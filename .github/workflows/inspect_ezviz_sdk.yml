@@ -13,40 +13,58 @@ jobs:
       - name: Fetch official EZVIZ Android SDK
         run: |
           curl -L --fail -o ezviz-sdk.aar https://repo.maven.apache.org/maven2/io/github/ezviz-open/ezviz-sdk/5.27.3/ezviz-sdk-5.27.3.aar
-          mkdir sdk
+          mkdir sdk cls
           unzip -q ezviz-sdk.aar -d sdk
-          echo "===== JARS ====="
-          find sdk -type f -name '*.jar' -print
-          echo "===== RELEVANT SO ====="
-          find sdk -type f -name '*.so' | grep -Ei 'ezstream|npq|qos|voice' | head -n 200 || true
+          CP=$(find sdk -type f -name '*.jar' -print | paste -sd: -)
+          echo "$CP" > classpath.txt
+          (cd cls && jar xf ../sdk/classes.jar)
 
-      - name: Locate relevant classes in all jars
+      - name: Find classes referencing QOS talk fields
         run: |
-          find sdk -type f -name '*.jar' -print | while read j; do
-            hits=$(jar tf "$j" | grep -Ei '(^|/)(NativeApi|EZPlayer|EZTalkback|EZStreamCtrl|EZQosParams|EZVoiceTalk).*class$' || true)
-            if [ -n "$hits" ]; then
-              echo "===== $j ====="
-              echo "$hits"
-            fi
+          echo "===== FIELD REFERENCES ====="
+          for term in iQosTakPort szQosTaklIP iQosTalkVersion szStreamToken szClientSession QoSTalkParam EZQosParams support_qos_talk support_new_talk; do
+            echo "----- $term -----"
+            grep -aRl "$term" cls --include='*.class' | sed 's#^cls/##;s#/#.#g;s#\.class$##' | head -n 200 || true
           done
 
-      - name: Disassemble talkback orchestration
+      - name: Disassemble QOS and stream classes
         run: |
-          CP=$(find sdk -type f -name '*.jar' -print | paste -sd: -)
+          CP=$(cat classpath.txt)
           for c in \
-            com.videogo.openapi.EZPlayer \
+            com.ez.stream.EZQosVoiceStremClient \
+            com.ez.stream.VoiceTalk \
+            com.ez.stream.InitParam \
+            com.ez.stream.QoSTalkParam \
+            com.ez.stream.EZStreamClient \
+            com.ez.stream.IVoiceStream \
+            com.ez.stream.EZStreamClientManager \
+            com.videogo.stream.EZStreamParamHelp \
             com.videogo.stream.EZTalkback \
-            com.videogo.stream.EZStreamCtrl \
             com.videogo.openapi.bean.EZQosParams \
-            com.ez.player.EZVoiceTalk \
-            com.ez.stream.NativeApi; do
+            com.videogo.openapi.PlayAPI; do
             echo "===== JAVAP-C $c ====="
             javap -classpath "$CP" -p -c -s "$c" 2>&1 || true
           done
 
-      - name: Native voice symbols
+      - name: Disassemble all classes that reference QOS endpoint fields
+        run: |
+          CP=$(cat classpath.txt)
+          {
+            grep -aRl 'iQosTakPort' cls --include='*.class'
+            grep -aRl 'szQosTaklIP' cls --include='*.class'
+            grep -aRl 'iQosTalkVersion' cls --include='*.class'
+            grep -aRl 'szStreamToken' cls --include='*.class'
+            grep -aRl 'szClientSession' cls --include='*.class'
+          } | sort -u | sed 's#^cls/##;s#/#.#g;s#\.class$##' | while read c; do
+            echo "===== REFCLASS $c ====="
+            javap -classpath "$CP" -p -c -s "$c" 2>&1 || true
+          done
+
+      - name: Native talk signatures and endpoint strings
         run: |
           find sdk -type f \( -name 'libezstreamclient.so' -o -name 'libNPQos.so' -o -name '*Qos*.so' \) -print | while read f; do
             echo "===== NATIVE $f ====="
-            readelf -Ws "$f" 2>/dev/null | grep -Ei 'VoiceTalk|inputVoice|NPQ_|Qos|Talk|ezplayer' | head -n 1600 || true
+            readelf -Ws "$f" 2>/dev/null | grep -Ei 'VoiceTalk|InputVoice|QosVoice|StartTalk|TalkParam|NPQ_' | head -n 2000 || true
+            echo "===== ENDPOINT STRINGS $f ====="
+            strings "$f" | grep -Ei 'qos.*talk|talk.*qos|voice.*talk|talk.*voice|vtm|streamtoken|client.?session|talkserver|talk.*server' | head -n 3000 || true
           done
