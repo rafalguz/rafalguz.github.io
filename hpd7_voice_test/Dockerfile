@@ -28,20 +28,24 @@ p.write_text(s)
 m = Path("/app/main.py")
 ms = m.read_text()
 marker = "    # Create reader to receive commands from STDIN\n"
-if "HPD7 VoiceCom channel 0 probe" not in ms:
+if "HPD7 custom audio capability probe" not in ms:
     if marker not in ms:
         raise SystemExit("main.py probe insertion point not found")
     probe = (
         '    for _, test_doorbell in list(doorbell_registry.items()):\n'
         '        if getattr(getattr(test_doorbell, "_type", None), "name", "") == "HPD7":\n'
-        '            logger.info("HPD7 VoiceCom channel 0 probe")\n'
-        '            h = test_doorbell._sdk.NET_DVR_StartVoiceCom_V30(test_doorbell.user_id, 0, 0, None, None)\n'
-        '            if h == -1:\n'
-        '                logger.error("HPD7 VoiceCom channel 0 failed: {}", test_doorbell._sdk.NET_DVR_GetLastError())\n'
-        '            else:\n'
-        '                logger.info("HPD7 VoiceCom channel 0 succeeded: handle={}", h)\n'
-        '                await asyncio.sleep(1)\n'
-        '                test_doorbell._sdk.NET_DVR_StopVoiceCom(h)\n\n'
+        '            logger.info("HPD7 custom audio capability probe")\n'
+        '            probe_urls = [\n'
+        '                "/ISAPI/Event/triggers/notifications/AudioAlarm/capabilities?format=json",\n'
+        '                "/ISAPI/Event/triggers/notifications/AudioAlarm/customAudioInfo?format=json",\n'
+        '                "/ISAPI/Event/triggers/notifications/AudioAlarm/channels/customAudioInfo?format=json",\n'
+        '            ]\n'
+        '            for probe_url in probe_urls:\n'
+        '                try:\n'
+        '                    response = test_doorbell._call_isapi("GET", probe_url, "")\n'
+        '                    logger.info("HPD7 custom audio GET {} => {}", probe_url, response[:6000])\n'
+        '                except Exception as exc:\n'
+        '                    logger.error("HPD7 custom audio GET {} failed: {}", probe_url, exc)\n\n'
     )
     ms = ms.replace(marker, probe + marker, 1)
 m.write_text(ms)
