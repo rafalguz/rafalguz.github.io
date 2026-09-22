@@ -1,0 +1,46 @@
+name: Inspect EZVIZ SDK
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/inspect_ezviz_sdk.yml"
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch public EZVIZ AARs
+        run: |
+          curl -L --fail -o super_ezviz.aar https://raw.githubusercontent.com/Ezviz-OpenBiz/UniEzOpenSDK/main/android/super_ezviz.aar
+          curl -L --fail -o app-common.aar https://raw.githubusercontent.com/Ezviz-OpenBiz/UniEzOpenSDK/main/android/app-common.aar
+          mkdir super app
+          unzip -q super_ezviz.aar -d super
+          unzip -q app-common.aar -d app
+
+      - name: List relevant Java classes
+        run: |
+          for j in super/classes.jar app/classes.jar; do
+            echo "===== $j ====="
+            jar tf "$j" | grep -Ei 'NativeApi|EZPlayer|VoiceTalk|Talk|Qos|NPQ' | head -n 500 || true
+          done
+
+      - name: Print relevant Java signatures
+        run: |
+          classes="com.ez.stream.NativeApi com.videogo.openapi.EZPlayer"
+          for j in super/classes.jar app/classes.jar; do
+            echo "===== JAVAP $j ====="
+            for c in $classes; do
+              echo "----- $c -----"
+              javap -classpath "$j" -p -s "$c" 2>&1 || true
+            done
+          done
+
+      - name: Inspect native voice and QoS symbols
+        run: |
+          find super app -type f \( -name 'libezstreamclient.so' -o -name 'libNPQos.so' -o -name 'libHCCore.so' \) -print | while read f; do
+            echo "===== NATIVE $f ====="
+            readelf -Ws "$f" 2>/dev/null | grep -Ei 'VoiceTalk|inputVoice|NPQ_|Qos|Talk' | head -n 500 || true
+            echo "===== STRINGS $f ====="
+            strings "$f" | grep -Ei 'VoiceTalk|inputVoice|NPQ_|Qos|Talk' | head -n 800 || true
+          done
