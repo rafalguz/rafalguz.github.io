@@ -1,6 +1,6 @@
 name: HPD7 Voice Test
 description: Temporary HPD7 VoiceCom test based on Hikvision Doorbell
-version: "0.0.1"
+version: "0.0.2"
 slug: hpd7_voice_test
 arch:
   - aarch64
