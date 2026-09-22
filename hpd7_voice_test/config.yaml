@@ -1,0 +1,53 @@
+name: HPD7 Voice Test
+description: Temporary HPD7 VoiceCom test based on Hikvision Doorbell
+version: "0.0.1"
+slug: hpd7_voice_test
+arch:
+  - aarch64
+stage: experimental
+startup: application
+boot: manual
+stdin: true
+homeassistant_api: true
+full_access: true
+map:
+  - media:rw
+  - config:rw
+services:
+  - "mqtt:need"
+
+options:
+  doorbells:
+    - name: ""
+      ip: ""
+      port: 8000
+      username: admin
+      password: ""
+      scenes: false
+  system:
+    log_level: DEBUG
+    sdk_log_level: ERROR
+  mqtt: {}
+
+schema:
+  doorbells:
+    - name: str
+      ip: str
+      port: "int?"
+      username: str
+      password: str
+      output_relays: "int?"
+      snapshot: "bool?"
+      scenes: "bool?"
+      call_state_poll: "int?"
+      scene_state_poll: "int?"
+      alarm_state_poll: "int?"
+  system:
+    log_level: match(^ERROR|WARNING|INFO|DEBUG$)
+    sdk_log_level: match(^NONE|ERROR|INFO|DEBUG$)?
+  mqtt:
+    host: "str?"
+    port: "int?"
+    ssl: "bool?"
+    username: "str?"
+    password: "str?"
