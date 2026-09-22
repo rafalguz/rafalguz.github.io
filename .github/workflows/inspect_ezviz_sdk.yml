@@ -10,37 +10,32 @@ jobs:
   inspect:
     runs-on: ubuntu-latest
     steps:
-      - name: Fetch public EZVIZ AARs
+      - name: Fetch official EZVIZ Android SDK
         run: |
-          curl -L --fail -o super_ezviz.aar https://raw.githubusercontent.com/Ezviz-OpenBiz/UniEzOpenSDK/main/android/super_ezviz.aar
-          curl -L --fail -o app-common.aar https://raw.githubusercontent.com/Ezviz-OpenBiz/UniEzOpenSDK/main/android/app-common.aar
-          mkdir super app
-          unzip -q super_ezviz.aar -d super
-          unzip -q app-common.aar -d app
+          curl -L --fail -o ezviz-sdk.aar https://repo.maven.apache.org/maven2/io/github/ezviz-open/ezviz-sdk/5.27.3/ezviz-sdk-5.27.3.aar
+          mkdir sdk
+          unzip -q ezviz-sdk.aar -d sdk
+          ls -lh ezviz-sdk.aar sdk/classes.jar
+          find sdk -type f -name '*.so' | sed -n '1,160p'
 
       - name: List relevant Java classes
         run: |
-          for j in super/classes.jar app/classes.jar; do
-            echo "===== $j ====="
-            jar tf "$j" | grep -Ei 'NativeApi|EZPlayer|VoiceTalk|Talk|Qos|NPQ' | head -n 500 || true
-          done
+          jar tf sdk/classes.jar | grep -Ei 'NativeApi|EZPlayer|VoiceTalk|Talk|Qos|NPQ|StreamClient' | head -n 1000 || true
 
       - name: Print relevant Java signatures
         run: |
-          classes="com.ez.stream.NativeApi com.videogo.openapi.EZPlayer"
-          for j in super/classes.jar app/classes.jar; do
-            echo "===== JAVAP $j ====="
-            for c in $classes; do
-              echo "----- $c -----"
-              javap -classpath "$j" -p -s "$c" 2>&1 || true
-            done
+          for c in com.ez.stream.NativeApi com.videogo.openapi.EZPlayer; do
+            echo "===== JAVAP $c ====="
+            javap -classpath sdk/classes.jar -p -s "$c" 2>&1 || true
           done
+          echo "===== OTHER TALK CLASSES ====="
+          jar tf sdk/classes.jar | grep -Ei '(VoiceTalk|TalkBack|Talk|Qos).*class$' | head -n 250 || true
 
       - name: Inspect native voice and QoS symbols
         run: |
-          find super app -type f \( -name 'libezstreamclient.so' -o -name 'libNPQos.so' -o -name 'libHCCore.so' \) -print | while read f; do
+          find sdk -type f \( -name 'libezstreamclient.so' -o -name 'libNPQos.so' -o -name 'libHCCore.so' -o -name '*qos*.so' \) -print | while read f; do
             echo "===== NATIVE $f ====="
-            readelf -Ws "$f" 2>/dev/null | grep -Ei 'VoiceTalk|inputVoice|NPQ_|Qos|Talk' | head -n 500 || true
+            readelf -Ws "$f" 2>/dev/null | grep -Ei 'VoiceTalk|inputVoice|NPQ_|Qos|Talk' | head -n 1000 || true
             echo "===== STRINGS $f ====="
-            strings "$f" | grep -Ei 'VoiceTalk|inputVoice|NPQ_|Qos|Talk' | head -n 800 || true
+            strings "$f" | grep -Ei 'VoiceTalk|inputVoice|NPQ_|Qos|Talk' | head -n 1500 || true
           done
