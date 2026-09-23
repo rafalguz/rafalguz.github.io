@@ -15,22 +15,33 @@ jobs:
           curl -L --fail -o ezviz-sdk.aar https://repo.maven.apache.org/maven2/io/github/ezviz-open/ezviz-sdk/5.27.3/ezviz-sdk-5.27.3.aar
           mkdir sdk
           unzip -q ezviz-sdk.aar -d sdk
+          echo "===== JARS ====="
+          find sdk -type f -name '*.jar' -print
 
-      - name: Print talkback Java bytecode and signatures
+      - name: Find and decompile talk classes
         run: |
-          classes="com.videogo.stream.EZTalkback com.videogo.stream.EZStreamCtrl com.videogo.openapi.bean.EZQosParams com.ez.player.EZVoiceTalk com.ez.player.EZMediaPlayer"
-          for c in $classes; do
-            echo "===== JAVAP $c ====="
-            javap -classpath sdk/classes.jar -p -s -c "$c" 2>&1 || true
+          find sdk -type f -name '*.jar' | while read j; do
+            echo "===== SCAN $j ====="
+            jar tf "$j" | grep -E '(^|/)(NativeApi|EZVoiceTalk|EZStreamClientManager|InitParam|EZTalkback|EZStreamParamHelp).*class$' || true
           done
-          echo "===== COM EZ STREAM CLASSES ====="
-          jar tf sdk/classes.jar | grep '^com/ez/stream/' | head -n 500 || true
 
-      - name: Inspect native talk symbols
-        run: |
-          for f in sdk/jni/arm64-v8a/libezstreamclient.so sdk/jni/arm64-v8a/libNPQos.so; do
-            echo "===== NATIVE $f ====="
-            readelf -Ws "$f" 2>/dev/null | grep -Ei 'VoiceTalk|inputVoice|startVoice|CASClient_.*Voice|TTSCLN_|NPQ_|QosTalk|TalkClient' | head -n 2500 || true
-            echo "===== STRINGS $f ====="
-            strings "$f" | grep -Ei 'VoiceTalk|inputVoice|startVoice|CASClient_.*Voice|TTSCLN_|NPQ_|QosTalk|TalkClient' | head -n 2500 || true
+          for cls in             com.ez.stream.NativeApi             com.ez.stream.InitParam             com.ez.stream.EZStreamClientManager             com.ez.player.EZVoiceTalk             com.videogo.stream.EZTalkback             com.videogo.stream.EZStreamParamHelp
+          do
+            echo "===== CLASS $cls ====="
+            found=0
+            find sdk -type f -name '*.jar' | while read j; do
+              p="$(echo "$cls" | tr . /).class"
+              if jar tf "$j" | grep -qx "$p"; then
+                echo "----- IN $j -----"
+                javap -classpath "$j" -p -s -c "$cls" 2>&1 || true
+              fi
+            done
           done
+
+      - name: Show native public talk symbols
+        run: |
+          f=sdk/jni/arm64-v8a/libezstreamclient.so
+          echo "===== SYMBOLS ====="
+          readelf -Ws "$f" 2>/dev/null | grep -Ei 'Java_com_ez_stream_NativeApi_(startVoiceTalk|startVoiceTalkV2|inputVoiceTalkData|stopVoiceTalk)|ezstream_(startVoiceTalk|startVoiceTalkV2|inputVoiceTalkData|stopVoiceTalk)|CASClient_(VoiceTalk|StartP2PVoiceTalk)' | head -n 500 || true
+          echo "===== STRINGS ====="
+          strings "$f" | grep -Ei 'startVoiceTalk|inputVoiceTalkData|VoiceTalk(Start|Input|Stop)|getVoiceTalkUrl|talkurl|talkServer|talkToken|qos' | head -n 1200 || true
