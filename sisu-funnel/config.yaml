@@ -1,0 +1,13 @@
+name: SISU Funnel
+version: 0.1.0
+slug: sisu-funnel
+description: Oddzielny tunel HTTPS tylko do panelu SISU
+url: https://github.com/rafalguz/rafalguz.github.io
+startup: services
+boot: auto
+arch:
+  - amd64
+init: false
+host_network: true
+options: {}
+schema: {}
