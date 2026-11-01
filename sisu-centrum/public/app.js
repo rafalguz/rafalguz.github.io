@@ -178,14 +178,16 @@ function render(){
 async function loadData(silent=false){
  if(!S.user)return;
  try{
-  const data=await request('/api/overview');
+  const data=await request('/api/overview'+(silent?'':'?fresh=1'));
+  const old=JSON.stringify(S.overview?.rooms||[])+'|'+JSON.stringify(S.overview?.room401||null);
+  const incoming=JSON.stringify(data.rooms||[])+'|'+JSON.stringify(data.room401||null);
+  const changed=old!==incoming;
   S.overview=data;
   S.updated=new Date().toLocaleTimeString('pl-PL');
-  if(S.tab!=='staff')render();
+  if(S.tab!=='staff'&&(!silent||changed))render();
  }catch(e){
-  S.overview=null;
   if(!silent)toast(e.message,true);
-  if(S.tab!=='staff')render();
+  if(S.tab!=='staff'&&!silent)render();
  }
 }
 async function loadUsers(){
