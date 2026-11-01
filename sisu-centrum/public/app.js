@@ -2,6 +2,7 @@
 (() => {
 const root=document.getElementById('app');
 const notices=document.getElementById('toast-stack');
+const API_BASE=new URL('./',document.currentScript?.src||location.href);
 const ASSET_BASE=new URL('./',document.currentScript?.src||window.location.href);
 const S={user:null,csrf:null,configured:true,tab:'apartments',floor:0,query:'',focusRoom:null,overview:null,users:[],busy:false,updated:null};
 const FLOORS=[4,3,2,1];
