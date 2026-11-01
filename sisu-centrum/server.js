@@ -355,6 +355,20 @@ async function handle(req,res){
   return send(res,404,{error:'Nie znaleziono zasobu'});
 }
 loadAccounts();
+// Diagnostics only: one outbound HTTPS request at startup. Never modifies router or DNS.
+(async () => {
+  try {
+    const response = await fetch('https://api.ipify.org?format=json', {signal: AbortSignal.timeout(7000)});
+    if (!response.ok) throw Error('upstream status');
+    const data = await response.json();
+    const ip = typeof data.ip === 'string' ? data.ip.trim() : '';
+    if (/^(?:\d{1,3}\.){3}\d{1,3}$/.test(ip))
+      console.log('SISU: egress public IPv4: ' + ip);
+    else console.log('SISU: public IPv4 unavailable');
+  } catch (err) {
+    console.log('SISU: public IPv4 probe failed');
+  }
+})();
 http.createServer((req,res)=>{
   Promise.resolve(handle(req,res)).catch(err=>{
     console.error('SISU request failed:',err?.message||'unknown');
