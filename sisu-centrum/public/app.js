@@ -2,6 +2,7 @@
 (() => {
 const root=document.getElementById('app');
 const notices=document.getElementById('toast-stack');
+const ASSET_BASE=new URL('./',document.currentScript?.src||window.location.href);
 const S={user:null,csrf:null,configured:true,tab:'apartments',floor:0,query:'',focusRoom:null,overview:null,users:[],busy:false,updated:null};
 const FLOORS=[4,3,2,1];
 const STATUSES=['Nieustalony','Oczekuje na przyjazd','Zameldowany','Do sprzątania','Sprzątanie','Gotowy'];
@@ -17,7 +18,7 @@ async function request(url,body){
  if(body!==undefined){opts.method='POST';opts.headers={'Content-Type':'application/json'};
    if(S.csrf)opts.headers['X-SISU-CSRF']=S.csrf;
    opts.body=JSON.stringify(body);}
- const r=await fetch(url,opts);
+ const r=await fetch(new URL(String(url).replace(/^\/+/,''),ASSET_BASE),opts);
  const json=await r.json().catch(()=>({}));
  if(!r.ok)throw Error(json.error||'Nie udało się wykonać operacji ('+r.status+')');
  return json;
