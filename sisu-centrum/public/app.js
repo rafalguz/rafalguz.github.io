@@ -7,6 +7,23 @@ const ASSET_BASE=new URL('./',document.currentScript?.src||window.location.href)
 const S={user:null,csrf:null,configured:true,tab:'apartments',floor:0,query:'',focusRoom:null,overview:null,users:[],busy:false,updated:null};
 const FLOORS=[4,3,2,1];
 const STATUSES=['Nieustalony','Oczekuje na przyjazd','Zameldowany','Do sprzątania','Sprzątanie','Gotowy'];
+let overviewRequestId=0;
+let followUpTimers=[];
+function cancelFollowUpRefreshes(){
+ for(const timer of followUpTimers)clearTimeout(timer);
+ followUpTimers=[];
+}
+function refreshAfterControl(kind){
+ cancelFollowUpRefreshes();
+ // Some hardware updates its reported state later than the HA service call returns.
+ const delays=['ac','ac_temp','trv','tv'].includes(kind)?[1500,4500,10000]:[1100,3200,6500];
+ for(const delay of delays){
+  followUpTimers.push(setTimeout(()=>{
+   if(!S.user||S.busy||document.visibilityState!=='visible')return;
+   void loadData(true,true);
+  },delay));
+ }
+}
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const temp=n=>typeof n==='number'&&Number.isFinite(n)?n.toLocaleString('pl-PL',{maximumFractionDigits:1})+'°C':'—';
 const connected=()=>!!S.overview?.room401;
@@ -46,7 +63,7 @@ function layout(content){
  '</nav><div class="sidefoot"><span class="statusdot '+(connected()?'ok':'')+'"></span>'+ (connected()?'Home Assistant połączony':'Oczekiwanie na odczyty')+
  '<div style="margin-top:11px">30 apartamentów · 4 piętra<br>Bez dostępu gości do panelu</div></div></aside>'+
  '<main class="main"><header class="header"><div><span class="label">SISU / WŁODKOWICA</span><h1>'+pageTitle()+'</h1><p class="subtitle">Wrocław · prywatny panel obsługi</p></div><div class="header-right"><div class="userbadge">'+role+'<small>'+esc(S.user.email)+'</small></div><button class="btn subtle" data-action="refresh" '+(S.busy?'disabled':'')+'>Odśwież</button><button class="btn subtle" data-action="logout">Wyloguj</button></div></header>'+
- content+'<footer><span>SISU Boutique Apartments · Oddzielny dostęp managerów</span><span>Aktualizacja '+esc(S.updated||'—')+'</span></footer></main></div>';
+ content+'<footer><span>SISU Boutique Apartments · Oddzielny dostęp managerów</span><span data-last-update>Aktualizacja '+esc(S.updated||'—')+'</span></footer></main></div>';
 }
 function authForm(isSetup){
  const button=isSetup?'Utwórz konto administratora':'Zaloguj';
@@ -175,17 +192,24 @@ function render(){
  if(S.tab==='staff')content=staff();
  root.innerHTML=layout(content);
 }
-async function loadData(silent=false){
+async function loadData(silent=false,forceFresh=false){
  if(!S.user)return;
+ const requestId=++overviewRequestId;
  try{
-  const data=await request('/api/overview'+(silent?'':'?fresh=1'));
+  const data=await request('/api/overview'+((forceFresh||!silent)?'?fresh=1':''));
+  if(requestId!==overviewRequestId||!S.user)return;
   const old=JSON.stringify(S.overview?.rooms||[])+'|'+JSON.stringify(S.overview?.room401||null);
   const incoming=JSON.stringify(data.rooms||[])+'|'+JSON.stringify(data.room401||null);
   const changed=old!==incoming;
   S.overview=data;
   S.updated=new Date().toLocaleTimeString('pl-PL');
   if(S.tab!=='staff'&&(!silent||changed))render();
+  else {
+   const timestamp=root.querySelector('[data-last-update]');
+   if(timestamp)timestamp.textContent='Aktualizacja '+S.updated;
+  }
  }catch(e){
+  if(requestId!==overviewRequestId)return;
   if(!silent)toast(e.message,true);
   if(S.tab!=='staff'&&!silent)render();
  }
@@ -204,29 +228,31 @@ async function boot(){
  }catch(e){toast('Nie można połączyć się z serwerem SISU: '+e.message,true);root.innerHTML='<div class="empty" style="margin:25vh auto;max-width:500px">Serwer SISU nie odpowiada. Spróbuj odświeżyć stronę.</div>';}
 }
 async function doAction(cb){
- if(S.busy)return;
+ if(S.busy)return false;
  S.busy=true;
- try{await cb();}
- catch(e){toast(e.message,true);}
+ try{await cb();return true;}
+ catch(e){toast(e.message,true);return false;}
  finally{S.busy=false;render();}
 }
 root.addEventListener('click',async e=>{
  const el=e.target.closest('[data-action]');if(!el)return;
  const a=el.dataset.action;
- if(a==='tab'){S.tab=el.dataset.tab;S.focusRoom=null;render();if(S.tab==='staff')await loadUsers();return;}
+ if(a==='tab'){S.tab=el.dataset.tab;S.focusRoom=null;render();if(S.tab==='staff')await loadUsers();else void loadData(true);return;}
  if(a==='floor'){S.floor=Number(el.dataset.floor);render();return;}
- if(a==='room'){const number=Number(el.dataset.room);S.tab=number===401?'room401':'operations';S.focusRoom=number===401?null:number;render();return;}
- if(a==='refresh'){await doAction(()=>loadData());if(S.tab==='staff')await loadUsers();return;}
- if(a==='logout'){await doAction(async()=>{await request('/api/logout',{});S.user=null;S.csrf=null;S.overview=null;S.tab='apartments';render()});return;}
+ if(a==='room'){const number=Number(el.dataset.room);S.tab=number===401?'room401':'operations';S.focusRoom=number===401?null:number;render();void loadData(true);return;}
+ if(a==='refresh'){await doAction(()=>loadData(false,true));if(S.tab==='staff')await loadUsers();return;}
+ if(a==='logout'){cancelFollowUpRefreshes();++overviewRequestId;await doAction(async()=>{await request('/api/logout',{});S.user=null;S.csrf=null;S.overview=null;S.tab='apartments';render()});return;}
  if(a==='command'){
   const body={room:401,kind:el.dataset.kind,name:el.dataset.name,value:el.dataset.value};
   if(['trv','ac_temp'].includes(body.kind))body.value=Number(body.value);
   if(['ac','ac_temp','trv'].includes(body.kind)&&!confirm('Wysłać polecenie do urządzeń apartamentu 401?'))return;
-  await doAction(async()=>{
+  const success=await doAction(async()=>{
    await request('/api/control',body);
-   toast('Polecenie zostało przyjęte przez Home Assistant.');
-   await loadData(true);
-  });return;
+   toast('Polecenie wysłane. Sprawdzam aktualny stan urządzenia.');
+   await loadData(true,true);
+  });
+  if(success)refreshAfterControl(body.kind);
+  return;
  }
  if(a==='disable'){
   if(!confirm('Zmienić dostęp tego managera?'))return;
@@ -236,11 +262,12 @@ root.addEventListener('click',async e=>{
 root.addEventListener('change',async e=>{
  if(e.target.dataset.action!=='room-status')return;
  const room=Number(e.target.dataset.room),status=e.target.value;
- await doAction(async()=>{
+ const success=await doAction(async()=>{
   await request('/api/room-status',{room,status});
   toast('Apartament '+room+': '+status);
-  await loadData(true);
+  await loadData(true,true);
  });
+ if(success)refreshAfterControl('status');
 });
 root.addEventListener('input',e=>{
  if(e.target.id==='search'){
