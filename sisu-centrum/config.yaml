@@ -1,0 +1,21 @@
+name: SISU Centrum Zarzadzania
+version: "0.1.0"
+slug: sisu-centrum
+description: "Niezalezny panel WWW dla 30 apartamentow SISU Wlodkowica"
+url: "https://github.com/rafalguz/rafalguz.github.io"
+arch:
+  - amd64
+startup: services
+boot: auto
+init: true
+homeassistant_api: true
+hassio_role: default
+ingress: false
+panel_admin: true
+ports:
+  8098/tcp: 8098
+ports_description:
+  8098/tcp: "Prywatny panel WWW SISU"
+webui: "http://[HOST]:[PORT:8098]/"
+options: {}
+schema: {}
