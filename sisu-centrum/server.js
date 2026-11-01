@@ -179,6 +179,21 @@ function recordFailedLogin(req){
   attempts.set(key,entry);
   if(attempts.size>1000)for(const [id,r] of attempts)if(r.until<now)attempts.delete(id);
 }
+let overviewCache = null;
+let overviewInFlight = null;
+const OVERVIEW_TTL_MS = 4000;
+function invalidateOverview(){ overviewCache=null; }
+async function getOverview(fresh=false){
+  const now=Date.now();
+  if(!fresh&&overviewCache&&now-overviewCache.at<OVERVIEW_TTL_MS)return overviewCache.data;
+  if(overviewInFlight)return overviewInFlight;
+  overviewInFlight=(async()=>{
+    const data=extractStates(await haApi('/states'));
+    overviewCache={at:Date.now(),data};
+    return data;
+  })();
+  try{return await overviewInFlight;}finally{overviewInFlight=null;}
+}
 async function haApi(endpoint,method='GET',payload){
   if(!HA_TOKEN)throw Object.assign(Error('Brak połączenia serwerowego z Home Assistant'),{status:503});
   if(!/^\/(states|services\/[a-z_]+\/[a-z_]+)$/.test(endpoint))throw Object.assign(Error('Niedozwolone żądanie HA'),{status:400});
@@ -304,7 +319,7 @@ async function handle(req,res){
   }
   if(req.method==='GET'&&p==='/api/overview'){
     const ctx=requireUser(req,res);if(!ctx)return;
-    return send(res,200,{ok:true,...extractStates(await haApi('/states'))});
+    return send(res,200,{ok:true,...await getOverview(url.searchParams.get('fresh')==='1')});
   }
   if(req.method==='POST'&&p==='/api/room-status'){
     const ctx=requireUser(req,res,['admin','manager']);if(!ctx)return;
@@ -313,6 +328,7 @@ async function handle(req,res){
     const n=Number(body.room);
     if(!Number.isInteger(n)||!ROOMS.includes(n)||!STATUSES.includes(body.status))return send(res,400,{error:'Nieprawidłowy lokal lub status'});
     await haApi('/services/input_select/select_option','POST',{entity_id:roomId(n),option:body.status});
+    invalidateOverview();
     audit(ctx.user.id,'room_status',{room:n,status:body.status});
     return send(res,200,{ok:true,room:n,status:body.status});
   }
@@ -322,6 +338,7 @@ async function handle(req,res){
     const body=await jsonBody(req);
     if(Number(body.room)!==401)return send(res,400,{error:'Sterowanie dostępne tylko dla podłączonego apartamentu 401'});
     const action=await control401(body);
+    invalidateOverview();
     audit(ctx.user.id,'control_401',action);
     return send(res,200,{ok:true,accepted:true,action});
   }
