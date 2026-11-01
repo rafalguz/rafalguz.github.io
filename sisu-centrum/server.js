@@ -123,9 +123,9 @@ function send(res,code,data){
   res.end(JSON.stringify(data));
 }
 function securityHeaders(res,req){
-  res.setHeader('Content-Security-Policy',"default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'");
+  res.setHeader('Content-Security-Policy',"default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'");
   res.setHeader('X-Content-Type-Options','nosniff');
-  res.setHeader('X-Frame-Options','DENY');
+  res.setHeader('X-Frame-Options','SAMEORIGIN');
   res.setHeader('Referrer-Policy','no-referrer');
   res.setHeader('Permissions-Policy','camera=(), microphone=(), geolocation=()');
   if(isTls(req))res.setHeader('Strict-Transport-Security','max-age=31536000');
