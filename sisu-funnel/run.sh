@@ -1,10 +1,10 @@
 #!/bin/sh
 set -eu
 export TS_SOCKET=/data/sisu-tailscaled.sock
-mkdir -p /data
+mkdir -p /data/state
 rm -f "$TS_SOCKET"
 echo 'SISU: Starting dedicated Tailscale daemon (userspace mode)'
-tailscaled --state=/data/sisu-ts.state --socket="$TS_SOCKET" --tun=userspace-networking --no-logs-no-support --port=0 &
+tailscaled --state=/data/sisu-ts.state --statedir=/data/state --socket="$TS_SOCKET" --tun=userspace-networking --no-logs-no-support --port=0 &
 PID=$!
 trap 'kill "$PID" 2>/dev/null || true' EXIT INT TERM
 n=0
