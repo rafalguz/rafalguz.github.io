@@ -1,4 +1,3 @@
-@import url('');
 :root{color-scheme:dark;--bg:#0c0d0f;--panel:#1b1d1e;--soft:#242320;--line:#454038;--gold:#d8b980;--goldsoft:#a98b5d;--text:#f1e7d9;--muted:#a79c8d;--danger:#e6a18d;--good:#a5d3ac;--font:"Trebuchet MS","Segoe UI",sans-serif}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--text);font:14px/1.55 var(--font)}
