@@ -1,9 +1,9 @@
 FROM node:22-alpine
+RUN apk add --no-cache su-exec
 WORKDIR /app
 COPY server.js /app/server.js
 COPY public /app/public
 RUN mkdir -p /data && chown -R node:node /data /app
-USER node
 ENV NODE_ENV=production
 EXPOSE 8098
-CMD ["node", "/app/server.js"]
+CMD ["sh", "-c", "chown node:node /data && exec su-exec node node /app/server.js"]
