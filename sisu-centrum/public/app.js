@@ -109,15 +109,23 @@ function musicPage(){
  const m=music(),playing=m?.state==='playing';
  const row=(n,v)=>'<div class="datarow"><span>'+esc(n)+'</span><strong>'+esc(v||'Brak danych')+'</strong></div>';
  const vol=typeof m?.volume==='number'?Math.round(m.volume*100)+'%':'Brak danych';
+ const stations=Array.isArray(m?.stations)?m.stations:[];
+ const selected=m?.selected||'Relaxing Piano';
  return '<div class="music-hero"><span class="music-hero-icon">♫</span><div><span class="label">NAGŁOŚNIENIE HOLU · NA ŻYWO</span>'+
  '<h2>'+esc(playing?(m.title||'Radio internetowe'):'Obecnie nic nie gra')+'</h2>'+
  '<p>'+esc(m?.artist||'Brak danych o wykonawcy')+'</p><small>'+esc(musicStatus(m))+'</small></div></div>'+
  '<div class="split"><div class="panel"><h3>Aktualnie odtwarzane</h3>'+row('Stan',musicStatus(m))+
  row('Wykonawca',m?.artist)+row('Album',m?.album)+row('Głośność',vol)+row('Źródło',m?.source)+
  row('Wyciszenie',m?.muted?'Tak':'Nie')+'</div><div class="panel"><h3>Harmonogram</h3>'+
- row('Stacja zaprogramowana','laut.fm Relaxing Piano')+row('Start','Codziennie 07:00')+
+ row('Wybrana stacja',selected)+row('Start','Codziennie 07:00')+
  row('Stop','Codziennie 22:00')+row('Kontrola','Co 15 minut')+
- '<p class="music-note">Wartości utworu i stanu są pobierane z odtwarzacza Linkplay. To podgląd, bez sterowania nagłośnieniem.</p></div></div>';
+ '<p class="music-note">Automatyka pilnuje wybranej stacji i wznawia ją w godzinach 07:00–22:00.</p></div></div>'+
+ '<div class="panel music-picker"><div class="twohead"><div><h3>Wybór stacji</h3><small>Dostępne dla managera i administratora</small></div></div>'+
+ '<div class="station-list">'+stations.map(s=>'<div class="station-card '+(s.name===selected?'selected':'')+'"><div><b>'+esc(s.name)+'</b><p>'+esc(s.description||'')+'</p></div><div class="station-actions">'+
+ '<button class="btn subtle" data-action="music-preview" data-url="'+esc(s.preview||'')+'">Podgląd na komputerze</button>'+
+ '<button class="btn '+(s.name===selected?'subtle':'primary')+'" data-action="music-set" data-station="'+esc(s.name)+'" '+(!ready()?'disabled':'')+'>'+(s.name===selected?'Wybrana':'Ustaw w holu')+'</button>'+
+ '</div></div>').join('')+'</div>'+
+ '<p class="music-note">Podgląd otwiera strumień w nowej karcie na tym komputerze i nie zmienia muzyki w holu.</p></div>';
 }
 function dashboard(){
  const all=rooms();
@@ -270,6 +278,22 @@ root.addEventListener('click',async e=>{
  if(a==='room'){const number=Number(el.dataset.room);S.tab=number===401?'room401':'operations';S.focusRoom=number===401?null:number;render();void loadData(true);return;}
  if(a==='refresh'){await doAction(()=>loadData(false,true));if(S.tab==='staff')await loadUsers();return;}
  if(a==='logout'){cancelFollowUpRefreshes();++overviewRequestId;await doAction(async()=>{await request('/api/logout',{});S.user=null;S.csrf=null;S.overview=null;S.tab='apartments';render()});return;}
+ if(a==='music-preview'){
+  const url=el.dataset.url;
+  if(!url)return toast('Brak adresu podglądu',true);
+  window.open(url,'_blank','noopener,noreferrer');
+  return;
+ }
+ if(a==='music-set'){
+  const station=el.dataset.station;
+  const success=await doAction(async()=>{
+   await request('/api/music',{station});
+   toast('Ustawiono stację: '+station);
+   await loadData(true,true);
+  });
+  if(success)refreshAfterControl('music');
+  return;
+ }
  if(a==='command'){
   const body={room:401,kind:el.dataset.kind,name:el.dataset.name,value:el.dataset.value};
   if(['trv','ac_temp'].includes(body.kind))body.value=Number(body.value);
