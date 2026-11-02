@@ -19,6 +19,7 @@ const DEVICES = Object.freeze({
   acTemp:'sensor.401_apartament_room_temperature',
   tv:'media_player.401_salon_telewizor_ue55u8072huxxh',
   tvPower:'media_player.401_salon_401_salon_telewizor',
+  hallAudio:'media_player.smart_audio_player_2',
   windows:{
     'Salon prawe':'binary_sensor.contact_sensor_drzwi',
     'Salon lewe':'binary_sensor.contact_sensor_2_drzwi',
@@ -224,9 +225,23 @@ function extractStates(states){
   // Samsung TV exposes reliable LAN power state; SmartThings is a fallback when the LAN entity drops.
   const tvNative=one(DEVICES.tv);
   const tv=tvNative.available?tvNative:one(DEVICES.tvPower);
+  const audio=state(DEVICES.hallAudio);
+  const audioAttrs=audio?.attributes||{};
+  const musicLabel=v=>typeof v==='string'&&v.trim()?v.trim().slice(0,200):null;
+  const audioVolume=audioAttrs.volume_level;
   return {
     checkedAt:new Date().toISOString(),
     rooms,
+    hallMusic:{
+      state:audio?.state||'unavailable',
+      title:musicLabel(audioAttrs.media_title),
+      artist:musicLabel(audioAttrs.media_artist),
+      album:musicLabel(audioAttrs.media_album_name),
+      source:musicLabel(audioAttrs.source),
+      volume:typeof audioVolume==='number'&&Number.isFinite(audioVolume)?Math.max(0,Math.min(1,audioVolume)):null,
+      muted:audioAttrs.is_volume_muted===true,
+      lastReported:audio?.last_reported||null
+    },
     room401:{
       temperature:state(DEVICES.temp)&&Number.isFinite(Number(state(DEVICES.temp).state))?Number(state(DEVICES.temp).state):null,
       ac:one(DEVICES.ac),tv,windows:list(DEVICES.windows),motion:list(DEVICES.motion),lights:list(DEVICES.lights),heating:list(DEVICES.heating)
