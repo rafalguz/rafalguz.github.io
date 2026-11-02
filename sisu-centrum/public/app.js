@@ -101,7 +101,7 @@ function musicStatus(m){
 function musicPreview(){
  const m=music(),playing=m?.state==='playing';
  return '<section class="panel music-widget"><div class="music-icon">♫</div><div class="music-widget-content"><span class="label">HOL SISU · TERAZ GRA</span>'+
- '<h3>'+esc(playing?(m.title||'Radio internetowe'):'Muzyka nie gra')+'</h3><p>'+esc(playing?(m.artist||'Brak informacji o wykonawcy'):'Relaxing Piano · 07:00–22:00')+'</p>'+
+ '<h3>'+esc(playing?(m.title||'Radio internetowe'):'Muzyka nie gra')+'</h3><p>'+esc(playing?(m.artist||'Brak informacji o wykonawcy'):(m?.selected||'Wybrana stacja')+' · 07:00–22:00')+'</p>'+
  '<small>'+esc(musicStatus(m))+' · Głośność '+esc(typeof m?.volume==='number'?Math.round(m.volume*100)+'%':'—')+'</small></div>'+
  '<button class="btn subtle" data-action="tab" data-tab="music">Szczegóły</button></section>';
 }
