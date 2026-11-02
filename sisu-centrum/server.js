@@ -26,6 +26,10 @@ const MUSIC_STATIONS = Object.freeze({
   'SomaFM Beat Blender':{
     url:'https://ice2.somafm.com/beatblender-128-mp3',
     description:'Łagodny chillout i lekkie beaty. Trochę żywsze, nadal spokojne i premium.'
+  },
+  'SmoothJazz.com Global':{
+    url:'https://smoothjazz.cdnstream1.com/2585_128.mp3',
+    description:'Gładki jazz, saksofon, fortepian i spokojny groove. Eleganckie, bardzo dobre tło do holu premium.'
   }
 });
 const DEVICES = Object.freeze({
