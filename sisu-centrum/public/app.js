@@ -29,6 +29,7 @@ const temp=n=>typeof n==='number'&&Number.isFinite(n)?n.toLocaleString('pl-PL',{
 const connected=()=>!!S.overview?.room401;
 const rooms=()=>S.overview?.rooms||[];
 const room401=()=>S.overview?.room401||null;
+const music=()=>S.overview?.hallMusic||null;
 const count=status=>rooms().filter(x=>x.status===status).length;
 const ready=()=>!S.busy;
 async function request(url,body){
@@ -54,11 +55,11 @@ function nav(id,name,icon){
 function kpi(n,title,desc){
  return '<div class="panel metric"><strong>'+esc(n)+'</strong><b>'+title+'</b><small>'+desc+'</small></div>';
 }
-function pageTitle(){return {apartments:'Apartamenty',room401:'Apartament 401',operations:'Obsługa i statusy',alerts:'Okna i czujniki',staff:'Kontrola dostępu'}[S.tab]||'Centrum zarządzania'}
+function pageTitle(){return {apartments:'Apartamenty',room401:'Apartament 401',operations:'Obsługa i statusy',alerts:'Okna i czujniki',music:'Muzyka w holu',staff:'Kontrola dostępu'}[S.tab]||'Centrum zarządzania'}
 function layout(content){
  const role=S.user.role==='admin'?'Administrator':'Manager';
  return '<div class="shell"><aside class="side"><div class="brand"><span class="logo">SISU</span><small>BOUTIQUE APARTMENTS<br>WŁODKOWICA</small></div><div class="label">CENTRUM ZARZĄDZANIA</div><nav>'+
- nav('apartments','Apartamenty','⌂')+nav('room401','Sterowanie 401','◈')+nav('operations','Obsługa','▤')+nav('alerts','Czujniki','◇')+
+ nav('apartments','Apartamenty','⌂')+nav('room401','Sterowanie 401','◈')+nav('operations','Obsługa','▤')+nav('alerts','Czujniki','◇')+nav('music','Muzyka holu','♫')+
  (S.user.role==='admin'?nav('staff','Personel','♙'):'')+
  '</nav><div class="sidefoot"><span class="statusdot '+(connected()?'ok':'')+'"></span>'+ (connected()?'Home Assistant połączony':'Oczekiwanie na odczyty')+
  '<div style="margin-top:11px">30 apartamentów · 4 piętra<br>Bez dostępu gości do panelu</div></div></aside>'+
@@ -92,12 +93,38 @@ function cardsRooms(){
   }).join('')+'</div></section>';
  }).join('');
 }
+function musicStatus(m){
+ if(!m||['unavailable','unknown'].includes(m.state))return 'Brak połączenia';
+ if(m.state==='playing')return m.muted?'Gra (wyciszone)':'Gra';
+ return m.state==='paused'?'Pauza':m.state==='off'||m.state==='idle'?'Nie gra':'Nie odtwarza';
+}
+function musicPreview(){
+ const m=music(),playing=m?.state==='playing';
+ return '<section class="panel music-widget"><div class="music-icon">♫</div><div class="music-widget-content"><span class="label">HOL SISU · TERAZ GRA</span>'+
+ '<h3>'+esc(playing?(m.title||'Radio internetowe'):'Muzyka nie gra')+'</h3><p>'+esc(playing?(m.artist||'Brak informacji o wykonawcy'):'Relaxing Piano · 07:00–22:00')+'</p>'+
+ '<small>'+esc(musicStatus(m))+' · Głośność '+esc(typeof m?.volume==='number'?Math.round(m.volume*100)+'%':'—')+'</small></div>'+
+ '<button class="btn subtle" data-action="tab" data-tab="music">Szczegóły</button></section>';
+}
+function musicPage(){
+ const m=music(),playing=m?.state==='playing';
+ const row=(n,v)=>'<div class="datarow"><span>'+esc(n)+'</span><strong>'+esc(v||'Brak danych')+'</strong></div>';
+ const vol=typeof m?.volume==='number'?Math.round(m.volume*100)+'%':'Brak danych';
+ return '<div class="music-hero"><span class="music-hero-icon">♫</span><div><span class="label">NAGŁOŚNIENIE HOLU · NA ŻYWO</span>'+
+ '<h2>'+esc(playing?(m.title||'Radio internetowe'):'Obecnie nic nie gra')+'</h2>'+
+ '<p>'+esc(m?.artist||'Brak danych o wykonawcy')+'</p><small>'+esc(musicStatus(m))+'</small></div></div>'+
+ '<div class="split"><div class="panel"><h3>Aktualnie odtwarzane</h3>'+row('Stan',musicStatus(m))+
+ row('Wykonawca',m?.artist)+row('Album',m?.album)+row('Głośność',vol)+row('Źródło',m?.source)+
+ row('Wyciszenie',m?.muted?'Tak':'Nie')+'</div><div class="panel"><h3>Harmonogram</h3>'+
+ row('Stacja zaprogramowana','laut.fm Relaxing Piano')+row('Start','Codziennie 07:00')+
+ row('Stop','Codziennie 22:00')+row('Kontrola','Co 15 minut')+
+ '<p class="music-note">Wartości utworu i stanu są pobierane z odtwarzacza Linkplay. To podgląd, bez sterowania nagłośnieniem.</p></div></div>';
+}
 function dashboard(){
  const all=rooms();
  return '<div class="kpis">'+kpi(all.length,'Apartamentów','Na czterech piętrach')+
  kpi('1 / 30','Automatyka','Pilotaż apartamentu 401')+
  kpi(count('Zameldowany'),'Zameldowani','Stan według obsługi')+
- kpi(count('Do sprzątania'),'Do sprzątania','Wymagana obsługa')+'</div>'+
+ kpi(count('Do sprzątania'),'Do sprzątania','Wymagana obsługa')+'</div>'+musicPreview()+
  '<div class="sectiontitle"><div><span class="label">BUDYNEK SISU</span><h2>Wszystkie apartamenty</h2></div><small>Kliknij lokal, aby nim zarządzać</small></div>'+
  '<div class="filters">'+[[0,'Wszystkie'],[1,'Piętro 1'],[2,'Piętro 2'],[3,'Piętro 3'],[4,'Piętro 4']].map(([f,label])=>'<button data-action="floor" data-floor="'+f+'" class="btn '+(f===S.floor?'active':'')+'">'+label+'</button>').join('')+
  '<input id="search" class="input" placeholder="Znajdź apartament…" value="'+esc(S.query)+'" aria-label="Szukaj apartamentu"></div>'+
@@ -189,6 +216,7 @@ function render(){
  if(S.tab==='room401')content=hvac();
  if(S.tab==='operations')content=operations();
  if(S.tab==='alerts')content=alerts();
+ if(S.tab==='music')content=musicPage();
  if(S.tab==='staff')content=staff();
  root.innerHTML=layout(content);
 }
@@ -198,8 +226,8 @@ async function loadData(silent=false,forceFresh=false){
  try{
   const data=await request('/api/overview'+((forceFresh||!silent)?'?fresh=1':''));
   if(requestId!==overviewRequestId||!S.user)return;
-  const old=JSON.stringify(S.overview?.rooms||[])+'|'+JSON.stringify(S.overview?.room401||null);
-  const incoming=JSON.stringify(data.rooms||[])+'|'+JSON.stringify(data.room401||null);
+  const old=JSON.stringify(S.overview?.rooms||[])+'|'+JSON.stringify(S.overview?.room401||null)+'|'+JSON.stringify(S.overview?.hallMusic||null);
+  const incoming=JSON.stringify(data.rooms||[])+'|'+JSON.stringify(data.room401||null)+'|'+JSON.stringify(data.hallMusic||null);
   const changed=old!==incoming;
   S.overview=data;
   S.updated=new Date().toLocaleTimeString('pl-PL');
@@ -302,6 +330,6 @@ setInterval(()=>{
   if(active&&['INPUT','SELECT','TEXTAREA'].includes(active.tagName))return;
   loadData(true);
  }
-},20000);
+},10000);
 boot();
 })();
