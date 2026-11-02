@@ -111,6 +111,7 @@ function musicPage(){
  const vol=typeof m?.volume==='number'?Math.round(m.volume*100)+'%':'Brak danych';
  const stations=Array.isArray(m?.stations)?m.stations:[];
  const selected=m?.selected||'Relaxing Piano';
+ const active=stations.find(s=>s.name===selected)||stations[0]||{};
  return '<div class="music-hero"><span class="music-hero-icon">♫</span><div><span class="label">NAGŁOŚNIENIE HOLU · NA ŻYWO</span>'+
  '<h2>'+esc(playing?(m.title||'Radio internetowe'):'Obecnie nic nie gra')+'</h2>'+
  '<p>'+esc(m?.artist||'Brak danych o wykonawcy')+'</p><small>'+esc(musicStatus(m))+'</small></div></div>'+
@@ -121,10 +122,12 @@ function musicPage(){
  row('Stop','Codziennie 22:00')+row('Kontrola','Co 15 minut')+
  '<p class="music-note">Automatyka pilnuje wybranej stacji i wznawia ją w godzinach 07:00–22:00.</p></div></div>'+
  '<div class="panel music-picker"><div class="twohead"><div><h3>Wybór stacji</h3><small>Dostępne dla managera i administratora</small></div></div>'+
- '<div class="station-list">'+stations.map(s=>'<div class="station-card '+(s.name===selected?'selected':'')+'"><div><b>'+esc(s.name)+'</b><p>'+esc(s.description||'')+'</p></div><div class="station-actions">'+
- '<button class="btn subtle" data-action="music-preview" data-url="'+esc(s.preview||'')+'">Podgląd na komputerze</button>'+
- '<button class="btn '+(s.name===selected?'subtle':'primary')+'" data-action="music-set" data-station="'+esc(s.name)+'" '+(!ready()?'disabled':'')+'>'+(s.name===selected?'Wybrana':'Ustaw w holu')+'</button>'+
- '</div></div>').join('')+'</div>'+
+ '<div class="music-select-row"><label for="music-station-select">Radio w holu</label><select id="music-station-select" class="input">'+
+ stations.map(s=>'<option value="'+esc(s.name)+'" data-description="'+esc(s.description||'')+'" data-preview="'+esc(s.preview||'')+'" '+(s.name===selected?'selected':'')+'>'+esc(s.name)+'</option>').join('')+
+ '</select></div>'+
+ '<div class="station-detail"><b id="music-station-name">'+esc(active.name||selected)+'</b><p id="music-station-description">'+esc(active.description||'')+'</p></div>'+
+ '<div class="station-actions"><button class="btn subtle" data-action="music-preview">▶ Podgląd na komputerze</button>'+
+ '<button class="btn primary" data-action="music-set" '+(!ready()?'disabled':'')+'>Ustaw w holu</button></div>'+
  '<p class="music-note">Podgląd otwiera strumień w nowej karcie na tym komputerze i nie zmienia muzyki w holu.</p></div>';
 }
 function dashboard(){
@@ -279,13 +282,16 @@ root.addEventListener('click',async e=>{
  if(a==='refresh'){await doAction(()=>loadData(false,true));if(S.tab==='staff')await loadUsers();return;}
  if(a==='logout'){cancelFollowUpRefreshes();++overviewRequestId;await doAction(async()=>{await request('/api/logout',{});S.user=null;S.csrf=null;S.overview=null;S.tab='apartments';render()});return;}
  if(a==='music-preview'){
-  const url=el.dataset.url;
+  const select=root.querySelector('#music-station-select');
+  const option=select?.selectedOptions?.[0];
+  const url=option?.dataset.preview;
   if(!url)return toast('Brak adresu podglądu',true);
   window.open(url,'_blank','noopener,noreferrer');
   return;
  }
  if(a==='music-set'){
-  const station=el.dataset.station;
+  const station=root.querySelector('#music-station-select')?.value;
+  if(!station)return toast('Wybierz stację',true);
   const success=await doAction(async()=>{
    await request('/api/music',{station});
    toast('Ustawiono stację: '+station);
@@ -312,6 +318,14 @@ root.addEventListener('click',async e=>{
  }
 });
 root.addEventListener('change',async e=>{
+ if(e.target.id==='music-station-select'){
+  const option=e.target.selectedOptions?.[0];
+  const name=root.querySelector('#music-station-name');
+  const desc=root.querySelector('#music-station-description');
+  if(name)name.textContent=option?.value||'';
+  if(desc)desc.textContent=option?.dataset.description||'';
+  return;
+ }
  if(e.target.dataset.action!=='room-status')return;
  const room=Number(e.target.dataset.room),status=e.target.value;
  const success=await doAction(async()=>{
