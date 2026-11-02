@@ -27,6 +27,18 @@ const MUSIC_STATIONS = Object.freeze({
     url:'https://ice2.somafm.com/beatblender-128-mp3',
     description:'Łagodny chillout i lekkie beaty. Trochę żywsze, nadal spokojne i premium.'
   },
+  "Chante France 60's":{
+    url:'https://chantefrance60s.ice.infomaniak.ch/chantefrance60s-128.mp3',
+    description:'Francuskie klasyki lat 60.: chanson, retro i największe francuskie przeboje epoki.'
+  },
+  "Chante France 70's":{
+    url:'https://chantefrance70s.ice.infomaniak.ch/chantefrance70s-128.mp3',
+    description:'Francuskie klasyki lat 70.: elegancka chanson i popularne francuskie przeboje.'
+  },
+  'Crooner Radio Frenchy':{
+    url:'https://direct.croonerradio.fr/croonerradio-frenchy-midfi.mp3',
+    description:'Francuska chanson i stylowe francuskie standardy z różnych dekad. Bardzo hotelowy klimat.'
+  },
   'SmoothJazz.com Global':{
     url:'https://smoothjazz.cdnstream1.com/2585_128.mp3',
     description:'Gładki jazz, saksofon, fortepian i spokojny groove. Eleganckie, bardzo dobre tło do holu premium.'
