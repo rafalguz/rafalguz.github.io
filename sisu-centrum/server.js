@@ -17,7 +17,8 @@ const DEVICES = Object.freeze({
   ac:'climate.401_apartament',
   temp:'sensor.401_salon_temperatura_pomiar',
   acTemp:'sensor.401_apartament_room_temperature',
-  tv:'media_player.401_salon_telewizor',
+  tv:'media_player.401_salon_telewizor_ue55u8072huxxh',
+  tvPower:'media_player.401_salon_401_salon_telewizor',
   windows:{
     'Salon prawe':'binary_sensor.contact_sensor_drzwi',
     'Salon lewe':'binary_sensor.contact_sensor_2_drzwi',
@@ -220,12 +221,15 @@ function extractStates(states){
   const one=id=>{const s=state(id);return s?{state:s.state,temperature:s.attributes?.current_temperature??null,target:s.attributes?.temperature??null,available:!['unknown','unavailable'].includes(s.state)}:{state:'unavailable',temperature:null,target:null,available:false};};
   const list=items=>Object.entries(items).map(([name,id])=>({name,...one(id)}));
   const rooms=ROOMS.map(n=>({number:n,floor:Math.floor(n/100),status:statusOf(state(roomId(n)))||'Nieustalony',connected:n===401}));
+  // Samsung TV exposes reliable LAN power state; SmartThings is a fallback when the LAN entity drops.
+  const tvNative=one(DEVICES.tv);
+  const tv=tvNative.available?tvNative:one(DEVICES.tvPower);
   return {
     checkedAt:new Date().toISOString(),
     rooms,
     room401:{
       temperature:state(DEVICES.temp)&&Number.isFinite(Number(state(DEVICES.temp).state))?Number(state(DEVICES.temp).state):null,
-      ac:one(DEVICES.ac),tv:one(DEVICES.tv),windows:list(DEVICES.windows),motion:list(DEVICES.motion),lights:list(DEVICES.lights),heating:list(DEVICES.heating)
+      ac:one(DEVICES.ac),tv,windows:list(DEVICES.windows),motion:list(DEVICES.motion),lights:list(DEVICES.lights),heating:list(DEVICES.heating)
     }
   };
 }
@@ -250,7 +254,7 @@ async function control401(body){
     const n=halfStep(value,16,30);if(n===null)throw Object.assign(Error('Temperatura Mitsubishi: 16–30°C co 0,5°C'),{status:400});
     domain='climate';action='set_temperature';entity=DEVICES.ac;data.temperature=n;
   }else if(kind==='tv'&&['on','off'].includes(value)){
-    domain='media_player';action=value==='on'?'turn_on':'turn_off';entity=DEVICES.tv;
+    domain='media_player';action=value==='on'?'turn_on':'turn_off';entity=DEVICES.tvPower;
   }else throw Object.assign(Error('Nieobsługiwane polecenie'),{status:400});
   if(kind==='ac_temp'||(kind==='ac'&&value!=='off')){
     const states=await haApi('/states');
