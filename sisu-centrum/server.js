@@ -13,6 +13,21 @@ const HA_TOKEN = process.env.SUPERVISOR_TOKEN;
 const SESSION_TTL = 12 * 60 * 60 * 1000;
 const ROOMS = [101,102,103,104,105,106,107,108,201,202,203,204,205,206,207,208,301,302,303,304,305,306,307,308,401,402,403,404,405,406];
 const STATUSES = ['Nieustalony', 'Oczekuje na przyjazd', 'Zameldowany', 'Do sprzątania', 'Sprzątanie', 'Gotowy'];
+const MUSIC_SELECT = 'input_select.sisu_muzyka_holu';
+const MUSIC_STATIONS = Object.freeze({
+  'Relaxing Piano':{
+    url:'https://stream.laut.fm/relaxing-piano',
+    description:'Spokojny fortepian i delikatne instrumentalne tło. Najbardziej elegancki, hotelowy klimat.'
+  },
+  'SomaFM Groove Salad':{
+    url:'https://ice2.somafm.com/groovesalad-128-mp3',
+    description:'Ambient i downtempo bez agresywnego rytmu. Nowoczesne, bardzo dyskretne tło.'
+  },
+  'SomaFM Beat Blender':{
+    url:'https://ice2.somafm.com/beatblender-128-mp3',
+    description:'Łagodny chillout i lekkie beaty. Trochę żywsze, nadal spokojne i premium.'
+  }
+});
 const DEVICES = Object.freeze({
   ac:'climate.401_apartament',
   temp:'sensor.401_salon_temperatura_pomiar',
@@ -238,6 +253,8 @@ function extractStates(states){
       artist:musicLabel(audioAttrs.media_artist),
       album:musicLabel(audioAttrs.media_album_name),
       source:musicLabel(audioAttrs.source),
+      selected:statusOf(state(MUSIC_SELECT))||'Relaxing Piano',
+      stations:Object.entries(MUSIC_STATIONS).map(([name,s])=>({name,description:s.description,preview:s.url})),
       volume:typeof audioVolume==='number'&&Number.isFinite(audioVolume)?Math.max(0,Math.min(1,audioVolume)):null,
       muted:audioAttrs.is_volume_muted===true,
       lastReported:audio?.last_reported||null
@@ -360,6 +377,19 @@ async function handle(req,res){
     invalidateOverview();
     audit(ctx.user.id,'control_401',action);
     return send(res,200,{ok:true,accepted:true,action});
+  }
+  if(req.method==='POST'&&p==='/api/music'){
+    const ctx=requireUser(req,res,['admin','manager']);if(!ctx)return;
+    if(!csrfOk(req,res,ctx))return;
+    const body=await jsonBody(req);
+    const station=typeof body.station==='string'?body.station:'';
+    const selected=MUSIC_STATIONS[station];
+    if(!selected)return send(res,400,{error:'Nieznana stacja radiowa'});
+    await haApi('/services/input_select/select_option','POST',{entity_id:MUSIC_SELECT,option:station});
+    await haApi('/services/media_player/play_media','POST',{entity_id:DEVICES.hallAudio,media_content_id:selected.url,media_content_type:'music'});
+    invalidateOverview();
+    audit(ctx.user.id,'hall_music',{station});
+    return send(res,200,{ok:true,station});
   }
   if(req.method==='GET'&&p==='/api/users'){
     const ctx=requireUser(req,res,['admin']);if(!ctx)return;
