@@ -130,7 +130,7 @@ function hvac(){
  '<span class="current">'+temp(ac.target)+'</span>'+
  cmd('ac_temp','',Math.min(30,Number(ac.target||22)+.5),'+',false,blocked||windowsUnsafe)+
  '</div></div></div><div class="panel devicebox"><h3>Telewizor Samsung</h3>'+
- deviceRow('Stan',v.tv.state,v.tv.state)+'<div class="controlrow"><span>Zasilanie</span><div class="controls">'+
+ deviceRow('Stan',v.tv.state,v.tv.state==='off'?'Wyłączony':['on','idle','playing','paused','standby','buffering'].includes(v.tv.state)?'Włączony':'Brak połączenia')+'<div class="controlrow"><span>Zasilanie</span><div class="controls">'+
  cmd('tv','','off','Wyłącz',v.tv.state==='off',blocked||!v.tv.available)+
  cmd('tv','','on','Włącz',v.tv.state==='on'||v.tv.state==='playing',blocked||!v.tv.available)+
  '</div></div></div></div>'+
