@@ -407,7 +407,31 @@ async function handle(req,res){
     audit(ctx.user.id,'hall_music',{station});
     return send(res,200,{ok:true,station});
   }
-  if(req.method==='GET'&&p==='/api/users'){
+  if(req.method==='POST'&&p==='/api/music/volume'){
+   const ctx=requireUser(req,res,['admin','manager']);if(!ctx)return;
+   if(!csrfOk(req,res,ctx))return;
+   const body=await jsonBody(req);
+   const volume=body.volume;
+   if(typeof volume!=='number'||!Number.isInteger(volume)||volume<0||volume>100)
+     return send(res,400,{error:'Głośność musi być liczbą od 0 do 100%'});
+   await haApi('/services/media_player/volume_set','POST',{entity_id:DEVICES.hallAudio,volume_level:volume/100});
+   await haApi('/services/input_number/set_value','POST',{entity_id:'input_number.sisu_glosnosc_holu',value:volume});
+   invalidateOverview();
+   audit(ctx.user.id,'hall_volume',{volume});
+   return send(res,200,{ok:true,volume});
+ }
+ if(req.method==='POST'&&p==='/api/music/mute'){
+   const ctx=requireUser(req,res,['admin','manager']);if(!ctx)return;
+   if(!csrfOk(req,res,ctx))return;
+   const body=await jsonBody(req);
+   if(typeof body.muted!=='boolean')
+     return send(res,400,{error:'Nieprawidłowa komenda wyciszenia'});
+   await haApi('/services/media_player/volume_mute','POST',{entity_id:DEVICES.hallAudio,is_volume_muted:body.muted});
+   invalidateOverview();
+   audit(ctx.user.id,'hall_mute',{muted:body.muted});
+   return send(res,200,{ok:true,muted:body.muted});
+ }
+ if(req.method==='GET'&&p==='/api/users'){
     const ctx=requireUser(req,res,['admin']);if(!ctx)return;
     return send(res,200,{ok:true,users:accountDB.users.map(briefUser),audit:accountDB.audit.slice(0,40)});
   }
