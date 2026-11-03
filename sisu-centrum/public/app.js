@@ -108,7 +108,9 @@ function musicPreview(){
 function musicPage(){
  const m=music(),playing=m?.state==='playing';
  const row=(n,v)=>'<div class="datarow"><span>'+esc(n)+'</span><strong>'+esc(v||'Brak danych')+'</strong></div>';
- const vol=typeof m?.volume==='number'?Math.round(m.volume*100)+'%':'Brak danych';
+ const volNumber=typeof m?.volume==='number'?Math.round(m.volume*100):null;
+ const vol=volNumber===null?'Brak danych':volNumber+'%';
+ const volumeDisabled=volNumber===null||!ready()||['unavailable','unknown'].includes(m?.state);
  const stations=Array.isArray(m?.stations)?m.stations:[];
  const selected=m?.selected||'Relaxing Piano';
  const active=stations.find(s=>s.name===selected)||stations[0]||{};
@@ -121,6 +123,12 @@ function musicPage(){
  row('Wybrana stacja',selected)+row('Start','Codziennie 07:00')+
  row('Stop','Codziennie 22:00')+row('Kontrola','Co 15 minut')+
  '<p class="music-note">Automatyka pilnuje wybranej stacji i wznawia ją w godzinach 07:00–22:00.</p></div></div>'+
+ '<div class="panel hall-volume-panel"><div class="twohead"><div><h3>Głośność w holu</h3><small>Regulacja na żywo · tylko manager i administrator</small></div><strong class="volume-indicator" id="hall-volume-label">'+esc(vol)+'</strong></div>'+
+ '<div class="hall-volume-controls"><button class="btn subtle" data-action="music-volume-step" data-step="-5" aria-label="Ścisz o 5 procent" '+(volumeDisabled?'disabled':'')+'>−5%</button>'+
+ '<input class="hall-volume-slider" type="range" id="hall-volume-slider" min="0" max="100" step="1" value="'+esc(volNumber??0)+'" aria-label="Głośność holu w procentach" '+(volumeDisabled?'disabled':'')+'>'+
+ '<button class="btn subtle" data-action="music-volume-step" data-step="5" aria-label="Zgłośnij o 5 procent" '+(volumeDisabled?'disabled':'')+'>+5%</button>'+
+ '<button class="btn '+(m?.muted?'primary':'subtle')+'" data-action="music-volume-mute" '+(volumeDisabled?'disabled':'')+'>'+(m?.muted?'Włącz dźwięk':'Wycisz')+'</button></div>'+
+ '<p class="music-note">Suwak i przyciski sterują głośnikiem holu. Poziom zostaje zapamiętany także na kolejny dzień. Wyciszenie nie zmienia wybranej stacji.</p></div>'+
  '<div class="panel music-picker"><div class="twohead"><div><h3>Wybór stacji</h3><small>Dostępne dla managera i administratora</small></div></div>'+
  '<div class="music-select-row"><label for="music-station-select">Radio w holu</label><select id="music-station-select" class="input">'+
  stations.map(s=>'<option value="'+esc(s.name)+'" data-description="'+esc(s.description||'')+'" data-preview="'+esc(s.preview||'')+'" '+(s.name===selected?'selected':'')+'>'+esc(s.name)+'</option>').join('')+
@@ -289,6 +297,28 @@ root.addEventListener('click',async e=>{
   window.open(url,'_blank','noopener,noreferrer');
   return;
  }
+ if(a==='music-volume-step'){
+   const current=music()?.volume;
+   if(typeof current!=='number')return toast('Brak odczytu głośności holu',true);
+   const volume=Math.max(0,Math.min(100,Math.round(current*100)+Number(el.dataset.step||0)));
+   const success=await doAction(async()=>{
+     await request('/api/music/volume',{volume});
+     toast('Głośność holu: '+volume+'%');
+     await loadData(true,true);
+   });
+   if(success)refreshAfterControl('music-volume');
+   return;
+ }
+ if(a==='music-volume-mute'){
+   const muted=!music()?.muted;
+   const success=await doAction(async()=>{
+     await request('/api/music/mute',{muted});
+     toast(muted?'Wyciszono muzykę w holu':'Przywrócono dźwięk w holu');
+     await loadData(true,true);
+   });
+   if(success)refreshAfterControl('music-volume');
+   return;
+ }
  if(a==='music-set'){
   const station=root.querySelector('#music-station-select')?.value;
   if(!station)return toast('Wybierz stację',true);
@@ -326,6 +356,18 @@ root.addEventListener('change',async e=>{
   if(desc)desc.textContent=option?.dataset.description||'';
   return;
  }
+ if(e.target.id==='hall-volume-slider'){
+   const volume=Number(e.target.value);
+   e.target.blur();
+   if(!Number.isInteger(volume)||volume<0||volume>100)return;
+   const success=await doAction(async()=>{
+     await request('/api/music/volume',{volume});
+     toast('Głośność holu: '+volume+'%');
+     await loadData(true,true);
+   });
+   if(success)refreshAfterControl('music-volume');
+   return;
+ }
  if(e.target.dataset.action!=='room-status')return;
  const room=Number(e.target.dataset.room),status=e.target.value;
  const success=await doAction(async()=>{
@@ -336,6 +378,11 @@ root.addEventListener('change',async e=>{
  if(success)refreshAfterControl('status');
 });
 root.addEventListener('input',e=>{
+ if(e.target.id==='hall-volume-slider'){
+   const label=root.querySelector('#hall-volume-label');
+   if(label)label.textContent=e.target.value+'%';
+   return;
+ }
  if(e.target.id==='search'){
   const at=e.target.selectionStart;
   S.query=e.target.value;render();
