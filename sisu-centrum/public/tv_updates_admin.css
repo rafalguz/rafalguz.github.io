@@ -1,0 +1,28 @@
+/* SISU23 central TV updates – private admin panel, responsive. */
+.tv-updates{max-width:1500px;margin:auto;display:grid;gap:20px}
+.tv-update-version{font-weight:700;letter-spacing:.05em;padding:10px 14px;border:1px solid #967e57;border-radius:20px}
+.tv-update-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:18px;align-items:start}
+.tv-update-grid .panel{min-width:0}
+.tv-field{display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--muted,#aeb1b8);margin:14px 0}
+.tv-field .input{font-size:15px;width:100%;box-sizing:border-box}
+.tv-update-buttons{display:flex;flex-wrap:wrap;gap:9px;margin:23px 0 10px}
+.tv-update-advanced{margin:21px 0;padding:15px;border:1px solid #414248;border-radius:10px}
+.tv-update-advanced summary{cursor:pointer;font-weight:600}
+.tv-update-advanced textarea{width:100%;min-height:150px;margin-top:12px;box-sizing:border-box;resize:vertical;font-family:monospace}
+.tv-update-upload{border-top:1px solid #45464c;margin-top:24px;padding-top:18px}
+.tv-update-upload .input{max-width:100%;box-sizing:border-box}
+.tv-update-preview{position:relative;box-sizing:border-box;min-height:360px;padding:65px 40px 30px;
+ display:flex;flex-direction:column;justify-content:center;gap:12px;background-color:#101823;background-repeat:no-repeat;background-size:cover;background-position:center;
+ border:1px solid #564c3b;border-radius:14px;color:#fff5e5;overflow:hidden}
+.tv-update-preview::before{content:"";position:absolute;inset:0;background:linear-gradient(115deg,rgba(3,10,19,.92),rgba(3,10,19,.24));pointer-events:none}
+.tv-update-preview>*{position:relative}
+.tv-update-preview small{font-size:11px;letter-spacing:.25em;color:var(--sisu-demo-accent,#D8B87C)}
+.tv-update-logo{font-family:Georgia,serif;font-size:47px;color:var(--sisu-demo-accent,#D8B87C);letter-spacing:.10em}
+.tv-update-logo span{color:#fff}
+.tv-update-preview h2{margin:15px 0 0;font-family:Georgia,serif;font-weight:400;font-size:34px;line-height:1.2;color:#fff5e5}
+.tv-update-preview p{font-size:17px;line-height:1.5;color:#e9dcca;max-width:410px;margin:0}
+.tv-update-preview i{font-style:normal;font-size:11px;letter-spacing:.15em;margin-top:20px;color:var(--sisu-demo-accent,#D8B87C)}
+.tv-update-preview.editorial{align-items:center;text-align:center}
+.tv-update-note{margin:15px 0 25px;padding:10px 3px;color:#c0c4c9;font-size:13px;line-height:1.6}
+.tv-update-note strong{color:#f1e7d5}
+@media(max-width:1100px){.tv-update-grid{grid-template-columns:1fr}.tv-update-preview{min-height:290px}}
