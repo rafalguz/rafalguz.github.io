@@ -24,3 +24,14 @@ Stan HA pozostaje bez zmian podczas instalowania aplikacji.
 * Tryb `demo` dla domowego testu nie steruje żadnymi urządzeniami. Tryb `room` wyznacza właściwy lokal, ale komendy dla urządzeń pozostają wyłączone, dopóki nie skonfigurujemy ścisłych serwerowych map encji Home Assistant i autoryzacji.
 * Połączenie aplikacji z serwerem wymaga HTTPS (SISU Funnel). Endpointy TV nigdy nie udostępniają tokenu administratora ani innych pokojów.
 * Instalacja modułu nie modyfikuje stanów Home Assistanta ani istniejących kont personelu.
+## Centralne aktualizacje SISU23 TV (od wersji 0.1.14 / TV 0.7.1)
+
+- W panelu administratora zakładka **Aktualizacje TV**: podgląd, zapis szkicu, publikacja, historia (12 wersji) i cofnięcie.
+- Publikowane dane są wyłącznie deklaratywne: teksty, kolory, pliki JPG/PNG/WEBP/MP3, warianty apartamentów. Bez pobierania ani uruchamiania zdalnego JavaScript.
+- GET /api/tv/content: bezpieczny widok ogólny; po uwierzytelnieniu sparowanego TV dane dotyczą tylko jego apartamentu. CORS dla telewizorów.
+- GET /api/tv/content/assets: media przesłane przez administratora (do 12 MB), bezpieczne typy MIME, nazwa oparta na hash pliku.
+- GET /api/tvs/content i POST /api/tvs/content/draft, /publish, /rollback, /assets: tylko administrator panelu SISU; zapis wymaga tokenu CSRF.
+- Dane przechowywane w /data/sisu-tv-content.json, media w /data/sisu-tv-assets. Cofnięcie tworzy nowy numer wersji.
+- Aplikacja Tizen 0.7.1 sprawdza publikacje przy uruchomieniu i co 5 minut, zapamiętuje ostatni poprawny zestaw w localStorage.
+- Bez internetu zachowuje zapisany zestaw oraz oryginalne nagranie Asi wewnątrz pakietu.
+- Zmiany kodu, nawigacji lub uprawnień Tizena nadal wymagają podpisanego pliku .wgt.

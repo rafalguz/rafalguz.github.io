@@ -316,13 +316,17 @@ async function control401(body){
 const tvRegistry=require('./tv_registry')({
   dataDir:DATA,rooms:ROOMS,send,requireUser,csrfOk,jsonBody,audit,clientKey
 });
+const tvContent=require('./tv_content')({
+  dataDir:DATA,rooms:ROOMS,send,requireUser,csrfOk,jsonBody,audit,resolveDevice:tvRegistry.resolveDevice
+});
 
 async function handle(req,res){
   securityHeaders(res,req);
   const url=new URL(req.url||'/', 'http://local.invalid');
   const p=url.pathname;
+  if(await tvContent.handle(req,res,p))return;
   if(await tvRegistry.handle(req,res,p))return;
-  if(req.method==='GET'&&['/','/app.js','/app.css'].includes(p)){
+  if(req.method==='GET'&&['/','/app.js','/app.css','/tv_updates_admin.js','/tv_updates_admin.css'].includes(p)){
     const file=p==='/'?'index.html':p.slice(1);
     const type=p==='/'?'text/html; charset=utf-8':p.endsWith('.js')?'application/javascript; charset=utf-8':'text/css; charset=utf-8';
     return fs.readFile(path.join(PUBLIC,file),(err,bytes)=>{

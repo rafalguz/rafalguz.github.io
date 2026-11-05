@@ -55,12 +55,12 @@ function nav(id,name,icon){
 function kpi(n,title,desc){
  return '<div class="panel metric"><strong>'+esc(n)+'</strong><b>'+title+'</b><small>'+desc+'</small></div>';
 }
-function pageTitle(){return {apartments:'Apartamenty',room401:'Apartament 401',operations:'Obsługa i statusy',alerts:'Okna i czujniki',music:'Muzyka w holu',staff:'Kontrola dostępu',tvs:'Telewizory SISU23'}[S.tab]||'Centrum zarządzania'}
+function pageTitle(){return {apartments:'Apartamenty',room401:'Apartament 401',operations:'Obsługa i statusy',alerts:'Okna i czujniki',music:'Muzyka w holu',staff:'Kontrola dostępu',tvs:'Telewizory SISU23',updates:'Aktualizacje TV'}[S.tab]||'Centrum zarządzania'}
 function layout(content){
  const role=S.user.role==='admin'?'Administrator':'Manager';
  return '<div class="shell"><aside class="side"><div class="brand"><span class="logo">SISU</span><small>BOUTIQUE APARTMENTS<br>WŁODKOWICA</small></div><div class="label">CENTRUM ZARZĄDZANIA</div><nav>'+
  nav('apartments','Apartamenty','⌂')+nav('room401','Sterowanie 401','◈')+nav('operations','Obsługa','▤')+nav('alerts','Czujniki','◇')+nav('music','Muzyka holu','♫')+
- (S.user.role==='admin'?nav('tvs','Telewizory','▣'):'')+
+ (S.user.role==='admin'?nav('tvs','Telewizory','▣')+nav('updates','Aktualizacje TV','↻'):'')+
  (S.user.role==='admin'?nav('staff','Personel','♙'):'')+
  '</nav><div class="sidefoot"><span class="statusdot '+(connected()?'ok':'')+'"></span>'+ (connected()?'Home Assistant połączony':'Oczekiwanie na odczyty')+
  '<div style="margin-top:11px">30 apartamentów · 4 piętra<br>Bez dostępu gości do panelu</div></div></aside>'+
@@ -263,6 +263,11 @@ function tvPage(){
   '<div class="panel"><div class="twohead"><h3>Telewizory w apartamentach</h3><small>Wersja · Stan · Lokal</small></div>'+
   '<div class="tv-devices">'+rows+'</div><p class="tv-note">Urządzenia nie otrzymują klucza administracyjnego Home Assistant. Sterowanie pokojami będzie udostępniane dopiero po bezpiecznym przypisaniu encji do poszczególnych apartamentów.</p></div></div>';
 }
+async function loadUpdates(){
+ if(S.user?.role!=='admin')return;
+ try{await window.SISUTVAdmin.load(request);if(S.tab==='updates')render()}
+ catch(e){toast('Aktualizacje TV: '+e.message,true)}
+}
 async function loadTvs(){
  if(S.user?.role!=='admin')return;
  try{
@@ -281,6 +286,7 @@ function render(){
  if(S.tab==='music')content=musicPage();
  if(S.tab==='staff')content=staff();
  if(S.tab==='tvs')content=tvPage();
+ if(S.tab==='updates')content=window.SISUTVAdmin.page();
  root.innerHTML=layout(content);
 }
 async function loadData(silent=false,forceFresh=false){
@@ -328,12 +334,24 @@ async function doAction(cb){
 root.addEventListener('click',async e=>{
  const el=e.target.closest('[data-action]');if(!el)return;
  const a=el.dataset.action;
- if(a==='tab'){S.tab=el.dataset.tab;S.focusRoom=null;render();if(S.tab==='staff')await loadUsers();else if(S.tab==='tvs')await loadTvs();else void loadData(true);return;}
+ if(a==='tab'){S.tab=el.dataset.tab;S.focusRoom=null;render();if(S.tab==='staff')await loadUsers();else if(S.tab==='tvs')await loadTvs();else if(S.tab==='updates')await loadUpdates();else void loadData(true);return;}
  if(a==='floor'){S.floor=Number(el.dataset.floor);render();return;}
  if(a==='room'){const number=Number(el.dataset.room);S.tab=number===401?'room401':'operations';S.focusRoom=number===401?null:number;render();void loadData(true);return;}
- if(a==='refresh'){await doAction(()=>loadData(false,true));if(S.tab==='staff')await loadUsers();if(S.tab==='tvs')await loadTvs();return;}
+ if(a==='refresh'){await doAction(()=>loadData(false,true));if(S.tab==='staff')await loadUsers();if(S.tab==='tvs')await loadTvs();if(S.tab==='updates')await loadUpdates();return;}
  if(a==='logout'){cancelFollowUpRefreshes();++overviewRequestId;await doAction(async()=>{await request('/api/logout',{});S.user=null;S.csrf=null;S.overview=null;S.tab='apartments';render()});return;}
  if(a==='tv-refresh'){await loadTvs();return;}
+ if(a==='tv-update-preview'){try{window.SISUTVAdmin.preview(root);toast('Podgląd szkicu odświeżony.')}catch(e){toast(e.message,true)}return;}
+ if(a==='tv-update-publish'){
+  if(!confirm('Opublikować zapisany szkic dla wszystkich telewizorów SISU23?'))return;
+  await doAction(async()=>{const x=await window.SISUTVAdmin.publish(request);await window.SISUTVAdmin.load(request);toast('Opublikowano aktualizację v'+x.version+'.')});
+  return;
+ }
+ if(a==='tv-update-rollback'){
+  const version=Number(el.dataset.version);
+  if(!Number.isInteger(version)||!confirm('Przywrócić treści z wersji '+version+' dla wszystkich telewizorów?'))return;
+  await doAction(async()=>{const x=await window.SISUTVAdmin.rollback(request,version);await window.SISUTVAdmin.load(request);toast('Przywrócono v'+version+' jako nową wersję '+x.version+'.')});
+  return;
+ }
  if(a==='tv-revoke'){
   if(!confirm('Na pewno odłączyć ten telewizor? Przestanie otrzymywać przypisanie pokoju.'))return;
   await doAction(async()=>{await request('/api/tvs/revoke',{id:el.dataset.id});toast('Telewizor odłączony.');await loadTvs()});
@@ -405,6 +423,11 @@ root.addEventListener('click',async e=>{
  }
 });
 root.addEventListener('change',async e=>{
+ if(e.target.id==='tv-update-upload'){
+  try{const asset=await window.SISUTVAdmin.upload(e.target,S.csrf,ASSET_BASE);if(asset)toast('Plik dodany do biblioteki. Zapisz szkic, aby użyć go w TV.')}
+  catch(err){toast(err.message,true)}
+  return;
+ }
  if(e.target.id==='music-station-select'){
   const option=e.target.selectedOptions?.[0];
   const name=root.querySelector('#music-station-name');
@@ -447,6 +470,11 @@ root.addEventListener('input',e=>{
  }
 });
 root.addEventListener('submit',async e=>{
+ if(e.target.id==='tv-update-form'){
+  e.preventDefault();
+  await doAction(async()=>{await window.SISUTVAdmin.save(e.target,request);toast('Szkic zapisany. Opublikuj, aby telewizory zobaczyły zmianę.')});
+  return;
+ }
  if(!['login','setup','new-manager','tv-approve'].includes(e.target.id))return;
  e.preventDefault();
  const form=e.target, kind=form.id, fd=new FormData(form);
@@ -476,6 +504,7 @@ root.addEventListener('submit',async e=>{
 setInterval(()=>{
  if(!S.busy&&S.user&&document.visibilityState==='visible'&&S.tab!=='staff'){
   if(S.tab==='tvs'){void loadTvs();return;}
+  if(S.tab==='updates')return;
   const active=document.activeElement;
   if(active&&['INPUT','SELECT','TEXTAREA'].includes(active.tagName))return;
   loadData(true);

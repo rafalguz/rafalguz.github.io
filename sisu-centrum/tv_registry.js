@@ -171,5 +171,5 @@ module.exports=function makeTvRegistry({dataDir,rooms,send,requireUser,csrfOk,js
     }
     return false;
   }
-  return {handle};
+  return {handle,resolveDevice:(req)=>{const d=tokenDevice(req);return d?{room:d.room,mode:d.mode}:null}};
 };
