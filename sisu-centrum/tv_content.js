@@ -38,6 +38,37 @@ module.exports=function makeTvContent({dataDir,rooms,send,requireUser,csrfOk,jso
   fs.writeFileSync(temp,JSON.stringify(state),{mode:0o600});
   fs.renameSync(temp,file);
  }
+ // Seed this approved public hospitality narration into the versioned media library.
+ // Applies only to the original published audio and only once. Existing user publications win.
+ const alexSource=path.join(__dirname,'default-media','welcome_sisu23_alex_20261105.mp3');
+ const alexExpected='fae110d6b210d51aebd5340eab5ef9b926e24891fb74604651bfb95fda5c6197';
+ const alexAsset='/api/tv/content/assets/'+alexExpected.slice(0,24)+'.mp3';
+ if(fs.existsSync(alexSource)){
+  try{
+   const bytes=fs.readFileSync(alexSource);
+   const actual=crypto.createHash('sha256').update(bytes).digest('hex');
+   if(actual!==alexExpected)throw Error('Invalid Alex narration checksum');
+   const dst=path.join(assetsDir,alexExpected.slice(0,24)+'.mp3');
+   if(!fs.existsSync(dst))fs.writeFileSync(dst,bytes,{flag:'wx',mode:0o644});
+   if(state.published.version===1 &&
+      state.published.content?.welcome?.audio==='assets/welcome_sisu.mp3'){
+    const original=copy(state.published);
+    state.history=Array.isArray(state.history)?state.history:[];
+    state.history.unshift(original);
+    state.history=state.history.slice(0,12);
+    state.published={version:original.version+1,publishedAt:new Date().toISOString(),
+      content:copy(original.content)};
+    state.published.content.welcome.audio=alexAsset;
+    // Preserve any unrelated draft edits while avoiding accidental fallback to old audio.
+    if(state.draft?.welcome?.audio==='assets/welcome_sisu.mp3')
+       state.draft.welcome.audio=alexAsset;
+    persist();
+    console.log('SISU TV: new welcome narration Alex published as content v'+state.published.version);
+   }
+  }catch(err){
+   console.error('SISU TV narration import skipped:',err.message);
+  }
+ }
  function bad(message){throw Object.assign(Error(message),{status:400})}
  function text(x,n=200,optional=false){
   if(optional&&(x===undefined||x===null))return '';

@@ -35,3 +35,10 @@ Stan HA pozostaje bez zmian podczas instalowania aplikacji.
 - Aplikacja Tizen 0.7.1 sprawdza publikacje przy uruchomieniu i co 5 minut, zapamiętuje ostatni poprawny zestaw w localStorage.
 - Bez internetu zachowuje zapisany zestaw oraz oryginalne nagranie Asi wewnątrz pakietu.
 - Zmiany kodu, nawigacji lub uprawnień Tizena nadal wymagają podpisanego pliku .wgt.
+
+## Nagranie powitalne 5 listopada 2026 (v0.1.15)
+
+- Dodano nowego lektora Alex jako uniwersalne powitanie SISU23 (MP3 32,84 s).
+- Bez zmiany aplikacji Tizen: weryfikacja SHA-256, kopiowanie do /data/sisu-tv-assets, jednorazowe opublikowanie w systemie treści.
+- Migracja jest idempotentna: wykonuje się wyłącznie, jeśli wersja treści wynosi 1 i nadal opublikowane jest oryginalne nagranie; wszystkie późniejsze publikacje administratora mają pierwszeństwo.
+- Poprzednia wersja jest w historii publikacji i można ją przywrócić z panelu; nagranie oryginalne pozostaje w aplikacji jako fallback.

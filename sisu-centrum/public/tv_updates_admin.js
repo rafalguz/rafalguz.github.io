@@ -25,7 +25,7 @@ window.SISUTVAdmin=(function(){
    field('footerLeft','Stopka po lewej',w.footerLeft,90)+
    field('footerRight','Stopka po prawej',w.footerRight,90)+
    field('background','Zdjęcie tła (ścieżka z biblioteki)',w.background,140)+
-   field('audio','Głos Asi — plik MP3 (ścieżka z biblioteki)',w.audio,140)+
+   field('audio','Głos lektora — plik MP3 (ścieżka z biblioteki)',w.audio,140)+
    '<h3>Wygląd i ekran główny</h3>'+
    '<label class="tv-field">Kolor złotych akcentów<input class="input" type="color" name="accent" value="'+esc(a.accent||'#D8B87C')+'"></label>'+
    '<label class="tv-field">Układ powitania<select name="layout" class="input"><option value="classic" '+(a.layout!=='editorial'?'selected':'')+'>Klasyczny</option><option value="editorial" '+(a.layout==='editorial'?'selected':'')+'>Redakcyjny</option></select></label>'+
