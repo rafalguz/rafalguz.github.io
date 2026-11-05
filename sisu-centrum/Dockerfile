@@ -2,6 +2,7 @@ FROM node:22-alpine
 RUN apk add --no-cache su-exec
 WORKDIR /app
 COPY server.js /app/server.js
+COPY tv_registry.js /app/tv_registry.js
 COPY public /app/public
 RUN mkdir -p /data && chown -R node:node /data /app
 ENV NODE_ENV=production
