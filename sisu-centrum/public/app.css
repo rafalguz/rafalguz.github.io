@@ -150,3 +150,30 @@ footer{border-top:1px solid #383128;padding-top:17px;margin-top:30px;color:#8079
 .hall-volume-slider{width:100%;height:28px;accent-color:#d8b980;cursor:pointer}
 .hall-volume-slider:disabled{cursor:not-allowed;opacity:.45}
 @media(max-width:650px){.hall-volume-controls{grid-template-columns:auto minmax(0,1fr) auto;gap:8px}.hall-volume-controls .btn:last-child{grid-column:1/-1}.hall-volume-panel .twohead{align-items:center}}
+
+/* TV registry admin area */
+.tv-admin{display:flex;flex-direction:column;gap:20px}
+.tv-intro p{max-width:900px;line-height:1.6;color:#c7c0b5}
+.tv-kpis{display:flex;align-items:center;gap:12px;margin-top:17px}
+.tv-kpis b{color:#e8cb98;font-size:24px}
+.tv-kpis small{color:#aaa397;font-size:13px;margin-right:23px}
+.tv-headpanels{align-items:stretch}
+.tv-form{display:grid;grid-template-columns:1fr 1fr 1fr auto;align-items:end;gap:13px;margin-top:19px}
+.tv-form label{display:flex;flex-direction:column;gap:8px;font-size:13px;color:#d1c0aa}
+.tv-form .btn{white-space:nowrap}
+.tv-note{color:#b9ad9e;font-size:12px;line-height:1.6;margin-top:18px}
+.tv-pending{display:flex;flex-direction:column;gap:10px;margin:17px 0}
+.tv-pending-row{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;border:1px solid #665440;border-radius:9px;padding:12px}
+.tv-pending-row strong{color:#f1d39b}
+.tv-pending-row small{color:#cbbba7}
+.tv-devices{display:flex;flex-direction:column;gap:11px;margin-top:17px}
+.tv-device{display:flex;align-items:center;gap:15px;padding:14px 17px;border:1px solid #6c5a43;border-radius:11px;background:#151718}
+.tv-device-icon{font-size:28px;color:#dbb67e}
+.tv-device-info{flex:1;min-width:180px;display:flex;flex-direction:column;gap:3px}
+.tv-device-info b{color:#efe5d5}
+.tv-device-info small{color:#aea595;font-size:11px}
+.tv-indicator{font-size:12px;color:#c7aaa0;padding:7px 11px;border-radius:30px;border:1px solid #806d59}
+.tv-indicator.online{color:#bfe3ca;border-color:#456f55}
+.tv-room-select{width:105px}
+@media(max-width:1250px){.tv-form{grid-template-columns:1fr 1fr}.tv-device{flex-wrap:wrap}.tv-headpanels{display:block}}
+@media(max-width:750px){.tv-form{grid-template-columns:1fr}.tv-devices{gap:13px}.tv-device{padding:13px}.tv-device-info{width:100%}}
