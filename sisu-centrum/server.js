@@ -313,10 +313,15 @@ async function control401(body){
   await haApi('/services/'+domain+'/'+action,'POST',{entity_id:entity,...data});
   return {kind,name:name||null,value,entity};
 }
+const tvRegistry=require('./tv_registry')({
+  dataDir:DATA,rooms:ROOMS,send,requireUser,csrfOk,jsonBody,audit,clientKey
+});
+
 async function handle(req,res){
   securityHeaders(res,req);
   const url=new URL(req.url||'/', 'http://local.invalid');
   const p=url.pathname;
+  if(await tvRegistry.handle(req,res,p))return;
   if(req.method==='GET'&&['/','/app.js','/app.css'].includes(p)){
     const file=p==='/'?'index.html':p.slice(1);
     const type=p==='/'?'text/html; charset=utf-8':p.endsWith('.js')?'application/javascript; charset=utf-8':'text/css; charset=utf-8';
@@ -480,4 +485,4 @@ http.createServer((req,res)=>{
     console.error('SISU request failed:',err?.message||'unknown');
     if(!res.writableEnded)send(res,Number.isInteger(err?.status)?err.status:500,{error:err?.status?err.message:'Błąd serwera SISU'});
   });
-}).listen(PORT,'0.0.0.0',()=>console.log('SISU panel działa na porcie '+PORT));
+}).listen(PORT,process.env.SISU_BIND_HOST||'0.0.0.0',()=>console.log('SISU panel działa na porcie '+PORT));

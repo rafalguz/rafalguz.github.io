@@ -4,7 +4,7 @@ const root=document.getElementById('app');
 const notices=document.getElementById('toast-stack');
 const API_BASE=new URL('./',document.currentScript?.src||location.href);
 const ASSET_BASE=new URL('./',document.currentScript?.src||window.location.href);
-const S={user:null,csrf:null,configured:true,tab:'apartments',floor:0,query:'',focusRoom:null,overview:null,users:[],busy:false,updated:null};
+const S={user:null,csrf:null,configured:true,tab:'apartments',floor:0,query:'',focusRoom:null,overview:null,users:[],tvs:[],tvPending:[],tvRooms:[],busy:false,updated:null};
 const FLOORS=[4,3,2,1];
 const STATUSES=['Nieustalony','Oczekuje na przyjazd','Zameldowany','Do sprzątania','Sprzątanie','Gotowy'];
 let overviewRequestId=0;
@@ -55,11 +55,12 @@ function nav(id,name,icon){
 function kpi(n,title,desc){
  return '<div class="panel metric"><strong>'+esc(n)+'</strong><b>'+title+'</b><small>'+desc+'</small></div>';
 }
-function pageTitle(){return {apartments:'Apartamenty',room401:'Apartament 401',operations:'Obsługa i statusy',alerts:'Okna i czujniki',music:'Muzyka w holu',staff:'Kontrola dostępu'}[S.tab]||'Centrum zarządzania'}
+function pageTitle(){return {apartments:'Apartamenty',room401:'Apartament 401',operations:'Obsługa i statusy',alerts:'Okna i czujniki',music:'Muzyka w holu',staff:'Kontrola dostępu',tvs:'Telewizory SISU23'}[S.tab]||'Centrum zarządzania'}
 function layout(content){
  const role=S.user.role==='admin'?'Administrator':'Manager';
  return '<div class="shell"><aside class="side"><div class="brand"><span class="logo">SISU</span><small>BOUTIQUE APARTMENTS<br>WŁODKOWICA</small></div><div class="label">CENTRUM ZARZĄDZANIA</div><nav>'+
  nav('apartments','Apartamenty','⌂')+nav('room401','Sterowanie 401','◈')+nav('operations','Obsługa','▤')+nav('alerts','Czujniki','◇')+nav('music','Muzyka holu','♫')+
+ (S.user.role==='admin'?nav('tvs','Telewizory','▣'):'')+
  (S.user.role==='admin'?nav('staff','Personel','♙'):'')+
  '</nav><div class="sidefoot"><span class="statusdot '+(connected()?'ok':'')+'"></span>'+ (connected()?'Home Assistant połączony':'Oczekiwanie na odczyty')+
  '<div style="margin-top:11px">30 apartamentów · 4 piętra<br>Bez dostępu gości do panelu</div></div></aside>'+
@@ -228,6 +229,48 @@ function staff(){
  (x.role==='manager'?'<button data-action="disable" data-id="'+esc(x.id)+'" class="btn '+(x.active?'danger':'subtle')+'" '+(!ready()?'disabled':'')+'>'+(x.active?'Zablokuj':'Odblokuj')+'</button>':'')+
  '</div></div>').join('')+'</div>';
 }
+function tvPage(){
+ if(S.user?.role!=='admin')return '<div class="empty">Brak uprawnień.</div>';
+ const list=S.tvs||[];
+ const pending=S.tvPending||[];
+ const roomNumbers=(S.tvRooms&&S.tvRooms.length?S.tvRooms:rooms().map(r=>r.number));
+ const options=roomNumbers.map(n=>'<option value="'+n+'">'+n+'</option>').join('');
+ const now=Date.now();
+ const rows=list.length?list.map(d=>
+  '<div class="tv-device"><div class="tv-device-icon">▣</div><div class="tv-device-info"><b>'+esc(d.name)+' · '+esc(d.room)+'</b>'+
+  '<small>'+esc(d.mode==='demo'?'TRYB TESTOWY':'APARTAMENT')+' · v'+esc(d.version||'—')+' · '+esc(d.deviceId)+'</small>'+
+  '<small>Ostatnio widziany: '+esc(d.lastSeen?new Date(d.lastSeen).toLocaleString('pl-PL'):'Brak danych')+'</small></div>'+
+  '<span class="tv-indicator '+(d.online?'online':'')+'">'+(d.online?'Online':'Offline')+'</span>'+
+  '<select class="input tv-room-select" data-tv-room="'+esc(d.id)+'">'+roomNumbers.map(n=>'<option value="'+n+'" '+(d.room===n?'selected':'')+'>'+n+'</option>').join('')+'</select>'+
+  '<button class="btn subtle" data-action="tv-reassign" data-id="'+esc(d.id)+'">Zmień pokój</button>'+
+  '<button class="btn danger" data-action="tv-revoke" data-id="'+esc(d.id)+'">Odłącz</button></div>'
+ ).join(''):'<div class="empty">Nie ma jeszcze przypisanych telewizorów. Pierwszy sparujemy testowo w salonie.</div>';
+ const waiting=pending.length?pending.map(x=>
+  '<div class="tv-pending-row"><strong>Kod '+esc(x.code)+'</strong><span>ID '+esc(x.deviceId)+' · v'+esc(x.version||'—')+'</span>'+
+  '<small>'+(!x.approved?'Oczekuje na przypisanie':'Zatwierdzono — telewizor pobierze konfigurację')+'</small></div>'
+ ).join(''):'<p class="muted">Brak telewizorów oczekujących na parowanie.</p>';
+ return '<div class="tv-admin"><div class="panel tv-intro">'+
+  '<h3>Jeden system, 30 niezależnych apartamentów</h3><p>Po pierwszym uruchomieniu SISU23 TV pokazuje 8-cyfrowy kod. Wpisz go poniżej, wybierz apartament i zatwierdź. Telewizor sam pobierze numer pokoju. Tryb testowy nie steruje urządzeniami.</p>'+
+  '<div class="tv-kpis"><b>'+list.length+' z 30</b><small>Przypisanych telewizorów</small><b>'+list.filter(x=>x.online).length+'</b><small>Online</small></div></div>'+
+  '<div class="split tv-headpanels"><section class="panel"><h3>Sparuj nowy telewizor</h3>'+
+  '<form id="tv-approve" class="tv-form"><label>Kod wyświetlony na TV<input class="input" name="code" pattern="[0-9]{8}" minlength="8" maxlength="8" inputmode="numeric" placeholder="8 cyfr" required></label>'+
+  '<label>Apartament<select class="input" name="room" required>'+options+'</select></label>'+
+  '<label>Tryb<select class="input" name="mode"><option value="demo">TEST — bez sterowania</option><option value="room">Apartament docelowy</option></select></label>'+
+  '<button class="btn primary" type="submit">Przypisz telewizor</button></form>'+
+  '<p class="tv-note">Parowanie zabezpiecza konto administratora i jednorazowy kod. Jeden telewizor docelowy może być przypisany do jednego apartamentu.</p></section>'+
+  '<section class="panel"><h3>Czekają na przypisanie</h3><div class="tv-pending">'+waiting+'</div>'+
+  '<button class="btn subtle" data-action="tv-refresh">Odśwież listę</button></section></div>'+
+  '<div class="panel"><div class="twohead"><h3>Telewizory w apartamentach</h3><small>Wersja · Stan · Lokal</small></div>'+
+  '<div class="tv-devices">'+rows+'</div><p class="tv-note">Urządzenia nie otrzymują klucza administracyjnego Home Assistant. Sterowanie pokojami będzie udostępniane dopiero po bezpiecznym przypisaniu encji do poszczególnych apartamentów.</p></div></div>';
+}
+async function loadTvs(){
+ if(S.user?.role!=='admin')return;
+ try{
+  const data=await request('/api/tvs');
+  S.tvs=data.devices||[];S.tvPending=data.pending||[];S.tvRooms=data.rooms||[];
+  if(S.tab==='tvs')render();
+ }catch(e){toast('Telewizory: '+e.message,true);}
+}
 function render(){
  if(!S.configured){root.innerHTML=authForm(true);return;}
  if(!S.user){root.innerHTML=authForm(false);return;}
@@ -237,6 +280,7 @@ function render(){
  if(S.tab==='alerts')content=alerts();
  if(S.tab==='music')content=musicPage();
  if(S.tab==='staff')content=staff();
+ if(S.tab==='tvs')content=tvPage();
  root.innerHTML=layout(content);
 }
 async function loadData(silent=false,forceFresh=false){
@@ -284,11 +328,24 @@ async function doAction(cb){
 root.addEventListener('click',async e=>{
  const el=e.target.closest('[data-action]');if(!el)return;
  const a=el.dataset.action;
- if(a==='tab'){S.tab=el.dataset.tab;S.focusRoom=null;render();if(S.tab==='staff')await loadUsers();else void loadData(true);return;}
+ if(a==='tab'){S.tab=el.dataset.tab;S.focusRoom=null;render();if(S.tab==='staff')await loadUsers();else if(S.tab==='tvs')await loadTvs();else void loadData(true);return;}
  if(a==='floor'){S.floor=Number(el.dataset.floor);render();return;}
  if(a==='room'){const number=Number(el.dataset.room);S.tab=number===401?'room401':'operations';S.focusRoom=number===401?null:number;render();void loadData(true);return;}
- if(a==='refresh'){await doAction(()=>loadData(false,true));if(S.tab==='staff')await loadUsers();return;}
+ if(a==='refresh'){await doAction(()=>loadData(false,true));if(S.tab==='staff')await loadUsers();if(S.tab==='tvs')await loadTvs();return;}
  if(a==='logout'){cancelFollowUpRefreshes();++overviewRequestId;await doAction(async()=>{await request('/api/logout',{});S.user=null;S.csrf=null;S.overview=null;S.tab='apartments';render()});return;}
+ if(a==='tv-refresh'){await loadTvs();return;}
+ if(a==='tv-revoke'){
+  if(!confirm('Na pewno odłączyć ten telewizor? Przestanie otrzymywać przypisanie pokoju.'))return;
+  await doAction(async()=>{await request('/api/tvs/revoke',{id:el.dataset.id});toast('Telewizor odłączony.');await loadTvs()});
+  return;
+ }
+ if(a==='tv-reassign'){
+  const input=root.querySelector('[data-tv-room="'+el.dataset.id+'"]');
+  const room=Number(input?.value);
+  if(!room||!confirm('Zmienić przypisanie telewizora na apartament '+room+'?'))return;
+  await doAction(async()=>{await request('/api/tvs/reassign',{id:el.dataset.id,room});toast('Nowy apartament: '+room);await loadTvs()});
+  return;
+ }
  if(a==='music-preview'){
   const select=root.querySelector('#music-station-select');
   const option=select?.selectedOptions?.[0];
@@ -390,9 +447,16 @@ root.addEventListener('input',e=>{
  }
 });
 root.addEventListener('submit',async e=>{
- if(!['login','setup','new-manager'].includes(e.target.id))return;
+ if(!['login','setup','new-manager','tv-approve'].includes(e.target.id))return;
  e.preventDefault();
  const form=e.target, kind=form.id, fd=new FormData(form);
+ if(kind==='tv-approve'){
+  const body={code:String(fd.get('code')||'').trim(),room:Number(fd.get('room')),mode:String(fd.get('mode')||'demo')};
+  const ok=await doAction(async()=>{await request('/api/tvs/approve',body);toast('Parowanie zaakceptowane. TV pobierze konfigurację.');await loadTvs()});
+  if(ok)await loadTvs();
+  return;
+ }
+
  const body={email:String(fd.get('email')||'').trim(),password:String(fd.get('password')||'')};
  if(kind==='setup')body.code=String(fd.get('code')||'').trim();
  if(kind==='new-manager'){
@@ -411,6 +475,7 @@ root.addEventListener('submit',async e=>{
 });
 setInterval(()=>{
  if(!S.busy&&S.user&&document.visibilityState==='visible'&&S.tab!=='staff'){
+  if(S.tab==='tvs'){void loadTvs();return;}
   const active=document.activeElement;
   if(active&&['INPUT','SELECT','TEXTAREA'].includes(active.tagName))return;
   loadData(true);
