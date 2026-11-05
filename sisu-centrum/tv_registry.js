@@ -66,13 +66,14 @@ module.exports=function makeTvRegistry({dataDir,rooms,send,requireUser,csrfOk,js
       appVersion:d.version||'',controlsEnabled:false,capabilities:{lights:[],climate:[]},
       notice:d.mode==='demo'?'Tryb testowy — bez sterowania urządzeniami':'Sterowanie nieaktywne do czasu przypisania urządzeń przez administratora'};
   }
-  function quota(req){
-    const key=clientKey(req),now=Date.now(),s=rate.get(key)||{n:0,until:now+10*60000};
-    if(s.until<now){s.n=0;s.until=now+10*60000}
+  function quota(key,max,period=10*60000){
+    // Per pairing request; 30 televisions may share a single Funnel proxy IP.
+    const now=Date.now(),s=rate.get(key)||{n:0,until:now+period};
+    if(s.until<now){s.n=0;s.until=now+period}
     s.n++;
     rate.set(key,s);
-    if(rate.size>1000)for(const [k,v] of rate)if(v.until<now)rate.delete(k);
-    return s.n<=90;
+    if(rate.size>3000)for(const [k,v] of rate)if(v.until<now)rate.delete(k);
+    return s.n<=max;
   }
   async function handle(req,res,p){
     expire();
@@ -81,7 +82,7 @@ module.exports=function makeTvRegistry({dataDir,rooms,send,requireUser,csrfOk,js
       if(req.method==='OPTIONS'){res.statusCode=204;res.end();return true}
     }
     if(req.method==='POST'&&p==='/api/tv/pair/start'){
-      if(!quota(req))return reply(res,429,{error:'Limit prób parowania'});
+      if(!quota('start:'+clientKey(req),180))return reply(res,429,{error:'Limit prób parowania'});
       if(pending.size>=100)return reply(res,503,{error:'Limit oczekujących telewizorów'});
       const body=await jsonBody(req);
       const deviceId=asId(body.deviceId);
@@ -95,9 +96,10 @@ module.exports=function makeTvRegistry({dataDir,rooms,send,requireUser,csrfOk,js
       return reply(res,200,{ok:true,requestId,code,expiresIn:600});
     }
     if(req.method==='POST'&&p==='/api/tv/pair/poll'){
-      if(!quota(req))return reply(res,429,{error:'Limit prób parowania'});
       const body=await jsonBody(req);
       const id=typeof body.requestId==='string'?body.requestId:'';
+      if(!/^[a-f0-9]{48}$/.test(id))return reply(res,404,{error:'Parowanie wygasło'});
+      if(!quota('poll:'+id,145))return reply(res,429,{error:'Zbyt wiele prób odczytu kodu'});
       const rec=pending.get(id);
       if(!/^[a-f0-9]{48}$/.test(id)||!rec||rec.deviceId!==body.deviceId)return reply(res,404,{error:'Parowanie wygasło'});
       if(!rec.room)return reply(res,200,{ok:true,status:'waiting',expiresIn:Math.max(0,Math.floor((rec.expires-Date.now())/1000))});
