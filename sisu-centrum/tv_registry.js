@@ -63,8 +63,9 @@ module.exports=function makeTvRegistry({dataDir,rooms,send,requireUser,csrfOk,js
   }
   function config(d){
     return {ok:true,deviceId:d.id,room:String(d.room),mode:d.mode,
-      appVersion:d.version||'',controlsEnabled:false,capabilities:{lights:[],climate:[]},
-      notice:d.mode==='demo'?'Tryb testowy — bez sterowania urządzeniami':'Sterowanie nieaktywne do czasu przypisania urządzeń przez administratora'};
+      appVersion:d.version||'',controlsEnabled:d.mode==='room'&&String(d.room)==='401',
+      capabilities:d.mode==='room'&&String(d.room)==='401'?{lights:['salon','stol','kuchnia','lazienka','sypialnia'],climate:['ac','salon','sypialnia','lazienka']}:{lights:[],climate:[]},
+      notice:d.mode==='demo'?'Tryb testowy — bez sterowania urządzeniami':String(d.room)==='401'?'Sterowanie apartamentem 401 aktywne':'Sterowanie nieaktywne do czasu przypisania urządzeń przez administratora'};
   }
   function quota(key,max,period=10*60000){
     // Per pairing request; 30 televisions may share a single Funnel proxy IP.
@@ -171,5 +172,5 @@ module.exports=function makeTvRegistry({dataDir,rooms,send,requireUser,csrfOk,js
     }
     return false;
   }
-  return {handle,resolveDevice:(req)=>{const d=tokenDevice(req);return d?{room:d.room,mode:d.mode}:null}};
+  return {handle,resolveDevice:(req)=>{const d=tokenDevice(req);return d?{id:d.id,room:d.room,mode:d.mode}:null}};
 };
