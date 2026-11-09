@@ -8,6 +8,7 @@ const S={user:null,csrf:null,configured:true,tab:'apartments',floor:0,query:'',f
 const FLOORS=[4,3,2,1];
 const STATUSES=['Nieustalony','Oczekuje na przyjazd','Zameldowany','Do sprzątania','Sprzątanie','Gotowy'];
 let overviewRequestId=0;
+let hallDraft={text:'',voice:'AgnieszkaNeural',id:null};
 let followUpTimers=[];
 function cancelFollowUpRefreshes(){
  for(const timer of followUpTimers)clearTimeout(timer);
@@ -106,6 +107,21 @@ function musicPreview(){
  '<small>'+esc(musicStatus(m))+' · Głośność '+esc(typeof m?.volume==='number'?Math.round(m.volume*100)+'%':'—')+'</small></div>'+
  '<button class="btn subtle" data-action="tab" data-tab="music">Szczegóły</button></section>';
 }
+function hallAnnouncementPanel(){
+ const canStop=ready()&&!['unavailable','unknown'].includes(music()?.state);
+ return '<div class="panel hall-announcement"><div class="twohead"><div><h3>Komunikat głosowy w holu</h3><small>Wpisz tekst, wybierz głos i odsłuchaj na komputerze</small></div></div>'+
+ '<label class="hall-label" for="hall-message">Tekst komunikatu</label><textarea id="hall-message" class="input hall-message" rows="4" maxlength="650" placeholder="Np. Szanowni Goście, zapraszamy do restauracji SISU…">'+esc(hallDraft.text)+'</textarea>'+
+ '<div class="hall-message-counter" id="hall-counter">'+hallDraft.text.length+' / 650 znaków</div>'+
+ '<div class="music-select-row"><label for="hall-voice">Głos lektora</label><select id="hall-voice" class="input">'+
+ '<option value="AgnieszkaNeural" '+(hallDraft.voice==='AgnieszkaNeural'?'selected':'')+'>Agnieszka · kobiecy</option>'+
+ '<option value="MarekNeural" '+(hallDraft.voice==='MarekNeural'?'selected':'')+'>Marek · męski</option></select></div>'+
+ '<audio id="hall-preview-audio" controls preload="none" class="hall-audio" '+(hallDraft.id?'src="'+esc(new URL('api/hall-announcements/audio/'+hallDraft.id,ASSET_BASE).href)+'"':'')+'></audio>'+
+ '<div class="station-actions"><button type="button" class="btn subtle" data-action="hall-preview" '+(!ready()?'disabled':'')+'>▶ Przygotuj i odsłuchaj</button>'+
+ '<button type="button" class="btn primary" data-action="hall-send" '+(!ready()||!hallDraft.id?'disabled':'')+'>Nadaj komunikat na holu</button></div>'+
+ '<p class="music-note">Przed emisją przygotuj odsłuch. Zmiana tekstu lub głosu wymaga nowego podglądu.</p>'+
+ '<div class="hall-stop-row"><button type="button" class="btn hall-stop-btn" data-action="music-stop" '+(!canStop?'disabled':'')+'>■ Zatrzymaj odtwarzanie muzyki w holu</button>'+
+ '<small>Zatrzymuje bieżące odtwarzanie; harmonogram może później uruchomić radio ponownie.</small></div></div>';
+}
 function musicPage(){
  const m=music(),playing=m?.state==='playing';
  const row=(n,v)=>'<div class="datarow"><span>'+esc(n)+'</span><strong>'+esc(v||'Brak danych')+'</strong></div>';
@@ -137,7 +153,7 @@ function musicPage(){
  '<div class="station-detail"><b id="music-station-name">'+esc(active.name||selected)+'</b><p id="music-station-description">'+esc(active.description||'')+'</p></div>'+
  '<div class="station-actions"><button class="btn subtle" data-action="music-preview">▶ Podgląd na komputerze</button>'+
  '<button class="btn primary" data-action="music-set" '+(!ready()?'disabled':'')+'>Ustaw w holu</button></div>'+
- '<p class="music-note">Podgląd otwiera strumień w nowej karcie na tym komputerze i nie zmienia muzyki w holu.</p></div>';
+ '<p class="music-note">Podgląd otwiera strumień w nowej karcie na tym komputerze i nie zmienia muzyki w holu.</p></div>'+hallAnnouncementPanel();
 }
 function dashboard(){
  const all=rooms();
@@ -364,7 +380,33 @@ root.addEventListener('click',async e=>{
   await doAction(async()=>{await request('/api/tvs/reassign',{id:el.dataset.id,room});toast('Nowy apartament: '+room);await loadTvs()});
   return;
  }
- if(a==='music-preview'){
+ if(a==='hall-preview'){
+   const t=root.querySelector('#hall-message'),v=root.querySelector('#hall-voice');
+   hallDraft.text=t?.value||'';hallDraft.voice=v?.value||'AgnieszkaNeural';
+   if(!hallDraft.text.trim())return toast('Wpisz treść komunikatu.',true);
+   const ok=await doAction(async()=>{
+     const d=await request('/api/hall-announcements/preview',{text:hallDraft.text,voice:hallDraft.voice});
+     hallDraft.id=d.id;toast('Odsłuch przygotowany.');
+   });
+   if(ok){const audio=root.querySelector('#hall-preview-audio');if(audio)audio.play().catch(()=>toast('Naciśnij ▶ w odtwarzaczu.'));}
+   return;
+  }
+  if(a==='hall-send'){
+   if(!hallDraft.id)return toast('Najpierw przygotuj odsłuch.',true);
+   if(!confirm('Nadać przygotowany komunikat przez głośniki w holu SISU?'))return;
+   const ok=await doAction(async()=>{
+     await request('/api/hall-announcements/send',{id:hallDraft.id});
+     hallDraft.id=null;toast('Komunikat wysłany do holu.');await loadData(true,true);
+   });
+   if(ok)refreshAfterControl('music');
+   return;
+  }
+  if(a==='music-stop'){
+   const ok=await doAction(async()=>{await request('/api/music/stop',{});toast('Wysłano polecenie zatrzymania holu.');await loadData(true,true)});
+   if(ok)refreshAfterControl('music');
+   return;
+  }
+  if(a==='music-preview'){
   const select=root.querySelector('#music-station-select');
   const option=select?.selectedOptions?.[0];
   const url=option?.dataset.preview;
@@ -428,7 +470,8 @@ root.addEventListener('change',async e=>{
   catch(err){toast(err.message,true)}
   return;
  }
- if(e.target.id==='music-station-select'){
+ if(e.target.id==='hall-voice'){hallDraft.voice=e.target.value;hallDraft.id=null;const send=root.querySelector('[data-action="hall-send"]');if(send)send.disabled=true;return;}
+  if(e.target.id==='music-station-select'){
   const option=e.target.selectedOptions?.[0];
   const name=root.querySelector('#music-station-name');
   const desc=root.querySelector('#music-station-description');
@@ -458,6 +501,12 @@ root.addEventListener('change',async e=>{
  if(success)refreshAfterControl('status');
 });
 root.addEventListener('input',e=>{
+  if(e.target.id==='hall-message'){
+    hallDraft.text=e.target.value;hallDraft.id=null;
+    const counter=root.querySelector('#hall-counter');if(counter)counter.textContent=hallDraft.text.length+' / 650 znaków';
+    const send=root.querySelector('[data-action="hall-send"]');if(send)send.disabled=true;
+    return;
+  }
  if(e.target.id==='hall-volume-slider'){
    const label=root.querySelector('#hall-volume-label');
    if(label)label.textContent=e.target.value+'%';
