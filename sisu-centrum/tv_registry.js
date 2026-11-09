@@ -172,5 +172,5 @@ module.exports=function makeTvRegistry({dataDir,rooms,send,requireUser,csrfOk,js
     }
     return false;
   }
-  return {handle,resolveDevice:(req)=>{const d=tokenDevice(req);return d?{id:d.id,room:d.room,mode:d.mode}:null}};
+  return {handle,watchdogTargets:()=>db.devices.map(d=>({room:d.room,mode:d.mode,lastSeen:seen.get(d.id)||d.lastSeen||null})),resolveDevice:(req)=>{const d=tokenDevice(req);return d?{id:d.id,room:d.room,mode:d.mode}:null}};
 };
