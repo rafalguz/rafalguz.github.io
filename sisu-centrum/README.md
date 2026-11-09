@@ -42,3 +42,12 @@ Stan HA pozostaje bez zmian podczas instalowania aplikacji.
 - Bez zmiany aplikacji Tizen: weryfikacja SHA-256, kopiowanie do /data/sisu-tv-assets, jednorazowe opublikowanie w systemie treści.
 - Migracja jest idempotentna: wykonuje się wyłącznie, jeśli wersja treści wynosi 1 i nadal opublikowane jest oryginalne nagranie; wszystkie późniejsze publikacje administratora mają pierwszeństwo.
 - Poprzednia wersja jest w historii publikacji i można ją przywrócić z panelu; nagranie oryginalne pozostaje w aplikacji jako fallback.
+
+
+## Komunikaty głosowe i zatrzymanie nagłośnienia holu (v0.1.17)
+
+W panelu **Muzyka holu** manager i administrator mogą wpisać komunikat (do 650 znaków), wybrać polski głos kobiecy lub męski, przygotować nagranie i odsłuchać je prywatnie na komputerze. Nadanie w holu jest osobną czynnością z potwierdzeniem; zmiana tekstu lub głosu unieważnia podgląd. Podgląd jest udostępniany przez serwer SISU wyłącznie zalogowanemu autorowi przez 10 minut, bez ujawniania tokenu HA.
+
+Przycisk **Zatrzymaj odtwarzanie muzyki w holu** wywołuje `media_player.media_stop` na `media_player.smart_audio_player_2`. Automatyzacja radia (kontrola co 15 minut) nadal może wznowić muzykę; przycisk nie wyłącza harmonogramu.
+
+Wymaga dostępnego `tts.home_assistant_cloud` (konfigurowalne przez `SISU_TTS_ENGINE`) z polskimi głosami oraz obsługi TTS przez odtwarzacz holu. Przed produkcyjnym użyciem sprawdzić na miejscu nazwy obsługiwanych głosów, `/api/tts_get_url`, odtwarzanie MP3 w przeglądarce i usługę `tts.speak` na głośniku holu. Wdrożenie wymaga aktualizacji dodatku HA SISU Centrum; aktualizacja samego repozytorium nie zmienia bieżącej instalacji.
