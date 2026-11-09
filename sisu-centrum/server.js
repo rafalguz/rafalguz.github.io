@@ -320,6 +320,7 @@ const tvContent=require('./tv_content')({
   dataDir:DATA,rooms:ROOMS,send,requireUser,csrfOk,jsonBody,audit,resolveDevice:tvRegistry.resolveDevice
 });
 const tvComfort=require('./tv_comfort')({haApi,send,jsonBody,audit,resolveDevice:tvRegistry.resolveDevice});
+const hallAnnouncements=require('./hall_announcements')({haApi,send,requireUser,csrfOk,jsonBody,audit,invalidateOverview,hallAudio:DEVICES.hallAudio,haToken:HA_TOKEN});
 
 async function handle(req,res){
   securityHeaders(res,req);
@@ -328,6 +329,7 @@ async function handle(req,res){
   if(await tvContent.handle(req,res,p))return;
   if(await tvRegistry.handle(req,res,p))return;
   if(await tvComfort.handle(req,res,p))return;
+  if(await hallAnnouncements.handle(req,res,p))return;
   if(req.method==='GET'&&['/','/app.js','/app.css','/tv_updates_admin.js','/tv_updates_admin.css'].includes(p)){
     const file=p==='/'?'index.html':p.slice(1);
     const type=p==='/'?'text/html; charset=utf-8':p.endsWith('.js')?'application/javascript; charset=utf-8':'text/css; charset=utf-8';
