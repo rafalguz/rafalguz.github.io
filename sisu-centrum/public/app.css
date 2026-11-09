@@ -177,3 +177,15 @@ footer{border-top:1px solid #383128;padding-top:17px;margin-top:30px;color:#8079
 .tv-room-select{width:105px}
 @media(max-width:1250px){.tv-form{grid-template-columns:1fr 1fr}.tv-device{flex-wrap:wrap}.tv-headpanels{display:block}}
 @media(max-width:750px){.tv-form{grid-template-columns:1fr}.tv-devices{gap:13px}.tv-device{padding:13px}.tv-device-info{width:100%}}
+/* SISU hall spoken announcements */
+.hall-announcement{margin-top:18px;border-color:#876943;background:linear-gradient(135deg,#29241f,#181a1b 75%)}
+.hall-label{display:block;margin-top:18px;margin-bottom:10px;font-size:13px;font-weight:700;color:#e8cc99}
+.hall-message{display:block;width:100%;min-height:118px;resize:vertical;line-height:1.6;padding:14px}
+.hall-message-counter{font-size:11px;color:var(--muted);text-align:right;margin-top:5px}
+.hall-audio{width:100%;margin-top:20px;min-height:45px}
+.hall-announcement>.station-actions{margin-top:14px}
+.hall-stop-row{display:flex;align-items:center;gap:15px;border-top:1px solid #55483c;margin-top:24px;padding-top:20px;flex-wrap:wrap}
+.hall-stop-row small{color:var(--muted);font-size:12px;max-width:420px;line-height:1.6}
+.hall-stop-btn{background:#492b26;border-color:#ae6652;color:#ffe1d6}
+.hall-stop-btn:hover{background:#65342c;border-color:#e58b6d}
+@media(max-width:650px){.hall-stop-row .btn,.hall-announcement>.station-actions .btn{width:100%}}
