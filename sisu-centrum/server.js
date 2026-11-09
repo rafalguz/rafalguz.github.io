@@ -316,6 +316,7 @@ async function control401(body){
 const tvRegistry=require('./tv_registry')({
   dataDir:DATA,rooms:ROOMS,send,requireUser,csrfOk,jsonBody,audit,clientKey
 });
+const tvWatchdog=require('./tv_watchdog')({targets:tvRegistry.watchdogTargets});
 const tvContent=require('./tv_content')({
   dataDir:DATA,rooms:ROOMS,send,requireUser,csrfOk,jsonBody,audit,resolveDevice:tvRegistry.resolveDevice
 });
