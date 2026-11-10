@@ -175,6 +175,11 @@ function deviceRow(name,state,label,opts=''){
 function cmd(kind,name,value,label,selected,disabled){
  return '<button class="control '+(selected?'selected':'')+'" data-action="command" data-kind="'+esc(kind)+'" data-name="'+esc(name||'')+'" data-value="'+esc(value)+'" '+(disabled?'disabled':'')+'>'+esc(label)+'</button>';
 }
+function tempEntry(kind,name,value,min,max,disabled){
+ const id='temp-'+kind+'-'+String(name||'main').toLowerCase().replace(/[^a-z0-9]+/g,'-');
+ const safe=typeof value==='number'&&Number.isFinite(value)?value:22;
+ return '<div class="temp-entry"><input class="temp-number" id="'+esc(id)+'" type="number" inputmode="decimal" min="'+min+'" max="'+max+'" step="0.5" value="'+esc(safe)+'" '+(disabled?'disabled':'')+' aria-label="Temperatura docelowa"><span>°C</span><button class="control temp-apply" data-action="temperature-set" data-kind="'+esc(kind)+'" data-name="'+esc(name||'')+'" data-input="'+esc(id)+'" '+(disabled?'disabled':'')+'>Ustaw</button></div>';
+}
 function hvac(){
  const v=room401();if(!v)return'<div class="empty">Oczekiwanie na odczyty apartamentu 401.</div>';
  const windowsUnsafe=v.windows.some(x=>x.state!=='off');
@@ -188,20 +193,22 @@ function hvac(){
  cmd('ac','','off','Wyłącz',ac.state==='off',blocked)+
  cmd('ac','','heat','Grzanie',ac.state==='heat',blocked||windowsUnsafe)+
  cmd('ac','','cool','Chłodzenie',ac.state==='cool',blocked||windowsUnsafe)+'</div></div>'+
- '<div class="controlrow"><span>Temperatura docelowa</span><div class="controls">'+
+ '<div class="controlrow temperature-control"><span>Temperatura docelowa</span><div class="controls">'+
  cmd('ac_temp','',Math.max(16,Number(ac.target||22)-.5),'−',false,blocked||windowsUnsafe)+
  '<span class="current">'+temp(ac.target)+'</span>'+
  cmd('ac_temp','',Math.min(30,Number(ac.target||22)+.5),'+',false,blocked||windowsUnsafe)+
+ tempEntry('ac_temp','',Number(ac.target||22),16,30,blocked||windowsUnsafe)+
  '</div></div></div><div class="panel devicebox"><h3>Telewizor Samsung</h3>'+
  deviceRow('Stan',v.tv.state,v.tv.state==='off'?'Wyłączony':['on','idle','playing','paused','standby','buffering'].includes(v.tv.state)?'Włączony':'Brak połączenia')+'<div class="controlrow"><span>Zasilanie</span><div class="controls">'+
  cmd('tv','','off','Wyłącz',v.tv.state==='off',blocked||!v.tv.available)+
  cmd('tv','','on','Włącz',v.tv.state==='on'||v.tv.state==='playing',blocked||!v.tv.available)+
  '</div></div></div></div>'+
  '<div><div class="panel devicebox"><h3>Grzejniki · regulacja</h3>'+
- v.heating.map(x=>'<div class="controlrow"><span><b>'+esc(x.name)+'</b><small>Aktualnie '+temp(x.temperature)+'</small></span><div class="controls">'+
+ v.heating.map(x=>'<div class="controlrow temperature-control"><span><b>'+esc(x.name)+'</b><small>Aktualnie '+temp(x.temperature)+'</small></span><div class="controls">'+
  cmd('trv',x.name,Math.max(8,Number(x.target||22)-.5),'−',false,blocked||!x.available)+
  '<span class="current">'+temp(x.target)+'</span>'+
  cmd('trv',x.name,Math.min(28,Number(x.target||22)+.5),'+',false,blocked||!x.available)+
+ tempEntry('trv',x.name,Number(x.target||22),8,28,blocked||!x.available)+
  '</div></div>').join('')+'</div></div>'+
  '<div><div class="panel devicebox"><h3>Oświetlenie</h3>'+
  v.lights.map(x=>'<div class="controlrow"><span><b>'+esc(x.name)+'</b><small>'+esc(labelForState(x.state))+'</small></span><div class="controls">'+
@@ -445,6 +452,27 @@ root.addEventListener('click',async e=>{
    await loadData(true,true);
   });
   if(success)refreshAfterControl('music');
+  return;
+ }
+ if(a==='temperature-set'){
+  const input=root.querySelector('#'+CSS.escape(el.dataset.input||''));
+  if(!input)return;
+  const raw=String(input.value||'').replace(',','.');
+  const value=Number(raw);
+  const kind=el.dataset.kind;
+  const min=kind==='ac_temp'?16:8;
+  const max=kind==='ac_temp'?30:28;
+  if(!Number.isFinite(value)||value<min||value>max||Math.abs(value*2-Math.round(value*2))>1e-8){
+   toast('Podaj temperaturę od '+min+' do '+max+'°C, co 0,5°C.',true);input.focus();return;
+  }
+  if(!confirm('Ustawić '+value.toLocaleString('pl-PL',{maximumFractionDigits:1})+'°C w apartamencie 401?'))return;
+  const body={room:401,kind,name:el.dataset.name,value};
+  const success=await doAction(async()=>{
+   await request('/api/control',body);
+   toast('Temperatura ustawiona. Sprawdzam aktualny stan urządzenia.');
+   await loadData(true,true);
+  });
+  if(success)refreshAfterControl(kind);
   return;
  }
  if(a==='command'){
