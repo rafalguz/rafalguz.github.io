@@ -5,7 +5,7 @@ const LIGHTS=Object.freeze({
   stol:'switch.qs_zigbee_sec01_single_gang_3_switch_1',
   kuchnia:'switch.qs_zigbee_sec01_single_gang_2_switch_1',
   lazienka:'switch.qs_zigbee_sec01_single_gang_switch_1',
-  sypialnia:'switch.1_gang_touch_switch_switch'
+  sypialnia:'switch.qs_zigbee_sec01_single_gang_5_switch'
 });
 const CLIMATE=Object.freeze({
   ac:'climate.401_apartament',
