@@ -321,6 +321,7 @@ const tvContent=require('./tv_content')({
   dataDir:DATA,rooms:ROOMS,send,requireUser,csrfOk,jsonBody,audit,resolveDevice:tvRegistry.resolveDevice
 });
 const tvComfort=require('./tv_comfort')({haApi,send,jsonBody,audit,resolveDevice:tvRegistry.resolveDevice});
+const tvWelcome=require('./tv_welcome')({dataDir:DATA,haApi,resolveDevice:tvRegistry.resolveDevice,send,jsonBody});
 const hallAnnouncements=require('./hall_announcements')({haApi,send,requireUser,csrfOk,jsonBody,audit,invalidateOverview,hallAudio:DEVICES.hallAudio,haToken:HA_TOKEN});
 
 async function handle(req,res){
@@ -329,6 +330,7 @@ async function handle(req,res){
   const p=url.pathname;
   if(await tvContent.handle(req,res,p))return;
   if(await tvRegistry.handle(req,res,p))return;
+  if(await tvWelcome.handle(req,res,p))return;
   if(await tvComfort.handle(req,res,p))return;
   if(await hallAnnouncements.handle(req,res,p))return;
   if(req.method==='GET'&&['/','/app.js','/app.css','/tv_updates_admin.js','/tv_updates_admin.css'].includes(p)){
