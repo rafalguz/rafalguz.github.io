@@ -1,0 +1,52 @@
+'use strict';
+// Server-authorized, at-most-once welcome ticket for a newly used TTLock code.
+// No access to the raw PIN: Home Assistant stores only a salted SHA-256 digest.
+const fs=require('node:fs');
+const path=require('node:path');
+const crypto=require('node:crypto');
+module.exports=function makeWelcome({dataDir,haApi,resolveDevice,send,jsonBody}) {
+  const FILE=path.join(dataDir,'sisu-welcome-claims.json');
+  const HASH_ENTITY='input_text.401_kod_uzyty_do_powitania_skrot_sha_256';
+  const MAX_AGE_MS=5*60*1000;
+  let claims={};
+  if(fs.existsSync(FILE)) {
+    const stored=JSON.parse(fs.readFileSync(FILE,'utf8'));
+    if(stored&&typeof stored==='object'&&!Array.isArray(stored))claims=stored;
+  }
+  function persist() {
+    fs.mkdirSync(dataDir,{recursive:true,mode:0o700});
+    const tmp=FILE+'.tmp-'+process.pid;
+    fs.writeFileSync(tmp,JSON.stringify(claims),{mode:0o600});
+    fs.renameSync(tmp,FILE);
+  }
+  async function handle(req,res,p) {
+    if(p!=='/api/tv/welcome/claim')return false;
+    if(req.method!=='POST'){send(res,405,{error:'Method not allowed'});return true;}
+    const d=resolveDevice(req);
+    if(!d||d.mode!=='room'||d.room!==401){
+      send(res,403,{error:'TV not paired with apartment 401'});return true;
+    }
+    await jsonBody(req);
+    const states=await haApi('/states');
+    if(!Array.isArray(states))throw Error('Unavailable Home Assistant states');
+    const entry=states.find(x=>x.entity_id===HASH_ENTITY);
+    const current=entry?.state||'';
+    const changed=Date.parse(entry?.last_changed||'');
+    const age=Date.now()-changed;
+    if(!/^[a-f0-9]{64}$/.test(current)||!Number.isFinite(age)||age<(-15000)||age>MAX_AGE_MS){
+      send(res,200,{ok:true,welcome:false});return true;
+    }
+    const key='401';
+    if(claims[key]===current){
+      send(res,200,{ok:true,welcome:false});return true;
+    }
+    // Commit BEFORE replying, so replays, app crashes and retries cannot claim twice.
+    claims[key]=current;
+    persist();
+    const eventId=crypto.randomBytes(16).toString('hex');
+    console.info('SISU TV 401: issued one-time arrival event '+eventId.slice(0,8));
+    send(res,200,{ok:true,welcome:true,eventId});
+    return true;
+  }
+  return {handle};
+};
