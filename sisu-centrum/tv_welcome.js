@@ -37,11 +37,22 @@ module.exports=function makeWelcome({dataDir,haApi,resolveDevice,send,jsonBody})
       send(res,200,{ok:true,welcome:false});return true;
     }
     const key='401';
+    // Identify the actual arrival, not just the PIN. A manual new-stay reset
+    // clears the HA helper, so reusing the same PIN creates a NEW last_changed.
+    // Regular repeat entries leave the helper unchanged and never replay.
+    const arrival=current+':'+entry.last_changed;
+    if(claims[key]===arrival){
+      send(res,200,{ok:true,welcome:false});return true;
+    }
+    // Migrate existing installations: older claims contain only the PIN hash.
+    // Suppress the already-served arrival on the first request after upgrade.
     if(claims[key]===current){
+      claims[key]=arrival;
+      persist();
       send(res,200,{ok:true,welcome:false});return true;
     }
     // Commit BEFORE replying, so replays, app crashes and retries cannot claim twice.
-    claims[key]=current;
+    claims[key]=arrival;
     persist();
     const eventId=crypto.randomBytes(16).toString('hex');
     console.info('SISU TV 401: issued one-time arrival event '+eventId.slice(0,8));
