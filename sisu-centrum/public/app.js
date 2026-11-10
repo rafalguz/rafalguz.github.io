@@ -393,9 +393,21 @@ root.addEventListener('click',async e=>{
    if(!hallDraft.text.trim())return toast('Wpisz treść komunikatu.',true);
    const ok=await doAction(async()=>{
      const d=await request('/api/hall-announcements/preview',{text:hallDraft.text,voice:hallDraft.voice});
-     hallDraft.id=d.id;toast('Odsłuch przygotowany.');
+     hallDraft.id=d.id;
+     const audio=root.querySelector('#hall-preview-audio');
+     if(audio){
+       audio.pause();
+       audio.src=new URL('api/hall-announcements/audio/'+d.id,ASSET_BASE).href;
+       audio.load();
+     }
+     const send=root.querySelector('[data-action="hall-send"]');
+     if(send)send.disabled=false;
+     toast('Nagranie gotowe. Odsłuchaj je na komputerze.');
    });
-   if(ok){const audio=root.querySelector('#hall-preview-audio');if(audio)audio.play().catch(()=>toast('Naciśnij ▶ w odtwarzaczu.'));}
+   if(ok){
+     const audio=root.querySelector('#hall-preview-audio');
+     if(audio)audio.play().catch(()=>toast('Naciśnij ▶ w odtwarzaczu, aby usłyszeć podgląd.'));
+   }
    return;
   }
   if(a==='hall-send'){
