@@ -5,11 +5,14 @@ const crypto = require('node:crypto');
 // The Home Assistant bearer token never leaves the server.
 module.exports = function hallAnnouncements({haApi, send, requireUser, csrfOk, jsonBody, audit, invalidateOverview, hallAudio, haToken}) {
   const HA_API = 'http://supervisor/core/api';
+  const HA_PROXY_ORIGIN = 'http://supervisor/core';
+  const HA_DIRECT_ORIGIN = 'http://homeassistant:8123';
   const TTS_ENGINE = process.env.SISU_TTS_ENGINE || 'tts.home_assistant_cloud';
   const VOICES = Object.freeze({AgnieszkaNeural:'Agnieszka', MarekNeural:'Marek'});
   const MAX_TEXT = 650;
   const MAX_AUDIO = 5 * 1024 * 1024;
   const PREVIEW_TTL = 10 * 60 * 1000;
+  const MAX_PREVIEWS = 30;
   const previews = new Map();
 
   function httpError(message, status) {
@@ -19,7 +22,7 @@ module.exports = function hallAnnouncements({haApi, send, requireUser, csrfOk, j
   function cleanup() {
     const now = Date.now();
     for (const [key, value] of previews) if (now - value.at >= PREVIEW_TTL) previews.delete(key);
-    if (previews.size >= 100) {
+    if (previews.size >= MAX_PREVIEWS) {
       const oldest = previews.keys().next().value;
       if (oldest) previews.delete(oldest);
     }
@@ -47,7 +50,47 @@ module.exports = function hallAnnouncements({haApi, send, requireUser, csrfOk, j
     if (typeof previewPath !== 'string' || !/^\/api\/tts_proxy\/[A-Za-z0-9_.%\-]+$/.test(previewPath)) {
       throw httpError('Home Assistant zwrócił nieprawidłową ścieżkę nagrania.', 502);
     }
-    return previewPath;
+    // The returned path already starts with /api/. Do not append it to
+    // http://supervisor/core/api, which produces /core/api/api/tts_proxy (404).
+    // Download the finished audio now and keep it for the whole preview session.
+    return fetchPreviewAudio(previewPath);
+  }
+
+  async function fetchPreviewAudio(previewPath) {
+    const origins = [
+      {url:HA_PROXY_ORIGIN + previewPath, auth:true},
+      // This endpoint is publicly readable INSIDE the HA network (no token).
+      // Direct Core is a fallback for Supervisor proxies that cannot stream.
+      {url:HA_DIRECT_ORIGIN + previewPath, auth:false}
+    ];
+    let lastError = 'brak odpowiedzi';
+    for (const source of origins) {
+      let response;
+      try {
+        response = await fetch(source.url,{
+          method:'GET',redirect:'error',signal:AbortSignal.timeout(30000),
+          headers:source.auth?{Authorization:'Bearer '+haToken}:{}
+        });
+      } catch (err) {
+        lastError = err?.message || 'błąd połączenia';
+        continue;
+      }
+      if (!response.ok) {lastError = 'HTTP '+response.status;continue;}
+      const size = Number(response.headers.get('content-length')||0);
+      if (size > MAX_AUDIO) throw httpError('Nagranie jest zbyt duże.',413);
+      let bytes;
+      try {bytes=Buffer.from(await response.arrayBuffer());}
+      catch {lastError='Nie udało się pobrać wszystkich danych audio';continue;}
+      if (!bytes.length) {lastError='Pusty plik audio';continue;}
+      if (bytes.length > MAX_AUDIO) throw httpError('Nagranie jest zbyt duże.',413);
+      const mimetype=response.headers.get('content-type')||'';
+      if (mimetype && !/^audio\/(?:mpeg|mp3|wav|ogg|x-wav|flac)|^application\/octet-stream/i.test(mimetype)) {
+        lastError='Nieoczekiwany format pliku ('+mimetype.slice(0,80)+')';
+        continue;
+      }
+      return {bytes,mimetype:/^audio\//i.test(mimetype)?mimetype:'audio/mpeg'};
+    }
+    throw httpError('Home Assistant nie udostępnił nagrania ('+lastError+'). Spróbuj ponownie.',502);
   }
 
   async function handle(req, res, p) {
@@ -83,9 +126,9 @@ module.exports = function hallAnnouncements({haApi, send, requireUser, csrfOk, j
         send(res,400,{error:'Wybierz dostępny głos polski.'});
         return true;
       }
-      const path = await generatePreview(text,voice);
+      const {bytes,mimetype} = await generatePreview(text,voice);
       const id = crypto.randomBytes(24).toString('hex');
-      previews.set(id,{userId:ctx.user.id,text,voice,path,at:Date.now()});
+      previews.set(id,{userId:ctx.user.id,text,voice,bytes,mimetype,at:Date.now()});
       send(res,200,{ok:true,id,expiresInSeconds:PREVIEW_TTL/1000});
       return true;
     }
@@ -110,30 +153,14 @@ module.exports = function hallAnnouncements({haApi, send, requireUser, csrfOk, j
       return true;
     }
 
-    // Preview audio remains private and same-origin. Do not disclose the HA token
-    // or the Home Assistant internal TTS media URL to the browser.
-    if (!haToken) throw httpError('Brak połączenia z Home Assistant',503);
-    let audio;
-    try {
-      audio = await fetch(HA_API + preview.path, {
-        method:'GET',redirect:'error',signal:AbortSignal.timeout(30000),
-        headers:{Authorization:'Bearer ' + haToken}
-      });
-    } catch {
-      throw httpError('Nie można pobrać nagrania z Home Assistant.',503);
-    }
-    if (!audio.ok) throw httpError('Nagranie nie jest już dostępne w Home Assistant.',502);
-    const declaredSize = Number(audio.headers.get('content-length') || 0);
-    if (declaredSize > MAX_AUDIO) throw httpError('Nagranie jest zbyt duże.',413);
-    const bytes = Buffer.from(await audio.arrayBuffer());
-    if (bytes.length > MAX_AUDIO) throw httpError('Nagranie jest zbyt duże.',413);
-    const mimetype = audio.headers.get('content-type') || '';
+    // Stream the SAME generated audio bytes to this user's browser. Avoid
+    // requesting a temporary HA proxy token again when it may have expired.
     res.statusCode = 200;
-    res.setHeader('Content-Type', /^audio\/(?:mpeg|mp3|wav|ogg|x-wav)/i.test(mimetype) ? mimetype : 'audio/mpeg');
+    res.setHeader('Content-Type',preview.mimetype);
     res.setHeader('Cache-Control','private, no-store');
-    res.setHeader('Content-Length',String(bytes.length));
+    res.setHeader('Content-Length',String(preview.bytes.length));
     res.setHeader('X-Content-Type-Options','nosniff');
-    res.end(bytes);
+    res.end(preview.bytes);
     return true;
   }
 
