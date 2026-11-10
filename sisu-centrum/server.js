@@ -65,6 +65,7 @@ const DEVICES = Object.freeze({
     'Salon':'switch.qs_zigbee_sec01_single_gang_4_switch_1',
     'Nad stołem':'switch.qs_zigbee_sec01_single_gang_3_switch_1',
     'Przedpokój':'switch.qs_zigbee_sec01_single_gang_2_switch_1',
+    'Sypialnia':'switch.qs_zigbee_sec01_single_gang_5_switch',
     'Łazienka':'switch.qs_zigbee_sec01_single_gang_switch_1'
   },
   heating:{
