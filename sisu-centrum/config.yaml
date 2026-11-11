@@ -1,5 +1,5 @@
 name: SISU Centrum Zarzadzania
-version: "0.1.24"
+version: "0.1.25"
 slug: sisu-centrum
 description: "Niezalezny panel WWW dla 30 apartamentow SISU Wlodkowica"
 url: "https://github.com/rafalguz/rafalguz.github.io"
@@ -19,5 +19,13 @@ ports:
   8098/tcp: 8098
 ports_description:
   8098/tcp: "Prywatny panel WWW SISU"
-options: {}
-schema: {}
+options:
+  hotel_expert_enabled: false
+  hotel_expert_base_url: "https://demohotel.hotelowyexpert.pl/index.php"
+  hotel_expert_api_key: ""
+  hotel_expert_room_401: "302"
+schema:
+  hotel_expert_enabled: bool
+  hotel_expert_base_url: str
+  hotel_expert_api_key: password
+  hotel_expert_room_401: str

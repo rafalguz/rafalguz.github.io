@@ -18,10 +18,11 @@ const WINDOWS=Object.freeze({
     'binary_sensor.contact_sensor_4_drzwi','binary_sensor.contact_sensor_5_drzwi'],
   sypialnia:['binary_sensor.contact_sensor_3_drzwi']
 });
-const BASE=Object.freeze({ac:23,salon:22,sypialnia:22,lazienka:22});
-const RANGE=Object.freeze({ac:[21,25],salon:[20,24],sypialnia:[20,24],lazienka:[20,24]});
+const BASE=Object.freeze({ac:22,salon:22,sypialnia:22,lazienka:22});
+const RANGE=Object.freeze({ac:[21,23],salon:[19,23],sypialnia:[19,23],lazienka:[19,23]});
 const ALL_WINDOWS=Object.freeze([...WINDOWS.salon,...WINDOWS.sypialnia]);
-const MODES=new Set(['off','heat','cool','dry','fan_only']);
+function seasonalMode(){const m=new Date().getMonth()+1;return m>=5&&m<=9?'cool':'heat';}
+function seasonLabel(){return seasonalMode()==='cool'?'Lato':'Zima';}
 const FANS=new Set(['auto','1','2','3','4','5']);
 function err(status,message){return Object.assign(new Error(message),{status});}
 function validTarget(value,zone){
@@ -78,7 +79,7 @@ module.exports=function createTvComfort({haApi,send,jsonBody,resolveDevice,audit
     for(const zone of Object.keys(CLIMATE))climate[zone]=climateState(states,zone);
     return {
       ok:true,room:'401',mode:'room',checkedAt:new Date().toISOString(),
-      lights,climate,
+      seasonal:{season:seasonLabel(),mode:seasonalMode()},lights,climate,
       windows:{acBlocked:anyWindowNotClosed(states,ALL_WINDOWS),
         salonOpen:anyWindowNotClosed(states,WINDOWS.salon),
         sypialniaOpen:anyWindowNotClosed(states,WINDOWS.sypialnia)}
@@ -87,12 +88,27 @@ module.exports=function createTvComfort({haApi,send,jsonBody,resolveDevice,audit
   async function action(body,states){
     const kind=body.kind,zone=body.zone,value=body.value;
     let domain,service,entity,data={};
+    if(kind==='heating_target'){
+      const n=validTarget(value,'salon');
+      if(n===null)throw err(400,'Nastawa ogrzewania musi być w zakresie 19–23°C co 0,5°C');
+      const applied=[];
+      for(const z of ['salon','sypialnia','lazienka']){
+        const id=CLIMATE[z];
+        if(!usable(states.get(id)))continue;
+        if(WINDOWS[z]&&anyWindowNotClosed(states,WINDOWS[z]))continue;
+        await haApi('/services/climate/set_temperature','POST',{entity_id:id,temperature:n});
+        applied.push(z);
+      }
+      if(!applied.length)throw err(409,'Ogrzewanie jest chwilowo niedostępne lub okna są otwarte');
+      return {ok:true,kind,zone:'heating',value:n,applied};
+    }
     if(kind==='light'){
       entity=Object.prototype.hasOwnProperty.call(LIGHTS,zone)?LIGHTS[zone]:null;
       if(!entity||!['on','off'].includes(value))throw err(400,'Nieprawidłowe sterowanie światłem');
       domain='switch';service=value==='on'?'turn_on':'turn_off';
     }else if(kind==='mode'&&zone==='ac'){
-      if(!MODES.has(value))throw err(400,'Nieprawidłowy tryb klimatyzacji');
+      const allowed=seasonalMode();
+      if(value!=='off'&&value!==allowed)throw err(400,'Dostępny jest tylko tryb sezonowy: '+allowed);
       entity=CLIMATE.ac;domain='climate';service='set_hvac_mode';data.hvac_mode=value;
       if(value!=='off'&&anyWindowNotClosed(states,ALL_WINDOWS))throw err(409,'Zamknij wszystkie okna przed włączeniem klimatyzacji');
     }else if(kind==='target'){
