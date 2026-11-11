@@ -1,0 +1,196 @@
+/* SISU23 TV · boutique hospitality · 1920x1080, Tizen */
+:root{--bg:#081019;--navy:#0a1420;--panel:#101c27;--cream:#f4e8d8;--muted:#b3a99c;--gold:#d6b27b;--gold2:#f0d6a6;--border:rgba(220,181,122,.35)}
+*{box-sizing:border-box}
+html,body{height:100%;width:100%;padding:0;margin:0;overflow:hidden;color:var(--cream);background:var(--bg);font-family:"Segoe UI",Arial,sans-serif}
+body{background:radial-gradient(ellipse at 88% 96%,rgba(103,74,41,.16),transparent 37%),linear-gradient(160deg,#0c1722,#070d16 65%)}
+button{cursor:pointer;color:inherit;font-family:inherit;background:none;border:0;font-size:inherit}
+button:focus{outline:0}
+.app-shell{height:100%;display:flex;flex-direction:column;padding:0 58px 12px}
+.topbar{height:101px;min-height:101px;display:flex;align-items:center;gap:23px;border-bottom:1px solid rgba(200,169,123,.22);flex-shrink:0}
+.brand{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;padding:8px 2px;flex:0 0 298px;text-align:left}
+.brand-main{color:var(--cream);font:normal 42px/1 Georgia,"Times New Roman",serif;letter-spacing:.11em}
+.brand-main span{color:var(--gold)}
+.brand-sub{font-size:9px;letter-spacing:.22em;color:#c0a986;margin-top:8px;white-space:nowrap}
+.brand-sub i{display:inline-block;width:6px;height:6px;background:var(--gold);border-radius:50%;margin:0 4px}
+#topNav{display:flex;justify-content:space-evenly;flex:1;align-items:center;gap:7px}
+.navbtn{font-size:16px;letter-spacing:.02em;color:#c6c2bd;padding:14px 17px;border:1px solid transparent;border-radius:11px;white-space:nowrap}
+.navbtn.active{background:rgba(201,164,111,.12);border-color:rgba(222,184,126,.48);color:#ecd2a8}
+.navbtn.focused,.navbtn:focus,.focusable:focus,.focusable.focused{outline:2px solid #e3bb83!important;outline-offset:2px;box-shadow:0 0 24px rgba(216,168,95,.30)!important}
+.topmeta{flex:0 0 164px;border-left:1px solid var(--border);text-align:right;padding-left:20px;color:#af9d88;font-size:12px;letter-spacing:.08em}
+.topmeta strong{color:#d2b98d;font-weight:500}
+.topclock{font:normal 31px Georgia,serif;color:#f4e7d4;margin-bottom:5px}
+#viewStage{flex:1;min-height:0;position:relative}
+.view{display:none;height:100%;width:100%;overflow:hidden}
+.view.active{display:block}
+.eyebrow{font-size:12px;letter-spacing:.23em;color:var(--gold);font-weight:600}
+.tiny-line{display:inline-block;width:31px;height:1px;background:var(--gold);vertical-align:middle;margin-right:13px}
+.muted{color:var(--muted);font-size:14px}
+h1,h2,h3,p{margin-top:0}
+h1,h2{font-family:Georgia,"Times New Roman",serif;font-weight:400}
+h1 em{font-style:normal;color:#e3be86}
+.home-stage{display:flex;flex-direction:column;gap:19px;height:100%;padding:24px 0 14px}
+.home-visual{min-height:0;flex:1.65;border:1px solid rgba(229,193,138,.62);border-radius:16px;position:relative;overflow:hidden;background:url('assets/apartment_living.jpg') center 46% / cover no-repeat;box-shadow:0 10px 35px rgba(0,0,0,.17)}
+.visual-overlay{position:absolute;inset:0;background:linear-gradient(90deg,rgba(6,10,16,.97),rgba(6,9,14,.90) 27%,rgba(6,10,15,.56) 56%,rgba(6,10,15,.06) 100%)}
+.hero-copy{position:absolute;z-index:1;top:0;bottom:0;left:0;width:60%;padding:62px 78px;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:15px}
+.hero-copy h1{font-size:74px;line-height:1.08;margin:0;letter-spacing:-.02em}
+.hero-copy p{font-size:20px;line-height:1.62;color:#e0d3c3;max-width:620px;margin:0}
+.primarybtn{background:linear-gradient(125deg,#f0d5a5,#c49b61);border-radius:10px;padding:17px 29px;min-height:56px;color:#18202a;font-size:17px;font-weight:600;margin-top:15px}
+.primarybtn span{font-size:23px;vertical-align:-1px;padding-left:15px}
+.hero-floor{position:absolute;bottom:27px;right:37px;z-index:2;letter-spacing:.17em;color:#f1ddbb;font-size:13px;text-shadow:0 1px 10px #0008}
+.hero-floor b{font-size:17px;font-weight:400}
+.section-caption{display:flex;align-items:end;justify-content:space-between;flex:none;min-height:49px}
+.section-caption h2{font-size:26px;margin:8px 0 0}
+.home-cards{min-height:160px;flex:.83;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px}
+.home-tile{position:relative;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;text-align:left;gap:8px;padding:25px 27px;border:1px solid rgba(216,180,119,.50);border-radius:14px;background:linear-gradient(143deg,#1b2630 0%,#101821 65%,#0c121b 100%)}
+.tile-icon{font-size:41px;font-weight:100;color:#dab37c;line-height:1;margin-bottom:5px}
+.home-tile strong{font:normal 26px Georgia,serif;color:#fff1dc}
+.home-tile>span:not(.tile-icon){font-size:13px;color:#b7aa96}
+.home-tile small{position:absolute;right:21px;top:25px;font-size:23px;color:#9e8766}
+.home-tile:hover{background:linear-gradient(143deg,#253442,#171e26)}
+.bottombar{height:32px;min-height:32px;flex-shrink:0;display:flex;align-items:center;gap:17px;color:#9a948e;font-size:10px;letter-spacing:.16em}
+.footer-ornament{color:#c1a178;font-size:19px}
+.footer-right{margin-left:auto;font-size:11px;letter-spacing:.08em}
+.footer-room{padding-left:15px;color:#bea17b}
+.pagehead{padding:33px 1px 26px;display:flex;justify-content:space-between;align-items:end;gap:35px}
+.pagehead h1{margin:11px 0 10px;font-size:58px;line-height:1.05}
+.pagehead p{font-size:18px;color:#c5beb5;line-height:1.45;margin:0;max-width:900px}
+.page-mark{font-size:13px;letter-spacing:.17em;color:#c19f72;padding-bottom:9px;white-space:nowrap}
+.page-mark strong{font-size:28px;font-family:Georgia,serif;font-weight:400}
+.map-layout{height:calc(100% - 180px);min-height:0;display:grid;grid-template-columns:405px minmax(0,1fr);gap:22px}
+.map-places{padding:23px;background:linear-gradient(155deg,#182431,#0c151f 75%);border:1px solid rgba(195,161,115,.30);border-radius:16px;display:flex;flex-direction:column;gap:13px}
+.sm-heading{font-size:12px;letter-spacing:.18em;color:#c9b188;margin-bottom:8px}
+.place{width:100%;display:grid;grid-template-columns:32px minmax(0,1fr) 21px;gap:12px;align-items:center;border:1px solid rgba(195,157,99,.30);border-radius:11px;padding:19px 14px;text-align:left;background:#101b27}
+.place.chosen{border-color:#e5ba7c;background:linear-gradient(125deg,#2f302e,#111d2a)}
+.place-number{font:normal 20px Georgia,serif;color:#ceab74}
+.place b{display:block;font-size:18px;font-weight:500}
+.place small{font-size:12px;color:#b9ac97;display:block;margin-top:5px}
+.map-note{margin-top:auto;font-size:12px;line-height:1.6;color:#a99f91}
+.map-controls{display:flex;gap:6px;align-items:center;justify-content:space-between}
+.map-control{font-size:12px;padding:11px 13px;background:#2b2a25;border:1px solid #866943;border-radius:9px;white-space:nowrap}
+.map-frame{position:relative;overflow:hidden;border-radius:17px;border:1px solid rgba(204,167,110,.55);background:radial-gradient(circle,#2b3d49,#091321)}
+#realMap{width:100%;height:100%;background:#1e2c35}
+.map-ribbon{position:absolute;bottom:19px;left:18px;z-index:500;background:#0b1724e8;border:1px solid #b89158;font-size:13px;letter-spacing:.08em;color:#ead4b5;padding:13px 18px;border-radius:9px;pointer-events:none}
+.live-point{display:inline-block;width:10px;height:10px;background:#d9b47a;border-radius:50%;box-shadow:0 0 9px #d7b478;margin-right:8px}
+.map-error{position:absolute;top:30px;left:30px;right:30px;z-index:510;background:#111c26eF;border:1px solid #c89c68;color:#eee;padding:23px;border-radius:10px}
+.map-error[hidden]{display:none}
+.leaflet-control-attribution{font-size:10px!important}
+.leaflet-container{font-family:Arial,sans-serif}
+.sisu-map-pin{background:#112232;color:#f6d59d;border:2px solid #dab575;border-radius:50%;width:46px;height:46px;text-align:center;line-height:42px;font-size:24px;box-shadow:0 0 0 7px rgba(224,178,102,.14)}
+.restaurant-grid{height:calc(100% - 191px);min-height:0;display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.restaurant-card{border:1px solid rgba(218,184,123,.47);border-radius:15px;position:relative;overflow:hidden;background:#16202a;box-shadow:0 12px 25px #0003}
+.restaurant-photo{position:absolute;inset:0;background-position:center;background-size:cover}
+.kantyna-photo{background-image:url('assets/kantyna.png');background-position:center 47%}
+.ida-photo{background-image:url('assets/ida_hero.png');background-color:#14171a;background-size:cover}
+.restaurant-overlay{position:absolute;inset:0;background:linear-gradient(0deg,rgba(4,8,12,.97) 0%,rgba(8,11,16,.85) 26%,rgba(8,11,16,.28) 65%,rgba(8,11,16,.08) 100%)}
+.restaurant-info{position:absolute;bottom:0;left:0;right:0;padding:38px 49px 33px}
+.restaurant-label{font-size:12px;letter-spacing:.20em;color:#ebc58c}
+.restaurant-info h2{font-size:54px;margin:12px 0 5px}
+.restaurant-info h2 small{font-size:26px;color:#e8d7b9}
+.restaurant-info p{font-size:17px;max-width:530px;color:#e1d9ce;line-height:1.5;margin-bottom:14px}
+.rest-address{color:#c5a67a;font-size:13px;letter-spacing:.11em;margin-bottom:18px}
+.outlinebtn{font-size:15px;color:#f4e3c5;border:1px solid rgba(219,179,119,.76);border-radius:9px;padding:13px 19px;background:#14202be0}
+.disclaimer{font-size:10px;color:#968979;margin-top:9px;text-align:right}
+.watch-layout{height:calc(100% - 191px);min-height:0;display:grid;grid-template-columns:1.1fr .9fr;gap:25px}
+.watch-image{background:url('assets/apartment_suite.jpg') center / cover;position:relative;border-radius:14px;border:1px solid var(--border);overflow:hidden}
+.watch-image:after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,#090e17d9,transparent 80%)}
+.watch-image-copy{z-index:1;position:absolute;bottom:32px;left:43px;right:40px}
+.watch-image-copy h2{font-size:43px;margin:10px 0}
+.watch-image-copy p{font-size:16px;color:#d6cbb7;margin:0}
+.watch-apps{display:flex;flex-direction:column;gap:14px}
+.app-choice{display:grid;grid-template-columns:64px 1fr 20px;align-items:center;gap:20px;text-align:left;min-height:115px;padding:18px 25px;background:linear-gradient(140deg,#182533,#0a1421);border:1px solid #b9976a73;border-radius:12px;font-size:24px}
+.app-choice strong{font:normal 38px Georgia,serif;color:#efc991;text-align:center}
+.app-choice strong.netflix-letter{color:#ed4242;font:bold 38px Arial,sans-serif}
+.app-choice b{font-size:25px;font-weight:500}
+.app-choice small{display:block;font-size:13px;color:#c1b39d;margin-top:7px}
+.watch-footnote{font-size:13px;color:#aea293;line-height:1.55;margin-top:auto}
+.comfort-layout{height:calc(100% - 190px);min-height:0;display:grid;grid-template-columns:1.12fr .88fr;gap:26px}
+.comfort-photo{border-radius:15px;border:1px solid var(--border);background:url('assets/apartment_bedroom.jpg') center / cover}
+.comfort-stack{display:flex;flex-direction:column;gap:14px}
+.comfort-box{flex:1;padding:26px 30px;background:#151f28;border:1px solid #a4865b65;border-radius:12px;display:flex;flex-direction:column}
+.comfort-box-title{font:normal 31px Georgia,serif;margin:13px 0}
+.comfort-box p{font-size:16px;line-height:1.5;color:#c5b9a7;max-width:570px}
+.demo-pill{display:inline-block;margin-top:auto;align-self:flex-start;background:rgba(199,162,109,.13);border:1px solid #d4af7859;padding:8px 13px;font-size:11px;letter-spacing:.12em;color:#d7b986;border-radius:6px}
+.info-grid{height:calc(100% - 228px);min-height:0;display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+.info-card{padding:40px;border:1px solid var(--border);border-radius:13px;background:linear-gradient(140deg,#1a2531,#101720);display:flex;flex-direction:column;align-items:flex-start}
+.info-ico{font-size:55px;color:#ccaa77;margin-bottom:26px;line-height:1}
+.info-card h2{font-size:39px;margin:14px 0}
+.info-card p{color:#ccc1b4;font-size:17px;line-height:1.6}
+.textlink{margin-top:auto;border-bottom:1px solid #d3aa71;padding:10px 1px;color:#eac591;font-size:17px}
+.info-bottom{text-align:right;margin-top:20px;font-size:12px;color:#9c8e7a}
+.modal{position:fixed;z-index:160;inset:0;display:flex;align-items:center;justify-content:center;background:#02060ad9}
+.modal.hidden{display:none}
+.modal-panel{border:1px solid #d9b27b;background:linear-gradient(145deg,#1a2631,#0b131c);border-radius:19px;padding:56px 65px;width:min(920px,76vw);box-shadow:0 0 110px rgba(4,8,12,.75)}
+.modal-eyebrow{font-size:13px;color:#deb783;letter-spacing:.20em;margin-bottom:25px}
+.modal-panel h2{font-size:56px;color:#f1dcc0;margin:0 0 30px}
+.modal-panel p{font-size:20px;color:#ded1be;line-height:1.65}
+.modal-panel small{font-size:15px;color:#c2a17c}
+.modal-panel .primarybtn{margin-top:34px}
+#toast{position:fixed;z-index:300;left:50%;bottom:68px;transform:translateX(-50%);background:#162332f2;border:1px solid #c89d66;border-radius:10px;max-width:860px;padding:17px 30px;color:#fff3df;font-size:17px;opacity:0;pointer-events:none;transition:opacity .2s}
+#toast.show{opacity:1}
+@media(max-width:1460px),(max-height:820px){
+ .app-shell{padding:0 28px 6px}
+ .topbar{height:75px;min-height:75px;gap:7px}
+ .brand{flex-basis:210px}
+ .brand-main{font-size:28px}
+ .brand-sub{font-size:7px;letter-spacing:.12em;margin-top:5px}
+ .navbtn{font-size:12px;padding:9px 10px}
+ .topmeta{flex-basis:112px;font-size:9px;padding-left:12px}
+ .topclock{font-size:23px}
+ .home-stage{padding:13px 0 9px;gap:10px}
+ .hero-copy{padding:35px 42px;gap:9px}
+ .hero-copy h1{font-size:49px}
+ .hero-copy p{font-size:14px;max-width:450px}
+ .primarybtn{font-size:13px;min-height:42px;padding:11px 17px;margin-top:7px}
+ .section-caption{min-height:32px}
+ .section-caption h2{font-size:20px;margin:4px 0 0}
+ .eyebrow{font-size:9px}
+ .home-cards{min-height:118px;gap:11px}
+ .home-tile{padding:15px 17px;gap:6px}
+ .tile-icon{font-size:27px;margin-bottom:2px}
+ .home-tile strong{font-size:20px}
+ .home-tile>span:not(.tile-icon){font-size:11px}
+ .home-tile small{top:17px;font-size:17px}
+ .bottombar{height:22px;min-height:22px;font-size:8px}
+ .footer-right{font-size:8px}
+ .pagehead{padding:18px 1px 15px}
+ .pagehead h1{font-size:42px;margin:8px 0}
+ .pagehead p{font-size:13px}
+ .map-layout{height:calc(100% - 116px);grid-template-columns:305px minmax(0,1fr);gap:13px}
+ .map-places{padding:14px;gap:6px}
+ .sm-heading{font-size:9px;margin-bottom:4px}
+ .place{padding:10px 9px;gap:7px}
+ .place b{font-size:14px}
+ .place small{font-size:9px;margin-top:3px}
+ .place-number{font-size:15px}
+ .map-note{font-size:10px;line-height:1.4}
+ .map-control{font-size:10px;padding:8px 6px}
+ .restaurant-grid{height:calc(100% - 124px);gap:13px}
+ .restaurant-info{padding:18px 23px}
+ .restaurant-info h2{font-size:34px}
+ .restaurant-info h2 small{font-size:18px}
+ .restaurant-label{font-size:9px}
+ .restaurant-info p{font-size:12px;line-height:1.4;margin-bottom:8px}
+ .rest-address{font-size:10px;margin-bottom:12px}
+ .outlinebtn{font-size:12px;padding:8px 12px}
+ .watch-layout,.comfort-layout{height:calc(100% - 124px);gap:13px}
+ .watch-image-copy{left:25px;bottom:25px}
+ .watch-image-copy h2{font-size:32px}
+ .app-choice{min-height:77px;padding:11px 15px;grid-template-columns:43px 1fr 16px;gap:10px;font-size:20px}
+ .app-choice strong{font-size:29px}
+ .app-choice b{font-size:19px}
+ .app-choice small{font-size:11px;margin-top:3px}
+ .watch-footnote{font-size:11px}
+ .comfort-box{padding:16px 18px}
+ .comfort-box-title{font-size:23px;margin:7px 0}
+ .comfort-box p{font-size:12px}
+ .info-grid{height:calc(100% - 158px);gap:13px}
+ .info-card{padding:24px}
+ .info-ico{font-size:37px;margin-bottom:12px}
+ .info-card h2{font-size:29px}
+ .info-card p{font-size:13px}
+ .textlink{font-size:13px}
+ .info-bottom{font-size:9px}
+ .modal-panel{padding:30px 39px}
+ .modal-panel h2{font-size:40px;margin:0 0 20px}
+ .modal-panel p{font-size:15px}
+}

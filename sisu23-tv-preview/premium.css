@@ -1,0 +1,71 @@
+
+/* SISU23 TV: authentic nocturnal exterior + television-grade hospitality UI */
+:root{--sisu-ink:#0b0d12;--sisu-gold:#e7c38b;--sisu-ivory:#f9ecd6}
+body.sisu-home{background:#080c12}
+body.sisu-home .app-shell{padding:0}
+body.sisu-home .topbar,body.sisu-home .bottombar{display:none}
+body.sisu-home #viewStage{height:100vh;flex:1}
+body.sisu-home #view-home,body.sisu-home .home-stage{width:100%;height:100%;overflow:hidden}
+body.sisu-home .home-stage{padding:0;gap:0;display:block}
+body.sisu-home .home-visual{position:absolute;inset:0;width:100%;height:100%;border:0;border-radius:0;box-shadow:none;background:#080c12 url('assets/sisu23_night_wide.jpg') center center / cover no-repeat}
+body.sisu-home .home-visual .visual-overlay{display:none}
+body.sisu-home .home-visual:after{content:'';position:absolute;inset:0;background:linear-gradient(0deg,rgba(4,5,9,.79),transparent 26%,transparent 84%,rgba(4,6,9,.13));pointer-events:none}
+body.sisu-home .hero-copy{top:16%;bottom:auto;left:5.7%;width:57%;padding:0;gap:0;display:block;z-index:3;justify-content:initial}
+body.sisu-home .sisu-biglogo{font:normal 150px/.96 Georgia,'Times New Roman',serif;letter-spacing:-.055em;white-space:nowrap;color:#ebc386;text-shadow:0 5px 26px #050406bf}
+body.sisu-home .sisu-biglogo span{color:#f1d5ab}
+body.sisu-home .sisu-brand-sub{font-size:22px;letter-spacing:.42em;color:#f5e7d5;margin:16px 0 24px 16px;white-space:nowrap}
+body.sisu-home .sisu-city{display:flex;align-items:center;gap:20px;font-size:19px;color:#eed8b3;letter-spacing:.42em;margin:0 0 60px 44px}
+body.sisu-home .sisu-city i{width:64px;height:1px;background:linear-gradient(90deg,#c69855,#edc98d);display:inline-block}
+body.sisu-home .sisu-copy-welcome{font:normal 56px/1.12 Georgia,serif;letter-spacing:-.025em;color:#fff4e7;text-shadow:0 4px 12px #000a}
+body.sisu-home .sisu-copy-tag{letter-spacing:.25em;color:#e7c495;font-size:14px;margin:16px 0}
+body.sisu-home .hero-copy p{font-size:16px;color:#e2d3c0;line-height:1.5;margin:14px 0 0;max-width:750px}
+body.sisu-home .hero-floor{left:6%;right:auto;bottom:235px;font-size:13px;color:#ead3ac;letter-spacing:.22em}
+body.sisu-home .home-top-status{position:absolute;z-index:3;right:48px;top:41px;background:rgba(9,9,12,.62);padding:20px 24px;min-width:235px;border-radius:14px;text-align:right;box-shadow:0 0 20px #0005;color:#e7c493;display:flex;flex-direction:column;gap:2px;letter-spacing:.19em;font-size:12px}
+body.sisu-home .home-top-status strong{font:normal 52px/1.1 Georgia,serif;letter-spacing:.01em;color:#fdf2e4}
+body.sisu-home .home-top-status small{font-size:12px;letter-spacing:.05em;color:#d2c2aa}
+body.sisu-home .home-cards{position:absolute;z-index:10;left:3%;right:3%;bottom:51px;height:172px;min-height:172px;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}
+body.sisu-home .home-tile{min-width:0;text-align:center;display:flex;align-items:center;justify-content:center;gap:10px;padding:16px 8px;border-radius:19px;background:linear-gradient(160deg,rgba(20,18,17,.91),rgba(12,10,11,.88));border:1px solid rgba(218,175,112,.50);box-shadow:0 11px 21px #0005}
+body.sisu-home .home-tile:first-child{border:2px solid rgba(229,174,93,.94);background:linear-gradient(160deg,rgba(68,45,23,.91),rgba(21,18,18,.94))}
+body.sisu-home .home-tile .tile-icon{font-size:40px;line-height:1;color:#e4bb80;margin-bottom:4px;min-height:39px}
+body.sisu-home .home-tile strong{font:normal 24px Georgia,serif;color:#fff0dc;white-space:nowrap}
+body.sisu-home .home-tile>span:not(.tile-icon){font-size:12px;color:#bdaf99;white-space:nowrap}
+body.sisu-home .home-tile.focused,body.sisu-home .home-tile:focus{border:2px solid #ffdfad;transform:translateY(-3px);background:linear-gradient(160deg,#54381b,#151318);box-shadow:0 0 23px #e8b56e75!important}
+body.sisu-home .home-tile small{display:none}
+.sisu-music-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:28px;height:calc(100% - 192px);min-height:0}
+.sisu-music-art{position:relative;border:1px solid rgba(220,179,116,.5);border-radius:16px;background:linear-gradient(0deg,#060b12e8,#070a0c22),url('assets/apartment_living.jpg') center/cover no-repeat;display:flex;align-items:flex-end;padding:52px}
+.sisu-music-art h2{font:normal 60px Georgia,serif;margin:20px 0}
+.sisu-music-art p{font-size:19px;color:#e4d6c3}
+.sisu-music-options{display:flex;flex-direction:column;gap:14px;padding:12px}
+.sisu-radio{min-height:91px;display:flex;align-items:center;gap:22px;padding:16px 23px;text-align:left;background:rgba(24,31,37,.84);border:1px solid rgba(220,178,116,.53);border-radius:13px}
+.sisu-radio>b{font:normal 28px Georgia,serif;color:#e6c28a}
+.sisu-radio>span:nth-child(2){flex:1}
+.sisu-radio strong{font:normal 23px Georgia,serif;color:#f9ebd5}
+.sisu-radio small{display:block;margin-top:6px;color:#b6a897;font-size:13px}
+.sisu-radio>span:last-child{font-size:30px;color:#dbb27a}
+.music-notice{font-size:13px;line-height:1.5;color:#b7a48d}
+@media(max-width:1450px),(max-height:820px){
+ body.sisu-home .hero-copy{top:16%;left:5.5%}
+ body.sisu-home .sisu-biglogo{font-size:106px}
+ body.sisu-home .sisu-brand-sub{font-size:16px;margin:10px 0 15px 9px}
+ body.sisu-home .sisu-city{font-size:13px;margin:0 0 35px 26px}
+ body.sisu-home .sisu-copy-welcome{font-size:41px}
+ body.sisu-home .sisu-copy-tag{font-size:11px;margin:9px 0}
+ body.sisu-home .hero-copy p{font-size:13px}
+ body.sisu-home .hero-floor{bottom:160px;font-size:10px}
+ body.sisu-home .home-top-status{top:19px;right:22px;padding:11px 14px;min-width:155px}
+ body.sisu-home .home-top-status strong{font-size:34px}
+ body.sisu-home .home-top-status small{font-size:9px}
+ body.sisu-home .home-cards{bottom:29px;height:116px;min-height:116px;gap:9px}
+ body.sisu-home .home-tile{border-radius:12px;gap:5px;padding:9px 5px}
+ body.sisu-home .home-tile .tile-icon{font-size:26px;min-height:25px;margin-bottom:0}
+ body.sisu-home .home-tile strong{font-size:17px}
+ body.sisu-home .home-tile>span:not(.tile-icon){font-size:9px}
+ .sisu-music-grid{height:calc(100% - 124px)}
+ .sisu-music-art{padding:27px}
+ .sisu-music-art h2{font-size:41px}
+ .sisu-radio{min-height:55px;padding:8px 14px;gap:13px}
+ .sisu-radio>b{font-size:20px}
+ .sisu-radio strong{font-size:15px}
+ .sisu-radio small{font-size:10px}
+ .music-notice{font-size:10px}
+}

@@ -1,0 +1,127 @@
+/* SISU23 TV 0.4.2: restaurant cards reconstructed, no overlays on food.
+   No object-fit:cover on food photographs. Stable photo and text zones. */
+#view-food .rebuild-restaurants{
+ display:grid!important;
+ grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;
+ gap:28px!important;flex:1 1 0!important;min-height:0!important;
+ padding:8px 0 13px!important;
+}
+#view-food .rebuild-restaurant{
+ display:flex!important;flex-direction:column!important;position:relative!important;
+ min-width:0!important;min-height:0!important;overflow:hidden!important;
+ background:linear-gradient(130deg,#171b21,#090d16)!important;
+ padding:0!important;margin:0!important;border-radius:17px!important;
+ border:1px solid #ba9465!important;text-align:left!important;
+ box-shadow:none!important; transform:none!important;
+}
+#view-food .rebuild-restaurant-head{
+ flex:0 0 122px!important;background:#10151d!important;
+ display:flex!important;flex-direction:column!important;justify-content:center!important;
+ gap:9px!important;padding:17px 31px!important;
+ position:relative!important;z-index:2!important;
+}
+#view-food .rebuild-restaurant-head strong{
+ font:normal 62px/1 Georgia,serif!important;color:#f5d6a2!important;
+ letter-spacing:.04em!important;display:block!important;opacity:1!important;
+ text-shadow:none!important;
+}
+#view-food .rebuild-restaurant-head small{
+ font:normal 13px/1.3 Arial,sans-serif!important;color:#eed2a5!important;
+ letter-spacing:.16em!important;display:block!important;
+}
+#view-food .rebuild-photo-area{
+ flex:1 1 0!important;min-height:0!important;position:relative!important;
+ display:flex!important;align-items:center!important;justify-content:center!important;
+ background:#0b0d13!important;overflow:hidden!important;padding:9px 10px!important;
+ border-top:1px solid #c59d6c49!important;
+}
+#view-food .rebuild-photo-area img{
+ position:relative!important;display:block!important;max-width:100%!important;max-height:100%!important;
+ width:100%!important;height:100%!important;object-fit:contain!important;
+ object-position:center!important;filter:none!important;opacity:1!important;
+ visibility:visible!important;transform:none!important;
+}
+#view-food .rebuild-restaurant-foot{
+ flex:0 0 76px!important;min-height:76px!important;background:#12161df8!important;
+ display:flex!important;align-items:center!important;justify-content:space-between!important;
+ gap:15px!important;padding:15px 30px!important;border-top:1px solid #b68b567a!important;
+ position:relative!important;z-index:2!important;
+}
+#view-food .rebuild-restaurant-foot span{font:normal 16px/1.3 Arial,sans-serif!important;color:#f6eadb!important}
+#view-food .rebuild-restaurant-foot b{
+ font:600 13px/1.1 Arial,sans-serif!important;color:#f2c782!important;
+ white-space:nowrap!important;letter-spacing:.1em!important;
+}
+#view-food .rebuild-restaurant:focus,#view-food .rebuild-restaurant.focused{
+ border:2px solid #ffe0a8!important;box-shadow:inset 0 0 0 1px #e0ad6b!important;
+}
+#view-kantyna .rebuild-detail,#view-ida .rebuild-detail{
+ display:grid!important;grid-template-columns:minmax(0,1.12fr) minmax(0,1fr)!important;
+ gap:22px!important;width:100%!important;min-height:0!important;
+ flex:1 1 0!important;height:auto!important;padding:20px 0 13px!important;
+}
+#view-kantyna .rebuild-photo-panel,#view-ida .rebuild-photo-panel{
+ display:flex!important;flex-direction:column!important;min-height:0!important;
+ min-width:0!important;overflow:hidden!important;background:#0d121b!important;
+ border:1px solid #bb9264!important;border-radius:17px!important;
+}
+#view-kantyna .rebuild-detail-head,#view-ida .rebuild-detail-head{
+ flex:0 0 130px!important;background:#12151c!important;
+ display:flex!important;flex-direction:column!important;gap:8px!important;
+ justify-content:center!important;padding:12px 27px!important;z-index:2!important;
+}
+.rebuild-detail-head .rebuild-back{
+ align-self:flex-start!important;background:none!important;padding:3px 0!important;
+ border:0!important;color:#e8c18a!important;font:normal 13px Arial,sans-serif!important;
+}
+.rebuild-detail-head .rebuild-brand{
+ font:normal 60px/1 Georgia,serif!important;color:#f3d3a2!important;
+ display:block!important;letter-spacing:.04em!important;
+}
+.rebuild-detail-head .rebuild-subtitle{
+ font:normal 12px/1.2 Arial,sans-serif!important;letter-spacing:.15em!important;color:#f1deca!important;
+}
+#view-kantyna .rebuild-detail-image,#view-ida .rebuild-detail-image{
+ display:flex!important;flex:1 1 0!important;min-height:0!important;
+ align-items:center!important;justify-content:center!important;padding:12px!important;
+ overflow:hidden!important;background:#090c11!important;
+}
+#view-kantyna .rebuild-detail-image img,#view-ida .rebuild-detail-image img{
+ width:100%!important;height:100%!important;max-height:100%!important;
+ display:block!important;object-fit:contain!important;object-position:center!important;
+ filter:none!important;transform:none!important;opacity:1!important;
+}
+#view-kantyna .rebuild-detail-caption,#view-ida .rebuild-detail-caption{
+ display:flex!important;flex:0 0 51px!important;min-height:51px!important;
+ padding:12px 27px!important;align-items:center!important;
+ background:#12151c!important;color:#e6d1b2!important;font:normal 17px Arial,sans-serif!important;
+ border-top:1px solid #b18e615e!important;
+}
+#view-kantyna .rebuild-detail>.menu-right,#view-ida .rebuild-detail>.menu-right{
+ min-height:0!important;max-height:none!important;height:auto!important;flex:1 1 0!important;
+ display:flex!important;flex-direction:column!important;overflow:hidden!important;
+ background:#10151dec!important;border:1px solid #b89569!important;
+ box-shadow:none!important;
+}
+#view-kantyna .rebuild-detail .menu-rows,#view-ida .rebuild-detail .menu-rows{
+ overflow-y:auto!important;flex:1 1 0!important;min-height:0!important;
+}
+#view-kantyna .rebuild-detail .menu-tabs,#view-ida .rebuild-detail .menu-tabs{
+ flex:0 0 auto!important;
+}
+@media(max-width:1450px),(max-height:820px){
+ #view-food .rebuild-restaurants{gap:14px!important;padding:5px 0 8px!important}
+ #view-food .rebuild-restaurant-head{flex-basis:77px!important;padding:9px 18px!important;gap:4px!important}
+ #view-food .rebuild-restaurant-head strong{font-size:39px!important}
+ #view-food .rebuild-restaurant-head small{font-size:9px!important}
+ #view-food .rebuild-restaurant-foot{flex-basis:49px!important;min-height:49px!important;padding:9px 15px!important}
+ #view-food .rebuild-restaurant-foot span{font-size:11px!important}
+ #view-food .rebuild-restaurant-foot b{font-size:9px!important}
+ #view-kantyna .rebuild-detail,#view-ida .rebuild-detail{gap:13px!important;padding:9px 0!important}
+ #view-kantyna .rebuild-detail-head,#view-ida .rebuild-detail-head{flex-basis:86px!important;padding:7px 15px!important;gap:3px!important}
+ .rebuild-detail-head .rebuild-brand{font-size:39px!important}
+ .rebuild-detail-head .rebuild-subtitle{font-size:9px!important}
+ .rebuild-detail-head .rebuild-back{font-size:10px!important}
+ #view-kantyna .rebuild-detail-caption,#view-ida .rebuild-detail-caption{flex-basis:34px!important;min-height:34px!important;font-size:11px!important;padding:7px 15px!important}
+ #view-kantyna .rebuild-detail-image,#view-ida .rebuild-detail-image{padding:7px!important}
+}

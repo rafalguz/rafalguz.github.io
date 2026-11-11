@@ -1,0 +1,147 @@
+/* SISU23 TV v0.3.0 — uniform premium design for all screens */
+:root{--luxGold:#ecc68a;--luxCream:#f8eddb;--luxMuted:#c5b7a2}
+body:not(.sisu-home) .app-shell{padding:0;background:#090d13;height:100vh}
+body:not(.sisu-home) .topbar,body:not(.sisu-home) .bottombar{display:none!important}
+body:not(.sisu-home) #viewStage{position:absolute;inset:0;width:100%;height:100%;min-height:0}
+body:not(.sisu-home) #viewStage>.view{position:relative;width:100%;height:100%;padding:0 5% 205px;overflow:hidden}
+body:not(.sisu-home) #viewStage>.view:before{position:absolute;inset:0;content:"";background:linear-gradient(100deg,#050912e9,#060b13d9 50%,#050b11c2),url('assets/sisu23_night_wide.jpg') center center/cover;opacity:1;pointer-events:none;z-index:0}
+body:not(.sisu-home) #viewStage>.view>*{position:relative;z-index:1}
+body:not(.sisu-home) .pagehead{padding:50px 0 28px;align-items:center;min-height:169px}
+body:not(.sisu-home) .pagehead h1{font:normal 61px/1.03 Georgia,serif;color:var(--luxCream);margin:12px 0 9px;letter-spacing:-.02em}
+body:not(.sisu-home) .pagehead p{font-size:18px;color:#d2c5b5;max-width:1070px}
+body:not(.sisu-home) .pagehead .eyebrow{font-size:13px;letter-spacing:.25em;color:var(--luxGold)}
+body:not(.sisu-home) .page-mark{color:var(--luxGold)}
+#globalDock{position:fixed;left:2.7%;right:2.7%;bottom:37px;z-index:48;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:14px;height:143px}
+body.sisu-home #globalDock{display:none}
+.dock-link{height:100%;border:1px solid rgba(226,181,109,.47);border-radius:17px;background:linear-gradient(145deg,#1d1715ed,#0e1119f3);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;padding:10px 8px;text-align:center;min-width:0;box-shadow:0 10px 23px #0007}
+.dock-link .dock-icon{font:normal 34px/1 Georgia,serif;color:#e6bd7f}
+.dock-link strong{font:normal 23px/1.05 Georgia,serif;color:#fbf0de;white-space:nowrap}
+.dock-link small{font-size:12px;color:#c4b49b;white-space:nowrap}
+.dock-link.active{background:linear-gradient(160deg,#49301bcf,#151219ee);border:2px solid #eabb77;box-shadow:0 0 20px #d2a36633}
+.dock-link:focus,.dock-link.focused{border:2px solid #ffdf9f;transform:translateY(-3px);box-shadow:0 0 25px #dfb47588!important}
+body:not(.sisu-home) .map-layout{height:calc(100% - 175px);grid-template-columns:410px minmax(0,1fr);gap:25px}
+body:not(.sisu-home) .map-places{border:1px solid #bf955b8a;border-radius:18px;background:linear-gradient(145deg,#221c1bd9,#09111ceb);padding:22px}
+body:not(.sisu-home) .place{background:#0e141bc9;border:1px solid #b6936488}
+body:not(.sisu-home) .place.chosen{background:#3a291ccf;border-color:#f0c78c}
+body:not(.sisu-home) .map-frame{border-radius:18px;box-shadow:0 10px 32px #0006}
+body:not(.sisu-home) .watch-layout,
+body:not(.sisu-home) .comfort-layout{height:calc(100% - 178px);gap:25px}
+body:not(.sisu-home) .watch-image,
+body:not(.sisu-home) .comfort-photo{border-radius:19px;border-color:#e4b97a66;box-shadow:0 15px 31px #0008}
+body:not(.sisu-home) .watch-apps{justify-content:space-evenly}
+body:not(.sisu-home) .app-choice{min-height:108px;border:1px solid #c5986887;border-radius:15px;background:linear-gradient(145deg,#231d1bcf,#0b1420ee)}
+body:not(.sisu-home) .comfort-stack{justify-content:space-around}
+body:not(.sisu-home) .comfort-box{border:1px solid #cfa46d92;border-radius:16px;background:linear-gradient(150deg,#241b1be8,#0a1320ef)}
+body:not(.sisu-home) .info-grid{height:calc(100% - 190px);gap:25px}
+body:not(.sisu-home) .info-card{border:1px solid #ceab7d9e;border-radius:18px;background:linear-gradient(155deg,#271d1bdf,#0d1723f2);padding:32px 40px;box-shadow:0 15px 28px #0007}
+body:not(.sisu-home) .sisu-music-grid{height:calc(100% - 180px);gap:25px}
+body:not(.sisu-home) .sisu-music-art{border-radius:19px}
+body:not(.sisu-home) .sisu-radio{background:linear-gradient(145deg,#251e1cdb,#101723e8);border-color:#c8a16d80;border-radius:15px}
+body:not(.sisu-home) .sisu-radio:focus{border:2px solid #f2c889}
+.lux-pagehead{padding:50px 0 27px;display:flex;align-items:center;justify-content:space-between;gap:25px}
+.lux-pagehead .eyebrow{font-size:13px;letter-spacing:.24em;color:#e8bc80}
+.lux-pagehead h1{font:normal 65px/1.04 Georgia,serif;letter-spacing:-.03em;color:#f7e8d6;margin:9px 0 8px}
+.lux-pagehead h1 em{font-style:normal;color:#e4bc7e}
+.lux-pagehead p{font-size:18px;color:#d5c8b8;margin:0}
+.lux-pagehead .lux-section-mark{border-left:1px solid #bc8c53;padding-left:23px;letter-spacing:.16em;color:#dab988;font-size:13px;white-space:nowrap}
+.food-venues{display:grid;grid-template-columns:1fr 1fr;gap:27px;height:calc(100% - 176px);min-height:0}
+.venue-card{position:relative;overflow:hidden;border:1px solid #cfa573ac;border-radius:20px;background:#121315;display:block;text-align:left;padding:0;box-shadow:0 16px 27px #0008;min-width:0}
+.venue-cover{position:absolute;inset:0;background-position:center;background-size:cover;filter:saturate(.92)}
+.venue-cover.kantyna{background-image:url('assets/kantyna_food_wide.jpg')}
+.venue-cover.ida{background-image:url('assets/ida_hero.png')}
+.venue-card:after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,#050609f5 0%,#050609ac 27%,transparent 72%)}
+.venue-text{position:absolute;left:38px;bottom:30px;right:30px;z-index:2}
+.venue-text .eyebrow{color:#f0c78e;font-size:13px;letter-spacing:.22em}
+.venue-text h2{font:normal 63px/.98 Georgia,serif;color:#fff0db;margin:12px 0 8px}
+.venue-text p{font-size:17px;line-height:1.4;color:#d7cab9;margin:0 0 13px}
+.venue-text .venue-action{color:#f6d09b;font-size:15px;letter-spacing:.08em}
+.venue-card:focus,.venue-card.focused{outline:2px solid #fed59c!important;box-shadow:0 0 30px #e4b6768e!important;transform:translateY(-2px)}
+.menu-shell{height:100%;padding-top:38px;display:grid;grid-template-columns:49% 51%;gap:24px;min-height:0}
+.menu-visual{border:1px solid #cda36b9e;border-radius:21px;position:relative;overflow:hidden;min-width:0;box-shadow:0 15px 30px #0009;background:#121019}
+.menu-visual:before{content:'';position:absolute;inset:0;background-size:cover;background-position:center;opacity:.96}
+.menu-visual.venue-kantyna:before{background-image:url('assets/kantyna_food_wide.jpg')}
+.menu-visual.venue-ida:before{background-image:url('assets/ida_hero.png')}
+.menu-visual:after{content:'';position:absolute;inset:0;background:linear-gradient(0deg,#05060cef 0%,#05070b92 38%,#05070b00 74%)}
+.menu-visual-head{position:absolute;z-index:2;left:36px;right:36px;top:35px}
+.menu-back{padding:13px 18px;font-size:13px;letter-spacing:.08em;color:#efd6af;border:1px solid #cdab7b;background:#080b0ed9;border-radius:9px}
+.menu-visual-copy{position:absolute;z-index:2;left:38px;right:38px;bottom:31px}
+.menu-visual-copy .eyebrow{font-size:13px;letter-spacing:.20em;color:#f0c98e}
+.menu-visual-copy h1{font:normal 62px Georgia,serif;color:#fff1dd;margin:9px 0}
+.menu-visual-copy p{font-size:17px;color:#d9cab6;line-height:1.5;max-width:690px}
+.food-thumbs{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:22px 0}
+.food-thumbs img{width:100%;height:115px;object-fit:cover;border:1px solid #d5ad70b8;border-radius:10px;background:#101923}
+.menu-address{font-size:12px;color:#d4b582;letter-spacing:.14em}
+.menu-right{border:1px solid #c9a3749c;border-radius:20px;min-height:0;overflow:hidden;background:linear-gradient(140deg,#211917ed,#080f1af2);display:flex;flex-direction:column;padding:24px 29px;gap:15px;box-shadow:0 15px 28px #0009}
+.menu-right h2{font:normal 36px/1.05 Georgia,serif;color:#f8e7cf;margin:0}
+.menu-right .menu-lede{color:#bca88f;font-size:12px;line-height:1.4;margin-top:6px}
+.menu-tabs{display:flex;flex:none;gap:8px;flex-wrap:wrap}
+.menu-tab{font-size:12px;border:1px solid #b5915e8c;border-radius:9px;color:#e1c9a6;padding:10px 14px;white-space:nowrap;background:#12141b9c}
+.menu-tab.active{background:#b78850;color:#090a0f;border-color:#ecc58b;font-weight:600}
+.menu-tab:focus{outline:2px solid #f3d2a2!important;outline-offset:1px}
+.menu-rows{flex:1;min-height:0;overflow-y:auto;scrollbar-color:#ac8755 #10131a;scrollbar-width:thin;padding:2px 3px}
+.menu-row{padding:12px 2px 12px;border-bottom:1px solid #b28b5945}
+.menu-row strong{display:block;font:normal 20px Georgia,serif;color:#fff0d9}
+.menu-row small{display:block;margin-top:7px;color:#bbae9d;line-height:1.25;font-size:12px}
+.menu-right-foot{display:flex;align-items:center;gap:16px;border-top:1px solid #b3926669;padding-top:12px;flex:none}
+.menu-right-foot .qr{width:78px;height:78px;object-fit:contain;background:#f9f6ed;border-radius:8px;padding:5px}
+.menu-right-foot strong{display:block;color:#e6c496;font-size:15px;font-weight:500}
+.menu-right-foot small{display:block;margin-top:5px;color:#b8aa98;font-size:11px;line-height:1.3}
+.menu-right-foot .menu-web{margin-left:auto;padding:13px;color:#f1d1a4;border:1px solid #be975c;border-radius:8px;background:#2d221a;font-size:12px}
+#view-food:before{opacity:1}
+#view-kantyna:before,#view-ida:before{opacity:1}
+@media(max-width:1450px),(max-height:820px){
+ body:not(.sisu-home) #viewStage>.view{padding:0 3% 147px}
+ body:not(.sisu-home) .pagehead{padding:27px 0 15px;min-height:110px}
+ body:not(.sisu-home) .pagehead h1{font-size:43px}
+ body:not(.sisu-home) .pagehead p{font-size:13px}
+ #globalDock{bottom:22px;height:105px;gap:8px;left:2%;right:2%}
+ .dock-link{padding:6px 4px;border-radius:11px;gap:4px}
+ .dock-link .dock-icon{font-size:25px}
+ .dock-link strong{font-size:17px}
+ .dock-link small{font-size:9px}
+ body:not(.sisu-home) .map-layout{height:calc(100% - 115px);grid-template-columns:305px minmax(0,1fr);gap:14px}
+ body:not(.sisu-home) .watch-layout,body:not(.sisu-home) .comfort-layout,body:not(.sisu-home) .sisu-music-grid{height:calc(100% - 114px);gap:13px}
+ body:not(.sisu-home) .info-grid{height:calc(100% - 124px)}
+ .lux-pagehead{padding:27px 0 15px}
+ .lux-pagehead h1{font-size:43px}
+ .lux-pagehead p{font-size:13px}
+ .food-venues{height:calc(100% - 115px);gap:14px}
+ .venue-text{left:21px;right:20px;bottom:18px}
+ .venue-text h2{font-size:40px}
+ .venue-text p{font-size:12px}
+ .menu-shell{padding-top:20px;gap:14px}
+ .menu-visual-copy{left:22px;right:22px;bottom:18px}
+ .menu-visual-copy h1{font-size:42px}
+ .menu-visual-copy p{font-size:12px}
+ .food-thumbs{gap:6px;margin:11px 0}
+ .food-thumbs img{height:72px}
+ .menu-right{padding:15px 17px;gap:8px}
+ .menu-right h2{font-size:25px}
+ .menu-tab{font-size:9px;padding:7px 9px}
+ .menu-row{padding:7px 2px}
+ .menu-row strong{font-size:14px}
+ .menu-row small{font-size:10px;margin-top:3px}
+ .menu-right-foot .qr{height:53px;width:53px}
+ .menu-right-foot strong{font-size:11px}
+ .menu-right-foot small{font-size:9px}
+ .menu-right-foot .menu-web{font-size:9px;padding:8px}
+}
+
+/* TV compatibility hotfix 0.3.1: images are actual DOM images, never pseudo backgrounds */
+.venue-cover-image{
+ display:block!important;position:absolute!important;left:0!important;top:0!important;width:100%!important;height:100%!important;
+ object-fit:cover!important;object-position:center!important;filter:none!important;opacity:1!important
+}
+.menu-visual{isolation:isolate;background:#08090f!important}
+.menu-visual:before{content:none!important;display:none!important;background-image:none!important}
+.menu-visual>.venue-big-photo{
+ position:absolute!important;inset:0!important;z-index:0!important;display:block!important;
+ height:100%!important;width:100%!important;object-fit:cover!important;object-position:center!important;
+ opacity:1!important;filter:none!important;visibility:visible!important;
+}
+.menu-visual.venue-kantyna>.venue-big-photo{object-position:43% 42%!important}
+.menu-visual.venue-ida>.venue-big-photo{object-position:50% 50%!important}
+.menu-visual:after{z-index:1!important;pointer-events:none!important;
+ background:linear-gradient(0deg,rgba(5,6,12,.95),rgba(5,6,12,.44) 37%,rgba(5,6,12,.04) 78%)!important}
+.menu-shell{grid-template-columns:minmax(0,55%) minmax(0,45%)!important}
+@media(max-width:1450px),(max-height:820px){.menu-shell{grid-template-columns:minmax(0,54%) minmax(0,46%)!important}}

@@ -1,0 +1,147 @@
+/* SISU23 TV v0.4.1 layout repair for Samsung 1920x1080 and 1280x720.
+   Content area and global navigation occupy separate zones: no overlapping frames. */
+body:not(.sisu-home) #viewStage>.view.active{
+  display:flex!important; flex-direction:column!important; gap:0!important;
+  width:100%!important; height:calc(100% - 204px)!important;
+  padding:0 4.7% 0!important; overflow:hidden!important;
+}
+body:not(.sisu-home) #viewStage>.view.active::before{
+  bottom:-205px!important;
+}
+body:not(.sisu-home) #viewStage>.view.active>.pagehead,
+body:not(.sisu-home) #viewStage>.view.active>.lux-pagehead{
+  flex:0 0 auto!important; min-height:0!important; max-height:156px!important;
+  padding:30px 0 17px!important; margin:0!important; overflow:hidden!important;
+}
+body:not(.sisu-home) #viewStage>.view.active>.pagehead h1,
+body:not(.sisu-home) #viewStage>.view.active>.lux-pagehead h1{
+  font-size:55px!important; margin:5px 0 7px!important;
+}
+body:not(.sisu-home) #viewStage>.view.active>.pagehead p,
+body:not(.sisu-home) #viewStage>.view.active>.lux-pagehead p{
+  font-size:16px!important;line-height:1.3!important;
+}
+body:not(.sisu-home) #viewStage>.view.active>.map-layout,
+body:not(.sisu-home) #viewStage>.view.active>.watch-layout,
+body:not(.sisu-home) #viewStage>.view.active>.sisu-music-grid,
+body:not(.sisu-home) #viewStage>.view.active>.food-venues,
+body:not(.sisu-home) #viewStage>.view.active>.comfort-layout,
+body:not(.sisu-home) #viewStage>.view.active>.info-grid,
+body:not(.sisu-home) #viewStage>.view.active>.p4-information,
+body:not(.sisu-home) #viewStage>.view.active>.p4-comfort-grid,
+body:not(.sisu-home) #viewStage>.view.active>.restaurant-grid,
+body:not(.sisu-home) #viewStage>.view.active>.menu-shell{
+  height:auto!important; flex:1 1 0!important; min-height:0!important;
+  max-height:none!important; margin:0!important; align-self:stretch!important;
+}
+body:not(.sisu-home) #viewStage>.view.active>.menu-shell{padding:20px 0 5px!important;gap:18px!important}
+body:not(.sisu-home) #viewStage>.view.active>.food-venues{padding-bottom:9px!important}
+body:not(.sisu-home) #viewStage>.view.active>.map-layout{padding-bottom:10px!important}
+body:not(.sisu-home) #viewStage>.view.active>.sisu-music-grid{padding-bottom:10px!important}
+body:not(.sisu-home) #viewStage>.view.active>.watch-layout{padding-bottom:10px!important}
+body:not(.sisu-home) #viewStage>.view.active>.p4-comfort-grid{padding-bottom:10px!important}
+body:not(.sisu-home) #viewStage>.view.active>.p4-information{padding-bottom:10px!important}
+body:not(.sisu-home) #viewStage>.view.active>.info-grid{padding-bottom:10px!important}
+#globalDock{
+  bottom:30px!important;height:136px!important;
+  gap:16px!important;left:3%!important;right:3%!important;
+  padding:0!important;
+}
+#globalDock .dock-link{
+  position:relative!important; border-radius:15px!important;
+  border-width:1px!important; outline:none!important; transform:none!important;
+  overflow:hidden!important;box-shadow:none!important;gap:7px!important;
+}
+#globalDock .dock-link.active{border:1px solid #e6b979!important;box-shadow:inset 0 0 0 1px #d9a65f3b!important}
+#globalDock .dock-link:focus,#globalDock .dock-link.focused{
+  border:2px solid #efc68d!important;outline:0!important;outline-offset:0!important;
+  transform:none!important;box-shadow:inset 0 0 0 1px #e4be88aa!important;
+}
+#globalDock .dock-link.active:focus{border:2px solid #efc68d!important}
+#globalDock .dock-link strong{font-size:21px!important}
+#globalDock .dock-link small{font-size:11px!important}
+#view-info .p4-info-main, #view-info .p4-info-right>div,
+#view-comfort .p4-panel,#view-comfort .p4-heatroom{
+  box-shadow:none!important;min-height:0!important;
+}
+#view-info .p4-info-main{padding:27px 36px!important}
+#view-info .p4-roomnum{font-size:170px!important}
+#view-info .p4-floor-label{margin-top:12px!important;padding-top:15px!important}
+#view-info .p4-floor-label strong{font-size:40px!important}
+#view-info .p4-info-right>div{padding:22px 30px!important}
+#view-info .p4-address h2{font-size:47px!important}
+#view-info .p4-datepair{margin:10px 0!important}
+#view-comfort .p4-comfort-grid{grid-template-rows:minmax(0,1fr) minmax(0,1fr)!important;gap:15px!important}
+#view-comfort .p4-comfort-top,#view-comfort .p4-heating-grid{gap:15px!important}
+#view-comfort .p4-panel{padding:19px 22px!important;gap:10px!important}
+#view-comfort .p4-panel-title{font-size:27px!important}
+#view-comfort .p4-light{padding:9px 13px!important}
+#view-comfort .p4-temp-number{font-size:67px!important}
+#view-comfort .p4-heating-grid .p4-temp-number{font-size:42px!important}
+#view-comfort .p4-heatroom{padding:15px 18px!important;gap:7px!important}
+#view-comfort .p4-heatroom h2{font-size:23px!important}
+#view-comfort .p4-roomcontrols .p4-temp-step{width:48px!important;height:48px!important;font-size:30px!important}
+#view-comfort .p4-demo-notice{white-space:normal!important;text-align:right!important}
+#view-music .sisu-music-options{min-height:0!important;overflow:hidden!important;gap:10px!important}
+#view-music .sisu-radio{min-height:78px!important;padding:12px 17px!important;gap:16px!important}
+#view-music .sisu-radio strong{font-size:21px!important}
+#view-music .sisu-radio small{font-size:12px!important}
+#view-watch .watch-apps{min-height:0!important;overflow:hidden!important;justify-content:space-around!important}
+#view-watch .app-choice{min-height:98px!important;padding:12px 18px!important}
+#view-food .venue-card{min-height:0!important}
+#view-map .map-places{min-height:0!important;overflow:hidden!important;padding:19px!important;gap:10px!important}
+#view-map .place{padding:13px!important;min-height:0!important}
+#view-map .map-note{font-size:11px!important;margin-top:auto!important;line-height:1.35!important}
+#view-map .map-control{padding:8px!important;font-size:11px!important}
+#view-kantyna .menu-right,#view-ida .menu-right{min-height:0!important;max-height:100%!important}
+#view-kantyna .menu-visual,#view-ida .menu-visual{min-height:0!important}
+#view-kantyna .menu-visual-copy,#view-ida .menu-visual-copy{bottom:23px!important}
+#view-kantyna .menu-visual-copy h1,#view-ida .menu-visual-copy h1{font-size:53px!important;margin:9px 0!important}
+#view-kantyna .food-thumbs img,#view-ida .food-thumbs img{height:92px!important}
+#view-kantyna .menu-right,#view-ida .menu-right{padding:20px 23px!important;gap:11px!important}
+#view-kantyna .menu-row,#view-ida .menu-row{padding:9px 0!important}
+#view-kantyna .menu-right-foot,#view-ida .menu-right-foot{min-height:75px!important}
+.focusable:focus,.focusable.focused{outline:0!important;outline-offset:0!important}
+button:not(.dock-link).focusable:focus,button:not(.dock-link).focusable.focused{
+  box-shadow:inset 0 0 0 2px #f5d29a!important;transform:none!important;
+}
+@media(max-width:1450px),(max-height:820px){
+ body:not(.sisu-home) #viewStage>.view.active{
+  height:calc(100% - 145px)!important;padding:0 3.1% 0!important;
+ }
+ body:not(.sisu-home) #viewStage>.view.active>.pagehead,
+ body:not(.sisu-home) #viewStage>.view.active>.lux-pagehead{
+  max-height:106px!important;padding:16px 0 11px!important;
+ }
+ body:not(.sisu-home) #viewStage>.view.active>.pagehead h1,
+ body:not(.sisu-home) #viewStage>.view.active>.lux-pagehead h1{font-size:37px!important;margin:3px 0 5px!important}
+ body:not(.sisu-home) #viewStage>.view.active>.pagehead p,
+ body:not(.sisu-home) #viewStage>.view.active>.lux-pagehead p{font-size:11px!important}
+ #globalDock{bottom:18px!important;height:102px!important;gap:8px!important;left:2%!important;right:2%!important}
+ #globalDock .dock-link{gap:4px!important}
+ #globalDock .dock-link strong{font-size:15px!important}
+ #globalDock .dock-link small{font-size:9px!important}
+ #view-info .p4-roomnum{font-size:112px!important}
+ #view-info .p4-floor-label strong{font-size:28px!important}
+ #view-info .p4-address h2{font-size:32px!important}
+ #view-comfort .p4-panel{padding:10px 12px!important;gap:5px!important}
+ #view-comfort .p4-panel-title{font-size:19px!important}
+ #view-comfort .p4-light{padding:5px 7px!important}
+ #view-comfort .p4-temp-number{font-size:45px!important}
+ #view-comfort .p4-heating-grid .p4-temp-number{font-size:30px!important}
+ #view-comfort .p4-heatroom{padding:10px 11px!important}
+ #view-comfort .p4-heatroom h2{font-size:16px!important}
+ #view-comfort .p4-roomcontrols .p4-temp-step{height:32px!important;width:32px!important;font-size:22px!important}
+ #view-music .sisu-radio{min-height:54px!important;padding:7px 12px!important;gap:10px!important}
+ #view-music .sisu-radio strong{font-size:14px!important}
+ #view-music .sisu-radio small{font-size:9px!important}
+ #view-watch .app-choice{min-height:65px!important;padding:8px 13px!important}
+ #view-map .map-places{padding:11px!important;gap:5px!important}
+ #view-map .place{padding:8px!important}
+ #view-map .map-note{font-size:9px!important}
+ #view-kantyna .menu-visual-copy h1,#view-ida .menu-visual-copy h1{font-size:39px!important}
+ #view-kantyna .food-thumbs img,#view-ida .food-thumbs img{height:67px!important}
+ #view-kantyna .menu-right,#view-ida .menu-right{padding:12px 15px!important;gap:7px!important}
+ #view-kantyna .menu-row,#view-ida .menu-row{padding:6px 0!important}
+ #view-kantyna .menu-right-foot,#view-ida .menu-right-foot{min-height:52px!important}
+}

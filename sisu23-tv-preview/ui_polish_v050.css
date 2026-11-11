@@ -1,0 +1,204 @@
+/* SISU23 TV v0.5.0 — reviewed, scoped visual layout; real app, not image mockups. */
+/* Keep already-accepted HOME unchanged. Polish the six tab views below. */
+body:not(.sisu-home) #viewStage>.view.active {overflow:hidden!important; box-sizing:border-box!important;}
+body:not(.sisu-home) #viewStage>.view.active>.pagehead,
+body:not(.sisu-home) #viewStage>.view.active>.lux-pagehead {
+  flex-shrink:0!important; padding-top:29px!important; padding-bottom:19px!important;
+  max-height:169px!important; overflow:visible!important;
+}
+body:not(.sisu-home) #viewStage>.view.active>.pagehead h1,
+body:not(.sisu-home) #viewStage>.view.active>.lux-pagehead h1 {
+  font:normal 59px/1.03 Georgia,'Times New Roman',serif!important;
+  color:#fff1de!important; letter-spacing:-.022em!important; margin:8px 0 10px!important;
+}
+body:not(.sisu-home) #viewStage>.view.active>.pagehead p,
+body:not(.sisu-home) #viewStage>.view.active>.lux-pagehead p{
+  font:normal 17px/1.45 Arial, sans-serif!important;color:#ded0bd!important;
+  max-width:1050px!important; margin:0!important;
+}
+body:not(.sisu-home) #viewStage>.view.active .eyebrow{
+  color:#e9bd7d!important; letter-spacing:.16em!important; font-size:13px!important;
+}
+body:not(.sisu-home) #viewStage>.view.active .page-mark{font-size:13px!important;color:#cdb58e!important}
+#globalDock{grid-template-columns:repeat(6,minmax(0,1fr))!important;gap:13px!important;left:3%!important;right:3%!important}
+#globalDock .dock-link{
+  padding:12px 5px!important;min-width:0!important;overflow:hidden!important;
+  border:1px solid rgba(226,181,109,.5)!important;box-shadow:none!important;
+}
+#globalDock .dock-link .dock-icon{font-size:32px!important;line-height:1!important;display:block!important}
+#globalDock .dock-link strong{font:normal 21px/1.15 Georgia,serif!important;white-space:nowrap!important;color:#f8e9d4!important}
+#globalDock .dock-link small{font-size:12px!important;line-height:1.2!important;white-space:nowrap!important;color:#bdab95!important}
+#globalDock .dock-link.active{border:1px solid #f2c680!important;background:linear-gradient(155deg,#482f1dd9,#17161de8)!important}
+#globalDock .dock-link.focused,#globalDock .dock-link:focus{
+  outline:none!important;border:2px solid #f7d59f!important;box-shadow:inset 0 0 0 1px #f7d59f55!important;transform:none!important;
+}
+/* Netflix, YouTube, Sweet.TV badges — preserve generous spacing of original cards. */
+#view-watch .watch-layout{min-height:0!important;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr)!important;gap:26px!important}
+#view-watch .watch-apps{
+  display:flex!important;flex-direction:column!important;justify-content:space-around!important;
+  min-width:0!important;min-height:0!important;gap:16px!important;padding:0!important;
+}
+#view-watch .app-choice{
+  display:grid!important; grid-template-columns:minmax(150px,190px) minmax(0,1fr) 30px!important;
+  align-items:center!important; min-height:0!important; flex:1 1 0!important;
+  padding:12px 26px!important;gap:19px!important;max-height:163px!important;
+  border-radius:15px!important;border:1px solid #bc9765a8!important;
+  background:linear-gradient(140deg,#211a19f0,#101925f0)!important;
+}
+#view-watch .app-choice .video-logo{display:block!important;width:100%!important;max-height:86px!important;object-fit:contain!important}
+#view-watch .app-choice .video-service-copy{min-width:0!important}
+#view-watch .app-choice .video-service-copy small{display:block!important;font:normal 21px/1.3 Arial,sans-serif!important;color:#eee0cb!important;margin:0!important}
+#view-watch .app-choice .video-arrow{font-size:31px!important;color:#e8c083!important;line-height:1!important;text-align:center!important}
+#view-watch .app-choice:focus,#view-watch .app-choice.focused{border:2px solid #f2ce94!important;box-shadow:inset 0 0 0 1px #edbd7aaa!important}
+#view-watch .watch-footnote{font-size:13px!important;line-height:1.4!important;margin:0!important;min-height:35px!important;color:#b5a48d!important}
+/* Six stations always get independent equal rows; never overlap. */
+#view-music .sisu-music-grid{grid-template-columns:minmax(0,1.04fr) minmax(0,.96fr)!important;gap:24px!important}
+#view-music .sisu-music-art{min-height:0!important;overflow:hidden!important}
+#view-music .sisu-music-options{
+  min-width:0!important;min-height:0!important; padding:4px 2px!important;
+  display:flex!important;flex-direction:column!important;gap:9px!important;
+  overflow:hidden!important;
+}
+#view-music .sisu-music-options>.eyebrow{flex:0 0 auto!important;padding:0 4px!important}
+#view-music .sisu-station-list{
+  flex:1 1 0!important;min-height:0!important;
+  display:grid!important;grid-template-columns:minmax(0,1fr)!important;
+  grid-template-rows:repeat(6,minmax(0,1fr))!important;gap:9px!important;
+}
+#view-music .sisu-station-list>.sisu-radio{
+  display:flex!important;align-items:center!important;min-width:0!important;min-height:0!important;
+  width:100%!important;height:100%!important;
+  border:1px solid #c5a0709c!important; border-radius:12px!important; padding:5px 18px!important;
+  box-sizing:border-box!important;gap:15px!important;
+  background:linear-gradient(135deg,#271e1ae8,#101924ef)!important;
+}
+#view-music .sisu-station-list>.sisu-radio>b{
+  flex:0 0 48px!important;font:normal 32px/.95 Georgia,serif!important;color:#ebbe80!important;text-align:center!important;
+}
+#view-music .sisu-station-list>.sisu-radio>span:nth-child(2){display:block!important;flex:1 1 0!important;min-width:0!important}
+#view-music .sisu-station-list>.sisu-radio strong{
+  display:block!important;font:normal 24px/1.1 Georgia,serif!important;color:#fff0da!important;white-space:nowrap!important;
+}
+#view-music .sisu-station-list>.sisu-radio small{
+  display:block!important;font:normal 14px/1.2 Arial,sans-serif!important;
+  margin-top:5px!important;color:#bfaf97!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;
+}
+#view-music .sisu-station-list>.sisu-radio>span:last-child{font-size:26px!important;flex:0 0 24px!important;color:#ebc086!important}
+#view-music .sisu-station-list>.sisu-radio:focus,#view-music .sisu-station-list>.sisu-radio.focused{
+  border:2px solid #f8cd8d!important;box-shadow:inset 0 0 0 1px #efc27baa!important;outline:none!important;
+}
+#view-music .music-notice{flex:0 0 auto!important;font:normal 13px/1.4 Arial,sans-serif!important;margin:0!important;padding:0 4px!important;color:#d2b991!important}
+/* Restaurant front page - accepted actual two-card design, real non-cropped photos. */
+#view-food .rebuild-restaurant{border-color:#c59b67!important}
+#view-food .rebuild-restaurant-head strong{font-family:Georgia,serif!important;color:#f4d09a!important}
+#view-food .rebuild-photo-area{background:#0b0e15!important}
+#view-food .rebuild-photo-area img{object-fit:contain!important;width:100%!important;height:100%!important}
+#view-food .rebuild-restaurant-foot b{color:#f8d295!important}
+/* Restaurant subpage: large QR + phone instead of outdated embedded menus. */
+body:not(.sisu-home) #viewStage>.view.active>.qr-restaurant-grid{
+  flex:1 1 0!important;min-height:0!important;height:auto!important;
+  display:grid!important;grid-template-columns:minmax(0,1.04fr) minmax(0,.96fr)!important;
+  gap:26px!important;padding:30px 0 14px!important;
+}
+#view-kantyna .qr-restaurant-photo,#view-ida .qr-restaurant-photo,
+#view-kantyna .qr-restaurant-card,#view-ida .qr-restaurant-card{
+  border:1px solid #c39c67!important;border-radius:19px!important;
+  background:linear-gradient(145deg,#1f1a1b,#0a121d)!important;min-width:0!important;
+  min-height:0!important;overflow:hidden!important;
+}
+.qr-restaurant-photo{display:flex!important;flex-direction:column!important}
+.qr-restaurant-photo-top{
+  flex:0 0 auto!important;min-height:165px!important;padding:19px 28px!important;
+  background:#14171e!important;border-bottom:1px solid #a9865690!important;
+}
+.qr-back{border:0!important;background:none!important;text-align:left!important;
+ color:#e4bd82!important;padding:4px 0!important;font:normal 16px/1.25 Arial,sans-serif!important}
+.qr-back:focus{box-shadow:inset 0 -2px #e4bd82!important}
+.qr-restaurant-photo-top h1{font:normal 70px/.99 Georgia,serif!important;color:#f6d4a2!important;letter-spacing:.01em!important;margin:9px 0 12px!important}
+.qr-location{font-size:13px!important;letter-spacing:.15em!important;color:#ded0b9!important;line-height:1.3!important}
+.qr-photo-display{display:flex!important;align-items:center!important;justify-content:center!important;
+  flex:1 1 0!important;min-height:0!important;background:#080d13!important;padding:12px!important;overflow:hidden!important}
+.qr-photo-display img{display:block!important;max-width:100%!important;max-height:100%!important;
+  width:100%!important;height:100%!important;object-fit:contain!important;object-position:center!important;filter:none!important;opacity:1!important}
+.qr-restaurant-card{
+ display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;
+ gap:11px!important;padding:22px 32px!important;text-align:center!important;
+}
+.qr-eyebrow{font:600 13px/1.2 Arial,sans-serif!important;letter-spacing:.2em!important;color:#e8bd7f!important}
+.qr-restaurant-card h2{font:normal 45px/1.1 Georgia,serif!important;color:#fff1db!important;margin:5px 0!important}
+.qr-restaurant-card p{font:normal 16px/1.45 Arial,sans-serif!important;color:#d9c9b0!important;max-width:500px!important;margin:0!important}
+.qr-code-box{
+ background:#fff!important;border:10px solid #fff!important;border-radius:10px!important;
+ display:flex!important;align-items:center!important;justify-content:center!important;
+ width:340px!important;height:340px!important;max-width:100%!important;max-height:48%!important;
+ flex:1 1 auto!important;min-height:170px!important;padding:0!important;
+}
+.qr-code-box img{display:block!important;width:100%!important;height:100%!important;object-fit:contain!important;image-rendering:auto!important}
+.qr-reserve{display:flex!important;flex-direction:column!important;align-items:center!important;gap:7px!important;margin-top:3px!important}
+.qr-reserve span{font:600 13px/1.2 Arial,sans-serif!important;letter-spacing:.15em!important;color:#e6bc80!important}
+.qr-reserve strong{font:normal 43px/1.1 Georgia,serif!important;color:#fff0d7!important;white-space:nowrap!important}
+.qr-hint{font:normal 12px/1.3 Arial,sans-serif!important;color:#c5b098!important}
+/* Clearly legible map and guest information; preserve real map tiles and locations. */
+#view-map .map-places{gap:12px!important;padding:20px!important}
+#view-map .sm-heading{font-size:13px!important;letter-spacing:.17em!important}
+#view-map .place{padding:15px 14px!important;gap:11px!important;min-width:0!important}
+#view-map .place b{font-size:19px!important;line-height:1.2!important}
+#view-map .place small{font-size:13px!important;line-height:1.3!important;white-space:normal!important}
+#view-map .place-number{font-size:22px!important}
+#view-map .map-note{line-height:1.4!important;color:#beb09e!important}
+#view-info .p4-info-main,#view-info .p4-info-right>div{border-color:#b9986a!important}
+#view-comfort .p4-mini-status,#view-comfort .p4-demo-notice{color:#e0bf8c!important}
+#view-comfort .p4-measured,#view-comfort .p4-roomfoot{white-space:normal!important}
+@media(max-width:1450px),(max-height:820px){
+ body:not(.sisu-home) #viewStage>.view.active>.pagehead,
+ body:not(.sisu-home) #viewStage>.view.active>.lux-pagehead{
+  padding:17px 0 11px!important;max-height:112px!important;
+ }
+ body:not(.sisu-home) #viewStage>.view.active>.pagehead h1,
+ body:not(.sisu-home) #viewStage>.view.active>.lux-pagehead h1{font-size:39px!important;margin:4px 0 5px!important}
+ body:not(.sisu-home) #viewStage>.view.active>.pagehead p,
+ body:not(.sisu-home) #viewStage>.view.active>.lux-pagehead p{font-size:12px!important}
+ body:not(.sisu-home) #viewStage>.view.active .eyebrow{font-size:9px!important}
+ #globalDock{gap:8px!important;left:2%!important;right:2%!important}
+ #globalDock .dock-link{padding:7px 3px!important}
+ #globalDock .dock-link .dock-icon{font-size:25px!important}
+ #globalDock .dock-link strong{font-size:15px!important}
+ #globalDock .dock-link small{font-size:9px!important}
+ #view-watch .watch-layout{gap:14px!important}
+ #view-watch .watch-apps{gap:9px!important}
+ #view-watch .app-choice{grid-template-columns:minmax(0,123px) minmax(0,1fr) 19px!important;gap:9px!important;padding:6px 10px!important;max-height:102px!important}
+ #view-watch .app-choice .video-logo{max-height:53px!important}
+ #view-watch .app-choice .video-service-copy small{font-size:13px!important}
+ #view-watch .app-choice .video-arrow{font-size:19px!important}
+ #view-watch .watch-footnote{font-size:10px!important;min-height:30px!important}
+ #view-music .sisu-music-grid{gap:12px!important}
+ #view-music .sisu-music-options{gap:5px!important;padding:2px!important}
+ #view-music .sisu-station-list{gap:6px!important}
+ #view-music .sisu-station-list>.sisu-radio{padding:3px 9px!important;gap:9px!important;border-radius:8px!important}
+ #view-music .sisu-station-list>.sisu-radio>b{flex-basis:30px!important;font-size:21px!important}
+ #view-music .sisu-station-list>.sisu-radio strong{font-size:16px!important}
+ #view-music .sisu-station-list>.sisu-radio small{font-size:9px!important;margin-top:2px!important}
+ #view-music .sisu-station-list>.sisu-radio>span:last-child{font-size:20px!important;flex-basis:17px!important}
+ #view-music .music-notice{font-size:9px!important}
+ body:not(.sisu-home) #viewStage>.view.active>.qr-restaurant-grid{gap:14px!important;padding:10px 0 8px!important}
+ .qr-restaurant-photo-top{padding:9px 17px!important;min-height:100px!important}
+ .qr-back{font-size:10px!important}
+ .qr-restaurant-photo-top h1{font-size:45px!important;margin:4px 0 7px!important}
+ .qr-location{font-size:9px!important}
+ .qr-photo-display{padding:6px!important}
+ .qr-restaurant-card{padding:8px 15px!important;gap:5px!important}
+ .qr-eyebrow{font-size:9px!important}
+ .qr-restaurant-card h2{font-size:30px!important;margin:1px 0!important}
+ .qr-restaurant-card p{font-size:10px!important;line-height:1.3!important}
+ .qr-code-box{width:220px!important;height:220px!important;min-height:125px!important;border-width:6px!important;max-height:48%!important}
+ .qr-reserve{gap:4px!important;margin-top:0!important}
+ .qr-reserve span{font-size:10px!important}
+ .qr-reserve strong{font-size:29px!important}
+ .qr-hint{font-size:9px!important}
+ #view-map .map-places{gap:6px!important;padding:10px!important}
+ #view-map .sm-heading{font-size:9px!important}
+ #view-map .place{padding:8px!important;gap:7px!important}
+ #view-map .place b{font-size:14px!important}
+ #view-map .place small{font-size:10px!important}
+ #view-map .place-number{font-size:16px!important}
+}

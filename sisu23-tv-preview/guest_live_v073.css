@@ -1,0 +1,36 @@
+/* SISU23 live controls v0.7.3: compact TV remote-friendly layout. */
+#view-comfort .p4-lights-grid{
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  grid-template-rows:repeat(3,minmax(0,1fr));
+  gap:8px; flex:1; min-height:0;
+}
+#view-comfort .p4-light:last-child{grid-column:1 / -1}
+#view-comfort .p4-light{padding:5px 11px;min-height:0}
+#view-comfort .p4-light span.p4-lamptext{font-size:clamp(12px,1.3vw,18px)}
+#view-comfort .p4-light .p4-power{font-size:clamp(10px,.85vw,13px)}
+#view-comfort .p4-light .p4-lamp{font-size:21px}
+#view-comfort .p4-ac-body{flex:1;min-height:54px}
+#view-comfort .p4-ac-quickrow{display:flex;align-items:center;gap:6px;min-height:27px}
+#view-comfort .p4-ac-quickrow>span{min-width:48px;color:#c8b18c;font-size:10px;letter-spacing:.06em}
+#view-comfort .p4-ac-shortcuts{display:flex;flex-direction:column;gap:5px;margin-top:-1px}
+#view-comfort .p4-climate-option{
+  flex:1;min-width:0;min-height:27px;border:1px solid #65563e;
+  background:rgba(18,23,30,.9);border-radius:7px;
+  color:#e5d5bd;font-size:12px;padding:3px 6px;
+}
+#view-comfort .p4-climate-option.is-selected{border-color:#e8bd78;background:#4d3520;color:#ffe4ae}
+#view-comfort .p4-window-guard{color:#b7a083;font-size:10px;text-align:right;line-height:1.15}
+#view-comfort .p4-demo-notice{max-width:280px}
+#view-comfort button:disabled{opacity:.49;cursor:not-allowed}
+#view-comfort button.is-on:disabled{opacity:.65}
+#view-comfort .p4-range{font-size:12px}
+#view-comfort .p4-ac-body .p4-temp-number{font-size:clamp(34px,4.2vw,72px)}
+@media(max-height:870px){
+ #view-comfort .p4-climate-option{font-size:10px;min-height:23px;padding:2px 3px}
+ #view-comfort .p4-ac-quickrow{min-height:23px}
+ #view-comfort .p4-ac-shortcuts{gap:3px}
+ #view-comfort .p4-ac-head .p4-panel-title{font-size:19px!important}
+ #view-comfort .p4-ac-body{min-height:35px}
+ #view-comfort .p4-range{font-size:10px}
+ #view-comfort .p4-lights-grid{gap:5px}
+}

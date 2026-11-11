@@ -1,0 +1,119 @@
+/* SISU23 v0.4.0 — guest information + comfort controls */
+#view-info .pagehead,#view-comfort .pagehead{min-height:153px;padding:37px 0 18px}
+#view-info .pagehead h1,#view-comfort .pagehead h1{font-size:53px;margin-top:8px;margin-bottom:8px}
+#view-info .pagehead p,#view-comfort .pagehead p{font-size:16px;line-height:1.35}
+#view-info .p4-information{height:calc(100% - 153px);min-height:0;display:grid;grid-template-columns:43% minmax(0,1fr);gap:24px}
+.p4-info-main,.p4-info-right>div,.p4-panel,.p4-heatroom{border:1px solid rgba(225,180,108,.57);border-radius:19px;background:linear-gradient(139deg,rgba(34,27,26,.92),rgba(11,17,26,.96) 68%);box-shadow:0 12px 30px #0007;min-width:0}
+.p4-info-main{position:relative;overflow:hidden;display:flex;flex-direction:column;justify-content:space-between;padding:36px 46px 41px;background:linear-gradient(115deg,#0c131cd9,#1617169a),url('assets/apartment_suite.jpg') center /cover}
+.p4-info-main:after{content:'';pointer-events:none;position:absolute;inset:0;background:linear-gradient(155deg,#090d15de,#080c14ab 72%,#080e140c)}
+.p4-info-main>*{position:relative;z-index:1}
+.p4-kicker{font-size:12px;font-weight:500;letter-spacing:.24em;color:#e4bb82;line-height:1.5}
+.p4-roomnum{font:normal 206px/.96 Georgia,serif;letter-spacing:-.055em;color:#ffedda;text-shadow:0 8px 50px #0008}
+.p4-floor-label{display:flex;align-items:baseline;gap:19px;border-top:1px solid rgba(217,170,106,.43);padding-top:23px;margin-top:25px}
+.p4-floor-label strong{font:normal 53px Georgia,serif;color:#f4d19b}
+.p4-floor-label span{font-size:17px;color:#ddd0bd;letter-spacing:.05em}
+.p4-info-right{display:grid;grid-template-rows:45% minmax(0,1fr);gap:22px;min-height:0}
+.p4-info-right>div{padding:36px 41px;overflow:hidden;display:flex;flex-direction:column;justify-content:space-between}
+.p4-address h2{font:normal 59px/1.08 Georgia,serif;color:#f7e9d6;margin:12px 0}
+.p4-address p{font-size:24px!important;line-height:1.4!important;color:#dbceb9!important}
+.p4-address .p4-rowlink{font-size:16px;color:#e8c386;text-align:left;align-self:flex-start;padding:10px 0;border-bottom:1px solid #ab8555}
+.p4-datepair{display:flex;gap:24px;align-items:center;margin:18px 0}
+.p4-dateitem{flex:1}
+.p4-dateitem span{display:block;color:#c5b296;font-size:12px;letter-spacing:.13em;margin-bottom:8px}
+.p4-dateitem strong{font:normal 35px/1.2 Georgia,serif;color:#f4e1c4;display:block}
+.p4-datearrow{font:normal 29px Georgia,serif;color:#ac8a5c}
+.p4-stay small{font-size:14px;color:#baa992;line-height:1.4}
+#view-comfort .p4-comfort-grid{height:calc(100% - 153px);min-height:0;display:grid;grid-template-rows:minmax(0,1.02fr) minmax(0,.98fr);gap:18px}
+.p4-comfort-top{display:grid;grid-template-columns:47% minmax(0,1fr);gap:18px;min-height:0}
+.p4-panel{padding:25px 30px;display:flex;flex-direction:column;gap:17px;overflow:hidden}
+.p4-panelhead{display:flex;justify-content:space-between;align-items:center;gap:16px}
+.p4-panel-title{font:normal 31px Georgia,serif;color:#f7e9d6;margin-top:5px}
+.p4-mini-status{font-size:12px;letter-spacing:.1em;color:#cdbda8;white-space:nowrap}
+.p4-lights-grid{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;flex:1;min-height:0;gap:11px}
+.p4-light{border:1px solid rgba(213,168,102,.4);border-radius:12px;background:linear-gradient(120deg,#151d25,#11141b);padding:13px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:left;min-height:0}
+.p4-light .p4-lamp{font:normal 27px Georgia,serif;color:#b39e83;flex:none}
+.p4-light span.p4-lamptext{font:normal 18px Georgia,serif;color:#ecddc8;flex:1}
+.p4-light .p4-power{font-size:12px;color:#b7a28b}
+.p4-light.is-on{background:linear-gradient(145deg,#4d3520,#27211e);border-color:#e1bb7a}
+.p4-light.is-on .p4-lamp{color:#ffdd9c}
+.p4-light.is-on .p4-power{color:#f5cd89}
+.p4-ac-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px}
+.p4-ac-on{padding:11px 17px;background:#232129;border:1px solid #bb9160;border-radius:10px;font-size:15px;color:#e2c9a2}
+.p4-ac-on.is-on{background:linear-gradient(135deg,#d3ab70,#966b36);color:#181815;border-color:#e2c184}
+.p4-ac-body{display:flex;align-items:center;justify-content:space-between;gap:20px;flex:1;min-height:0}
+.p4-ac-target{text-align:center;min-width:210px}
+.p4-temp-number{font:normal 82px/.95 Georgia,serif;color:#fff0d9;letter-spacing:-.045em;white-space:nowrap}
+.p4-temp-number small{font-size:31px;color:#dcb879}
+.p4-temp-caption{font-size:13px;color:#c9b69c;margin-top:9px}
+.p4-temp-step{width:73px;height:73px;border:1px solid #d0a979;border-radius:15px;background:#1b2530;color:#f2d3a1;font:normal 51px/1 Georgia,serif;display:flex;align-items:center;justify-content:center;flex:none}
+.p4-temp-step:disabled{opacity:.24;cursor:default}
+.p4-range{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:auto;font-size:13px;color:#bdae96}
+.p4-range strong{color:#e8c588;font-weight:500}
+.p4-heating-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;min-height:0}
+.p4-heatroom{padding:24px 27px;display:flex;flex-direction:column;justify-content:space-between;gap:12px;overflow:hidden}
+.p4-heatroom h2{font:normal 31px Georgia,serif;color:#f5e4cd;margin:0}
+.p4-measured{font-size:14px;color:#c1b39e;white-space:nowrap}
+.p4-measured strong{font-size:20px;color:#f7d8a9;font-weight:400}
+.p4-roomcontrols{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.p4-roomcontrols .p4-temp-step{width:57px;height:57px;font-size:39px;border-radius:11px}
+.p4-roomcontrols .p4-temp-number{font-size:53px}
+.p4-roomcontrols .p4-temp-number small{font-size:21px}
+.p4-roomfoot{display:flex;justify-content:space-between;gap:12px;color:#b9a994;font-size:12px;border-top:1px solid #cda46b40;padding-top:13px}
+.p4-roomfoot b{color:#e5bd82;font-weight:500}
+.p4-demo-notice{font-size:12px;color:#baaa90;line-height:1.25;white-space:nowrap}
+.p4-action:focus,.p4-action.focused{outline:0!important;outline-offset:0!important;box-shadow:inset 0 0 0 2px #ffe0ab,0 0 13px #bc915e52!important;transform:none!important}
+.p4-action:disabled{outline:0!important;box-shadow:none!important}
+#globalDock .dock-link:focus,#globalDock .dock-link.focused{outline:0!important;outline-offset:0!important;border:2px solid #f0ce96!important;box-shadow:inset 0 0 0 1px #f0ce9644,0 0 11px #dcb67c3b!important;transform:none!important}
+@media(max-width:1450px),(max-height:820px){
+ #view-info .pagehead,#view-comfort .pagehead{min-height:105px;padding:18px 0 13px}
+ #view-info .pagehead h1,#view-comfort .pagehead h1{font-size:38px;margin:5px 0}
+ #view-info .pagehead p,#view-comfort .pagehead p{font-size:12px}
+ #view-info .p4-information,#view-comfort .p4-comfort-grid{height:calc(100% - 105px)}
+ #view-info .p4-information{gap:13px}
+ .p4-info-main{padding:22px 27px 24px;border-radius:13px}
+ .p4-roomnum{font-size:139px}
+ .p4-floor-label{margin-top:11px;padding-top:11px;gap:12px}
+ .p4-floor-label strong{font-size:36px}
+ .p4-floor-label span{font-size:13px}
+ .p4-info-right{gap:12px}
+ .p4-info-right>div{padding:18px 24px;border-radius:12px}
+ .p4-address h2{font-size:37px;margin:4px 0}
+ .p4-address p{font-size:16px!important}
+ .p4-address .p4-rowlink{font-size:12px;padding:6px 0}
+ .p4-kicker{font-size:9px}
+ .p4-datepair{margin:7px 0;gap:10px}
+ .p4-dateitem span{font-size:9px;margin-bottom:5px}
+ .p4-dateitem strong{font-size:23px}
+ .p4-stay small{font-size:10px}
+ #view-comfort .p4-comfort-grid{gap:11px}
+ .p4-comfort-top,.p4-heating-grid{gap:11px}
+ .p4-panel{padding:13px 16px;gap:8px;border-radius:12px}
+ .p4-panel-title{font-size:21px}
+ .p4-mini-status{font-size:10px}
+ .p4-lights-grid{gap:7px}
+ .p4-light{padding:6px 9px;border-radius:7px;gap:4px}
+ .p4-light .p4-lamp{font-size:19px}
+ .p4-light span.p4-lamptext{font-size:12px}
+ .p4-light .p4-power{font-size:9px}
+ .p4-ac-on{font-size:11px;padding:8px 10px}
+ .p4-ac-body{gap:10px}
+ .p4-ac-target{min-width:130px}
+ .p4-temp-number{font-size:53px}
+ .p4-temp-number small{font-size:22px}
+ .p4-temp-step{width:49px;height:49px;font-size:36px;border-radius:9px}
+ .p4-temp-caption{font-size:10px;margin-top:3px}
+ .p4-range{font-size:10px}
+ .p4-heatroom{padding:14px 16px;gap:7px;border-radius:11px}
+ .p4-heatroom h2{font-size:19px}
+ .p4-measured{font-size:10px}
+ .p4-measured strong{font-size:14px}
+ .p4-roomcontrols{gap:5px}
+ .p4-roomcontrols .p4-temp-step{width:37px;height:37px;font-size:25px;border-radius:7px}
+ .p4-roomcontrols .p4-temp-number{font-size:34px}
+ .p4-roomcontrols .p4-temp-number small{font-size:15px}
+ .p4-roomfoot{font-size:9px;padding-top:8px}
+ .p4-demo-notice{font-size:9px}
+}
+
+#view-comfort .page-mark .p4-demo-notice{font:normal 12px/1.35 Arial,sans-serif;color:#edc993;margin-top:8px;letter-spacing:.02em;text-align:right}
+@media(max-width:1450px),(max-height:820px){#view-comfort .page-mark .p4-demo-notice{font-size:9px;margin-top:3px}}

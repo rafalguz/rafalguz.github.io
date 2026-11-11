@@ -1,0 +1,29 @@
+
+/* SISU23 0.6.8 - native lightweight Tizen welcome. */
+#sw-demo{position:fixed;inset:0;z-index:2147480000;overflow:hidden;display:block;
+ background:#101722 url('assets/sisu23_night_wide.jpg') center center / cover no-repeat;
+ color:#f7e6c8;font-family:Arial,Helvetica,sans-serif}
+#sw-demo.sw-hidden{display:none!important}
+#sw-demo .hero-shade{position:absolute;inset:0;background:linear-gradient(90deg,rgba(4,11,20,.96),rgba(4,11,20,.82) 46%,rgba(4,11,20,.18))}
+#sw-demo .hero-content{position:absolute;z-index:2;top:17%;left:7%;width:80%;max-width:1300px;animation:hero-in 1.1s ease-out both}
+#sw-demo .hero-tag{font-size:20px;letter-spacing:.30em;color:#dbc497}
+#sw-demo .hero-brand{font:normal 120px/1 Georgia,'Times New Roman',serif;letter-spacing:.09em;margin-top:36px;color:#d8b87c}
+#sw-demo .hero-brand span{color:#f9f2e7}
+#sw-demo .hero-rule{width:165px;height:2px;background:#d7b77a;margin:38px 0 38px}
+#sw-demo h1{font:normal 71px/1.2 Georgia,'Times New Roman',serif;color:#fff8ea;margin:0 0 22px}
+#sw-demo p{font-size:29px;line-height:1.48;margin:0 0 28px;max-width:850px;color:#efe6d9}
+#sw-demo .hero-audio-status{font-size:19px;color:#d5b57b;margin:16px 0 24px;min-height:30px}
+#sw-demo button{display:inline-block;border:1px solid #c8a369;background:#c8a369;color:#0b1721;
+ border-radius:6px;font-size:20px;padding:15px 30px;margin-right:15px;cursor:pointer}
+#sw-demo button:focus{outline:3px solid #fff;outline-offset:3px}
+#sw-demo #heroPlay{display:none}
+#sw-demo #heroSkip{background:transparent;color:#f3dfc0}
+#sw-demo .hero-foot{position:absolute;z-index:3;bottom:7%;left:7%;right:7%;display:flex;justify-content:space-between;color:#d8b87c;font-size:16px;letter-spacing:.14em}
+@keyframes hero-in{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:1300px){#sw-demo .hero-brand{font-size:80px}#sw-demo h1{font-size:47px}#sw-demo p{font-size:22px}}
+
+#sw-demo .hero-tag,#sw-demo .hero-brand,#sw-demo .hero-foot{color:var(--sisu-accent,#d8b87c)}
+#sw-demo .hero-rule{background:var(--sisu-accent,#d8b87c)}
+#sw-demo.sw-editorial .hero-content{left:9%;right:9%;width:82%;max-width:none;text-align:center}
+#sw-demo.sw-editorial .hero-rule{margin-left:auto;margin-right:auto}
+#sw-demo.sw-editorial .hero-content p{margin-left:auto;margin-right:auto}
