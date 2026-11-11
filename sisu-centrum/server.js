@@ -321,8 +321,8 @@ function createHotelExpert({dataDir,send,resolveDevice}){
     try{
       const o=JSON.parse(fs.readFileSync(OPTIONS,'utf8'));
       return {enabled:o.hotel_expert_enabled===true,base:String(o.hotel_expert_base_url||'').replace(/\/$/,''),
-        key:String(o.hotel_expert_api_key||''),room401:String(o.hotel_expert_room_401||'')};
-    }catch{return {enabled:false,base:'',key:'',room401:''};}
+        key:String(o.hotel_expert_api_key||''),writeKey:String(o.hotel_expert_write_api_key||''),room401:String(o.hotel_expert_room_401||'')};
+    }catch{return {enabled:false,base:'',key:'',writeKey:'',room401:''};}
   }
   function device(req,res){
     const tv=resolveDevice(req);
@@ -330,17 +330,21 @@ function createHotelExpert({dataDir,send,resolveDevice}){
     if(tv.mode!=='room'||String(tv.room)!=='401'){send(res,403,{error:'Dane pobytu dostępne tylko dla przypisanego apartamentu'});return null;}
     return tv;
   }
-  async function api(cfg,route){
-    if(!cfg.enabled||!cfg.base||!cfg.key)throw Object.assign(Error('Integracja HotelowyExpert nie jest skonfigurowana'),{status:503});
+  async function api(cfg,route,method='GET',body=null,useWrite=false){
+    const apiKey=useWrite?cfg.writeKey:cfg.key;
+    if(!cfg.enabled||!cfg.base||!apiKey)throw Object.assign(Error(useWrite?'Brak klucza zapisu HotelowyExpert':'Integracja HotelowyExpert nie jest skonfigurowana'),{status:503});
     const sep=cfg.base.includes('?')?'&':'?';
     let response;
     try{
+      const headers={'X-AXL-Key':apiKey,Accept:'application/json'};
+      if(body!==null)headers['Content-Type']='application/json';
       response=await fetch(cfg.base+sep+'rest_route='+encodeURIComponent('/agency-xl/v1'+route),{
-        headers:{'X-AXL-Key':cfg.key,Accept:'application/json'},signal:AbortSignal.timeout(9000),redirect:'manual'
+        method,headers,body:body===null?undefined:JSON.stringify(body),signal:AbortSignal.timeout(9000),redirect:'manual'
       });
     }catch{throw Object.assign(Error('HotelowyExpert nie odpowiada'),{status:503});}
-    if(!response.ok)throw Object.assign(Error('HotelowyExpert odrzucił odczyt ('+response.status+')'),{status:502});
-    return response.json().catch(()=>{throw Object.assign(Error('Nieprawidłowa odpowiedź HotelowyExpert'),{status:502});});
+    if(!response.ok)throw Object.assign(Error('HotelowyExpert odrzucił żądanie ('+response.status+')'),{status:502});
+    if(response.status===204)return {};
+    return response.json().catch(()=>({}));
   }
   async function guest(room){
     const cfg=opts(),key=String(room),hit=cache.get(key),now=Date.now();
@@ -357,11 +361,19 @@ function createHotelExpert({dataDir,send,resolveDevice}){
       .sort((a,b)=>String(b.przyjazd).localeCompare(String(a.przyjazd)))[0]||null;
     const data={ok:true,room:String(room),source:'HotelowyExpert',reservation:active?{
       id:active.id,guestName:typeof active.gosc==='string'?active.gosc:null,arrival:active.przyjazd||null,departure:active.wyjazd||null,
+      arrivalTime:active.godzina_przyjazdu||null,departureTime:active.godzina_wyjazdu||null,
       persons:Number(active.osob)||1,children:Number(active.dzieci)||0,status:active.status||null,channel:active.kanal||null,
+      email:active.email||active.e_mail||null,phone:active.phone||active.telefon||null,
       contactReady:!!((active.email||active.e_mail)&&(active.phone||active.telefon))
     }:null};
     cache.set(key,{at:now,data});
     return data;
+  }
+  async function patchReservation(id,changes){
+    const cfg=opts();
+    const result=await api(cfg,'/reservations/'+encodeURIComponent(String(id)),'PATCH',changes,true);
+    cache.clear();
+    return result;
   }
   async function handleHotel(req,res,p){
     if(p!=='/api/tv/hotel/guest')return false;
@@ -371,7 +383,126 @@ function createHotelExpert({dataDir,send,resolveDevice}){
     catch(e){send(res,Number.isInteger(e.status)?e.status:500,{error:e.message||'Błąd HotelowyExpert'});}
     return true;
   }
-  return {handle:handleHotel};
+  return {handle:handleHotel,guest,patchReservation};
+}
+function createLateCheckout({dataDir,send,jsonBody,resolveDevice,hotelExpert}){
+  const OPTIONS=path.join(dataDir,'options.json');
+  const STATE=path.join(dataDir,'late-checkout.json');
+  function opts(){
+    try{
+      const o=JSON.parse(fs.readFileSync(OPTIONS,'utf8'));
+      return {
+        mode:String(o.payu_mode||'mock'),
+        base:String(o.payu_base_url||'https://secure.snd.payu.com').replace(/\/$/,''),
+        posId:String(o.payu_pos_id||''),clientId:String(o.payu_client_id||''),clientSecret:String(o.payu_client_secret||''),
+        secondKey:String(o.payu_second_key||''),buyerEmailFallback:String(o.payu_buyer_email_fallback||''),
+        price:Number(o.late_checkout_price_grosz)||5000,hours:Number(o.late_checkout_hours)||2,
+        defaultCheckin:String(o.late_checkout_default_checkin||'15:00'),defaultCheckout:String(o.late_checkout_default_checkout||'11:00')
+      };
+    }catch{return {mode:'mock',base:'https://secure.snd.payu.com',posId:'',clientId:'',clientSecret:'',secondKey:'',buyerEmailFallback:'',price:5000,hours:2,defaultCheckin:'15:00',defaultCheckout:'11:00'};}
+  }
+  function load(){
+    try{const x=JSON.parse(fs.readFileSync(STATE,'utf8'));return x&&typeof x==='object'?x:{};}catch{return {};}
+  }
+  function save(x){
+    const tmp=STATE+'.tmp-'+process.pid;
+    fs.writeFileSync(tmp,JSON.stringify(x),{encoding:'utf8',mode:0o600});
+    fs.renameSync(tmp,STATE);
+  }
+  function device(req,res){
+    const tv=resolveDevice(req);
+    if(!tv){send(res,401,{error:'Telewizor nie jest sparowany'});return null;}
+    if(tv.mode!=='room'||String(tv.room)!=='401'){send(res,403,{error:'Late check-out dostępny tylko dla przypisanego apartamentu'});return null;}
+    return tv;
+  }
+  function addHours(v,h){
+    const m=/^(\d{2}):(\d{2})$/.exec(String(v||''));
+    if(!m)return null;
+    const total=(Number(m[1])*60+Number(m[2])+h*60)%(24*60);
+    return String(Math.floor(total/60)).padStart(2,'0')+':'+String(total%60).padStart(2,'0');
+  }
+  async function snapshot(room){
+    const cfg=opts(),g=await hotelExpert.guest(room),r=g&&g.reservation;
+    if(!r)return {ok:true,available:false,reason:'Brak aktywnej rezerwacji'};
+    const all=load(),record=all[String(r.id)]||null;
+    const baseCheckout=r.departureTime||cfg.defaultCheckout;
+    const newCheckout=record&&record.status==='COMPLETED'?record.newCheckout:addHours(baseCheckout,cfg.hours);
+    return {ok:true,available:!(record&&record.status==='COMPLETED'),room:String(room),reservationId:r.id,
+      arrival:r.arrival,departure:r.departure,checkinTime:r.arrivalTime||cfg.defaultCheckin,checkoutTime:record&&record.status==='COMPLETED'?record.newCheckout:baseCheckout,
+      newCheckout,priceGrosz:cfg.price,pricePLN:(cfg.price/100).toFixed(2),hours:cfg.hours,paymentMode:cfg.mode,
+      paid:!!(record&&record.status==='COMPLETED'),paymentStatus:record?record.status:null};
+  }
+  async function payuToken(cfg){
+    const body=new URLSearchParams({grant_type:'client_credentials',client_id:cfg.clientId,client_secret:cfg.clientSecret});
+    const r=await fetch(cfg.base+'/pl/standard/user/oauth/authorize',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body,signal:AbortSignal.timeout(10000)});
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok||!j.access_token)throw Object.assign(Error('PayU: nie udało się pobrać tokena'),{status:502});
+    return j.access_token;
+  }
+  async function createPayuOrder(cfg,req,reservation,code,newCheckout){
+    if(!/^\d{6}$/.test(code))throw Object.assign(Error('Kod BLIK musi mieć 6 cyfr'),{status:400});
+    if(!cfg.posId||!cfg.clientId||!cfg.clientSecret)throw Object.assign(Error('PayU nie jest skonfigurowane'),{status:503});
+    const email=reservation.email||cfg.buyerEmailFallback;
+    if(!email)throw Object.assign(Error('Brak e-maila gościa wymaganego przez płatność BLIK'),{status:409});
+    const token=await payuToken(cfg);
+    const extOrderId='sisu-late-'+reservation.id+'-'+Date.now();
+    const payload={
+      customerIp:req.socket.remoteAddress||'127.0.0.1',merchantPosId:cfg.posId,description:'SISU23 Late check-out +2h',
+      currencyCode:'PLN',totalAmount:String(cfg.price),extOrderId,
+      buyer:{email,firstName:String(reservation.guestName||'Gość').split(' ')[0]||'Gość',lastName:String(reservation.guestName||'SISU23').split(' ').slice(1).join(' ')||'SISU23',language:'pl'},
+      products:[{name:'Late check-out do '+newCheckout,unitPrice:String(cfg.price),quantity:'1'}],
+      payMethods:{payMethod:{type:'BLIK_AUTHORIZATION_CODE',value:code}}
+    };
+    const r=await fetch(cfg.base+'/api/v2_1/orders',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify(payload),redirect:'manual',signal:AbortSignal.timeout(12000)});
+    const j=await r.json().catch(()=>({}));
+    if(!(r.status===201||r.status===302)||!j.orderId)throw Object.assign(Error('PayU: '+((j.status&&j.status.statusDesc)||'płatność nie została przyjęta')),{status:400});
+    return {orderId:j.orderId,extOrderId};
+  }
+  async function payuStatus(cfg,orderId){
+    const token=await payuToken(cfg);
+    const r=await fetch(cfg.base+'/api/v2_1/orders/'+encodeURIComponent(orderId),{headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},signal:AbortSignal.timeout(10000)});
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok)throw Object.assign(Error('PayU: nie udało się sprawdzić płatności'),{status:502});
+    const order=Array.isArray(j.orders)?j.orders[0]:null;
+    return order&&order.status?order.status:'UNKNOWN';
+  }
+  async function fulfill(reservationId,newCheckout,meta){
+    await hotelExpert.patchReservation(reservationId,{godzina_wyjazdu:newCheckout});
+    const all=load(); all[String(reservationId)]={...(all[String(reservationId)]||{}),...meta,newCheckout,status:'COMPLETED',completedAt:new Date().toISOString()}; save(all);
+  }
+  async function handle(req,res,p){
+    if(!['/api/tv/late-checkout','/api/tv/late-checkout/start','/api/tv/late-checkout/check'].includes(p))return false;
+    const tv=device(req,res);if(!tv)return true;
+    try{
+      const cfg=opts(),g=await hotelExpert.guest(Number(tv.room)),reservation=g&&g.reservation;
+      if(!reservation){send(res,409,{error:'Brak aktywnej rezerwacji'});return true;}
+      if(req.method==='GET'&&p==='/api/tv/late-checkout'){send(res,200,await snapshot(Number(tv.room)));return true;}
+      if(req.method==='POST'&&p==='/api/tv/late-checkout/start'){
+        const current=await snapshot(Number(tv.room));
+        if(current.paid){send(res,409,{error:'Late check-out jest już opłacony',...current});return true;}
+        if(cfg.mode==='mock'){
+          await fulfill(reservation.id,current.newCheckout,{mode:'mock',amount:cfg.price});
+          send(res,200,{ok:true,paid:true,status:'COMPLETED',test:true,newCheckout:current.newCheckout});return true;
+        }
+        const body=await jsonBody(req);
+        const created=await createPayuOrder(cfg,req,reservation,String(body.blikCode||''),current.newCheckout);
+        const all=load();all[String(reservation.id)]={mode:cfg.mode,status:'PENDING',amount:cfg.price,newCheckout:current.newCheckout,orderId:created.orderId,extOrderId:created.extOrderId,createdAt:new Date().toISOString()};save(all);
+        send(res,200,{ok:true,paid:false,status:'PENDING',orderId:created.orderId,newCheckout:current.newCheckout});return true;
+      }
+      if(req.method==='POST'&&p==='/api/tv/late-checkout/check'){
+        const all=load(),record=all[String(reservation.id)];
+        if(!record){send(res,404,{error:'Brak rozpoczętej płatności'});return true;}
+        if(record.status==='COMPLETED'){send(res,200,{ok:true,paid:true,status:'COMPLETED',newCheckout:record.newCheckout});return true;}
+        if(cfg.mode==='mock'){send(res,200,{ok:true,paid:false,status:record.status});return true;}
+        const status=await payuStatus(cfg,record.orderId);
+        if(status==='COMPLETED')await fulfill(reservation.id,record.newCheckout,{...record,status:'COMPLETED'});
+        else{record.status=status;all[String(reservation.id)]=record;save(all);}
+        send(res,200,{ok:true,paid:status==='COMPLETED',status,newCheckout:record.newCheckout});return true;
+      }
+      send(res,405,{error:'Metoda nieobsługiwana'});return true;
+    }catch(e){send(res,Number.isInteger(e.status)?e.status:500,{error:e.message||'Błąd late check-out'});return true;}
+  }
+  return {handle};
 }
 const tvRegistry=require('./tv_registry')({
   dataDir:DATA,rooms:ROOMS,send,requireUser,csrfOk,jsonBody,audit,clientKey
@@ -382,6 +513,7 @@ const tvContent=require('./tv_content')({
 });
 const tvComfort=require('./tv_comfort')({haApi,send,jsonBody,audit,resolveDevice:tvRegistry.resolveDevice});
 const hotelExpert=createHotelExpert({dataDir:DATA,send,resolveDevice:tvRegistry.resolveDevice});
+const lateCheckout=createLateCheckout({dataDir:DATA,send,jsonBody,resolveDevice:tvRegistry.resolveDevice,hotelExpert});
 const tvWelcome=require('./tv_welcome')({dataDir:DATA,haApi,resolveDevice:tvRegistry.resolveDevice,send,jsonBody});
 const hallAnnouncements=require('./hall_announcements')({haApi,send,requireUser,csrfOk,jsonBody,audit,invalidateOverview,hallAudio:DEVICES.hallAudio,haToken:HA_TOKEN});
 
@@ -394,6 +526,7 @@ async function handle(req,res){
   if(await tvWelcome.handle(req,res,p))return;
   if(await tvComfort.handle(req,res,p))return;
   if(await hotelExpert.handle(req,res,p))return;
+  if(await lateCheckout.handle(req,res,p))return;
   if(await hallAnnouncements.handle(req,res,p))return;
   if(req.method==='GET'&&['/','/app.js','/app.css','/tv_updates_admin.js','/tv_updates_admin.css'].includes(p)){
     const file=p==='/'?'index.html':p.slice(1);
