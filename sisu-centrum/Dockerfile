@@ -6,6 +6,7 @@ COPY tv_registry.js /app/tv_registry.js
 COPY tv_watchdog.js /app/tv_watchdog.js
 COPY tv_welcome.js /app/tv_welcome.js
 COPY tv_comfort.js /app/tv_comfort.js
+COPY hotel_expert.js /app/hotel_expert.js
 COPY tv_content.js /app/tv_content.js
 COPY hall_announcements.js /app/hall_announcements.js
 COPY public /app/public
