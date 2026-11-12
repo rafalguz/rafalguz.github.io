@@ -1,0 +1,39 @@
+/* 1920x1080 TV fit: reserve space for fixed bottom dock, no scrolling. */
+#view-comfort.active{display:flex!important;flex-direction:column!important;height:100%!important;min-height:0!important;padding:14px 34px 170px!important}
+#view-comfort .comfort-premium-head{flex:0 0 auto;margin-bottom:10px!important;gap:20px!important}
+#view-comfort .comfort-premium-head h1{font-size:42px!important;margin:5px 0 7px!important}
+#view-comfort .comfort-premium-head p{font-size:15px!important}
+#view-comfort .comfort-season{min-width:315px!important;padding:10px 15px!important;border-radius:14px!important}
+#view-comfort .comfort-season>span{font-size:28px!important}
+#view-comfort .comfort-season strong{font-size:16px!important}
+#view-comfort .comfort-season small{font-size:10px!important}
+#view-comfort .comfort-status{flex:0 0 auto;margin-bottom:10px!important;padding:8px 18px!important;gap:18px!important;border-radius:14px!important}
+#view-comfort .comfort-status strong{font-size:21px!important}
+#view-comfort .comfort-status i{height:28px!important}
+#view-comfort .comfort-status-icon{font-size:21px!important}
+#view-comfort .comfort-premium-grid{flex:1 1 auto!important;min-height:0!important;grid-template-columns:1fr 1fr 1fr!important;gap:16px!important}
+#view-comfort .comfort-card{min-height:0!important;height:100%!important;padding:18px 22px!important;border-radius:18px!important}
+#view-comfort .comfort-card-title{margin-bottom:12px!important;gap:12px!important}
+#view-comfort .comfort-card-title>span{font-size:29px!important}
+#view-comfort .comfort-card-title h2{font-size:27px!important}
+#view-comfort .comfort-light-row{padding:7px 0!important;font-size:16px!important}
+#view-comfort .comfort-light-row b{font-size:13px!important;padding:6px 12px!important}
+#view-comfort .comfort-main-btn{left:22px!important;right:22px!important;bottom:16px!important;padding:11px!important;font-size:16px!important;border-radius:13px!important}
+#view-comfort .comfort-main-btn span{font-size:22px!important}
+#view-comfort .comfort-card-copy{font-size:14px!important;margin:4px 0 7px!important}
+#view-comfort .comfort-temp{font-size:58px!important;margin:6px 0 9px!important}
+#view-comfort .comfort-temp small{font-size:27px!important}
+#view-comfort .comfort-temp-controls{gap:42px!important}
+#view-comfort .comfort-temp-controls button{width:88px!important;height:44px!important;border-radius:14px!important;font-size:30px!important}
+#view-comfort .comfort-mode{font-size:17px!important;margin:-2px 0 0!important}
+#view-comfort .comfort-ac-power{margin:10px auto 0!important;max-width:300px!important;border-radius:14px!important}
+#view-comfort .comfort-ac-power button{padding:10px 7px!important;font-size:14px!important}
+#view-comfort .comfort-hidden-controls{inset:60px 18px 58px!important}
+@media(max-height:900px){
+ #view-comfort.active{padding-top:10px!important;padding-bottom:145px!important}
+ #view-comfort .comfort-premium-head h1{font-size:36px!important}
+ #view-comfort .comfort-premium-head p{font-size:13px!important}
+ #view-comfort .comfort-temp{font-size:50px!important}
+ #view-comfort .comfort-card{padding:14px 18px!important}
+ #view-comfort .comfort-light-row{padding:5px 0!important}
+}

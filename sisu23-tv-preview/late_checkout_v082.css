@@ -1,0 +1,14 @@
+.p4-dateitem small{display:block;margin-top:7px;color:#c9b99f;font-size:13px;font-style:normal}
+.p4-dateitem small b{color:#f3d08d;font-size:16px}
+.p4-checkout-item{position:relative}
+.late-checkout-btn{display:block;margin-top:12px;padding:10px 13px;border:1px solid rgba(231,181,95,.7);border-radius:12px;background:linear-gradient(180deg,rgba(73,51,24,.96),rgba(38,29,20,.96));color:#f7deb1;font-size:14px;font-weight:700}
+.late-checkout-btn:focus{outline:2px solid #ffd17b;outline-offset:2px}
+.late-checkout-btn[disabled]{opacity:.72}
+#lateCheckoutStatus{display:block;margin-top:7px;color:#70d59a;font-size:11px;font-style:normal;min-height:14px}
+.late-pay-box{display:grid;gap:12px;margin:16px 0 4px}
+.late-pay-summary{padding:14px;border:1px solid rgba(231,181,95,.35);border-radius:13px;background:rgba(255,255,255,.04)}
+.late-pay-summary strong{display:block;color:#f6e6cd;font-size:22px;margin-bottom:4px}
+.late-blik-input{width:100%;box-sizing:border-box;padding:14px;border:1px solid rgba(231,181,95,.55);border-radius:12px;background:#11161c;color:#fff4df;font-size:28px;letter-spacing:.22em;text-align:center}
+.late-pay-action{padding:13px 16px;border:0;border-radius:12px;background:linear-gradient(#ffd788,#e3a343);color:#17120c;font-weight:800;font-size:17px}
+.late-pay-note{color:#b9c0c8;font-size:12px;line-height:1.4}
+@media(max-width:1200px){.late-checkout-btn{font-size:12px;padding:8px 10px}.p4-dateitem small{font-size:11px}.p4-dateitem small b{font-size:14px}}

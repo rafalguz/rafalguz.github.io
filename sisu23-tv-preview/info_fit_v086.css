@@ -1,0 +1,88 @@
+/* SISU23 info stay layout v0.8.6 — large, balanced 1080p composition. */
+#view-info .p4-info-right{grid-template-rows:34% minmax(0,1fr)!important;gap:18px!important}
+#view-info .p4-info-right>div{padding:24px 30px!important}
+#view-info .p4-address h2{font-size:40px!important;margin:5px 0!important}
+#view-info .p4-address p{font-size:17px!important;line-height:1.28!important}
+#view-info .p4-address .p4-rowlink{font-size:12px!important;padding:5px 0!important}
+
+#view-info .p4-stay{
+ display:grid!important;
+ grid-template-rows:auto auto minmax(0,1fr) auto!important;
+ align-content:stretch!important;
+ justify-content:stretch!important;
+ overflow:hidden!important;
+ padding:26px 30px 22px!important;
+}
+#view-info .p4-stay>.p4-kicker{align-self:start!important}
+#view-info .stay-summary{
+ display:flex!important;align-items:center!important;justify-content:space-between!important;
+ margin:10px 0 14px!important;padding:15px 18px!important;min-height:64px!important;
+ border-radius:15px!important;
+}
+#view-info .stay-summary strong{font-size:31px!important;line-height:1.1!important}
+#view-info .stay-summary span{padding:7px 12px!important;font-size:12px!important}
+
+#view-info .p4-datepair{
+ display:grid!important;
+ grid-template-columns:minmax(0,1fr) 58px minmax(0,1fr)!important;
+ align-items:stretch!important;
+ gap:18px!important;
+ margin:0!important;
+ min-height:0!important;
+}
+#view-info .p4-dateitem{
+ min-width:0!important;
+ display:flex!important;
+ flex-direction:column!important;
+ justify-content:center!important;
+ align-items:flex-start!important;
+ padding:20px 22px!important;
+ border:1px solid rgba(224,179,105,.28)!important;
+ border-radius:16px!important;
+ background:linear-gradient(145deg,rgba(255,255,255,.035),rgba(255,255,255,.012))!important;
+}
+#view-info .p4-dateitem span{
+ font-size:11px!important;letter-spacing:.16em!important;
+ margin:0 0 8px!important;color:#d3b78d!important
+}
+#view-info .p4-dateitem strong{
+ font-size:36px!important;line-height:1.05!important;
+ margin:0!important;color:#f8e6cb!important
+}
+#view-info .p4-dateitem small{
+ display:block!important;
+ margin-top:9px!important;
+ font-size:13px!important;
+ color:#cbbba3!important
+}
+#view-info .p4-dateitem small b{
+ font-size:20px!important;
+ color:#f0c777!important
+}
+#view-info .p4-datearrow{
+ display:flex!important;align-items:center!important;justify-content:center!important;
+ padding:0!important;font-size:30px!important;color:#c89d61!important
+}
+#view-info .p4-checkout-item{justify-content:center!important}
+#view-info .late-checkout-btn{
+ width:100%!important;
+ margin-top:16px!important;
+ padding:12px 14px!important;
+ border-radius:12px!important;
+ font-size:14px!important;
+ line-height:1.15!important;
+ text-align:center!important;
+}
+#view-info #lateCheckoutStatus{
+ width:100%!important;
+ margin-top:7px!important;
+ min-height:14px!important;
+ font-size:11px!important;
+ line-height:1.25!important;
+}
+#view-info #infoStayHint{
+ margin-top:10px!important;
+ font-size:10px!important;
+ line-height:1.25!important;
+ color:#a99b88!important
+}

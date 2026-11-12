@@ -15,7 +15,16 @@
 <link rel="stylesheet" href="tv_pairing.css">
 <link rel="stylesheet" href="welcome_simple.css">
 <link rel="stylesheet" href="guest_live_v073.css">
-<link rel="stylesheet" href="browser_preview.css">
+<link rel="stylesheet" href="browser_preview_clean_v2.css">
+<link rel="stylesheet" href="comfort_premium.css">
+<link rel="stylesheet" href="browser_clock_fix.css">
+<link rel="stylesheet" href="restaurant_booking_test.css">
+<link rel="stylesheet" href="stay_summary_v081.css">
+<link rel="stylesheet" href="late_checkout_v082.css">
+<link rel="stylesheet" href="comfort_fit_v083.css">
+<link rel="stylesheet" href="comfort_v087.css">
+<link rel="stylesheet" href="info_fit_v086.css">
+<link rel="stylesheet" href="kantyna_video_v085.css">
 <script src="vendor/leaflet.js"></script>
 </head>
 <body>
@@ -28,12 +37,12 @@
   <nav id="topNav" aria-label="Nawigacja">
    <button class="navbtn focusable active" data-go="home">Początek</button>
    <button class="navbtn focusable" data-go="map">Gdzie jestem?</button>
-   <button class="navbtn focusable" data-go="food">Chcę zjeść</button>
+   <button class="navbtn focusable" data-go="food">Zjedz coś</button>
    <button class="navbtn focusable" data-go="watch">Oglądaj TV</button>
    <button class="navbtn focusable" data-go="comfort">Apartament</button>
    <button class="navbtn focusable" data-go="info">Informacje</button>
   </nav>
-  <div class="topmeta"><div class="topclock" id="clock">--:--</div><div>APARTAMENT <strong id="aptTop">401</strong></div></div>
+  <div class="topmeta"><div class="topclock" id="clock">--:--</div><div class="topdate" id="topDate">--</div></div>
  </header>
  <main id="viewStage">
   <section class="view active" id="view-home" aria-label="Ekran główny">
@@ -53,7 +62,7 @@
    <div class="home-cards">
     <button class="home-tile focusable" data-go="watch"><span class="tile-icon">▣</span><strong>Oglądaj TV</strong><span>Telewizja i filmy</span></button>
     <button class="home-tile focusable" data-go="music"><span class="tile-icon">♫</span><strong>Muzyka</strong><span>Radio i relaks</span></button>
-    <button class="home-tile focusable" data-go="food"><span class="tile-icon">♨</span><strong>Zjedz na miejscu</strong><span>Kantyna · IDA</span></button>
+    <button class="home-tile focusable" data-go="food"><span class="tile-icon">♨</span><strong>Zjedz coś</strong><span>Kantyna · IDA</span></button>
     <button class="home-tile focusable" data-go="map"><span class="tile-icon">⌖</span><strong>Wrocław</strong><span>Mapa i atrakcje</span></button>
     <button class="home-tile focusable" data-go="comfort"><span class="tile-icon">☷</span><strong>Komfort</strong><span>Twój apartament</span></button>
     <button class="home-tile focusable" data-go="info"><span class="tile-icon">ⓘ</span><strong>Informacje</strong><span>Pobyt · Kontakt</span></button>
@@ -128,15 +137,40 @@
     <button class="qr-back focusable" data-go="food" aria-label="Powrót do wyboru restauracji">‹ &nbsp; Wszystkie restauracje</button>
     <h1>KANTYNA</h1><div class="qr-location">RESTAURACJA W BUDYNKU · WŁODKOWICA 23</div>
    </div>
-   <div class="qr-photo-display"><img src="assets/kantyna_real_gallery.jpg" alt="Zdjęcia restauracji KANTYNA bez przycięcia"></div>
+   <div class="kantyna-video-display"><video id="kantynaPromoVideo" src="assets/kantyna_promo.mp4" autoplay muted loop playsinline preload="auto" aria-label="Film promocyjny restauracji KANTYNA"></video></div>
   </div>
-  <div class="qr-restaurant-card">
-   <span class="qr-eyebrow">MENU NA TWOIM TELEFONIE</span>
-   <h2>Zeskanuj kod QR</h2>
-   <p>Skieruj aparat telefonu na kod. Otworzysz kartę restauracji.</p>
-   <div class="qr-code-box"><img src="assets/kantyna_menu_qr_hd.png" alt="Kod QR do menu restauracji KANTYNA"></div>
-   <div class="qr-reserve"><span>REZERWACJA STOLIKA</span><strong>+48 514 998 311</strong></div>
-   <div class="qr-hint">Aktualne menu, ceny i dostępność potwierdza restauracja.</div>
+  <div class="kantyna-booking-card" id="kantynaBooking">
+   <span class="qr-eyebrow">REZERWACJA DLA GOŚCIA SISU23</span>
+   <h2>Zarezerwuj stolik</h2>
+   <div class="kantyna-guest">
+    <span>Rezerwacja apartamentu</span>
+    <strong id="kantynaGuestName">Pobieranie danych…</strong>
+    <small id="kantynaGuestStay">HotelowyExpert</small>
+   </div>
+   <div class="kantyna-book-row">
+    <span>Liczba osób</span>
+    <div class="kantyna-stepper">
+     <button class="focusable" id="kantynaPersonsMinus">−</button>
+     <strong id="kantynaPersons">2</strong>
+     <button class="focusable" id="kantynaPersonsPlus">+</button>
+    </div>
+   </div>
+   <div class="kantyna-label">Kiedy?</div>
+   <div class="kantyna-date-grid">
+    <button class="focusable kantyna-date is-selected" data-kantyna-date="today">Dzisiaj</button>
+    <button class="focusable kantyna-date" data-kantyna-date="tomorrow">Jutro</button>
+   </div>
+   <div class="kantyna-label">Godzina</div>
+   <div class="kantyna-time-grid">
+    <button class="focusable kantyna-time" data-kantyna-time="18:00">18:00</button>
+    <button class="focusable kantyna-time" data-kantyna-time="18:30">18:30</button>
+    <button class="focusable kantyna-time is-selected" data-kantyna-time="19:00">19:00</button>
+    <button class="focusable kantyna-time" data-kantyna-time="19:30">19:30</button>
+    <button class="focusable kantyna-time" data-kantyna-time="20:00">20:00</button>
+    <button class="focusable kantyna-time" data-kantyna-time="20:30">20:30</button>
+   </div>
+   <button class="focusable kantyna-reserve-btn" id="kantynaReserveBtn">Zarezerwuj stolik <span>›</span></button>
+   <div class="kantyna-book-status" id="kantynaBookStatus">Łączenie z HotelowyExpert…</div>
   </div>
  </div>
 </section>
@@ -173,70 +207,58 @@
   </section>
 
   <section class="view" id="view-comfort" aria-label="Komfort apartamentu">
- <div class="pagehead"><div><div class="eyebrow">TWÓJ KOMFORT · TWOJE ZASADY</div><h1>Komfort <em>apartamentu.</em></h1><p>Oświetlenie i temperatura pod kontrolą. Zmiana nastaw tylko w zakresie ±2°C ustalonym przez obiekt.</p></div><div class="page-mark">APARTAMENT <strong id="aptComfort">401</strong><div class="p4-demo-notice" id="guestNotice">TRYB TESTOWY · bez sterowania apartamentem</div></div></div>
- <div class="p4-comfort-grid">
-  <div class="p4-comfort-top">
-   <div class="p4-panel">
-    <div class="p4-panelhead"><div><div class="eyebrow">OŚWIETLENIE</div><div class="p4-panel-title">Światła w apartamencie</div></div><span class="p4-mini-status">WŁĄCZ / WYŁĄCZ</span></div>
-    <div class="p4-lights-grid">
-     <button class="focusable p4-action p4-light" id="lightBtnsalon" data-light-toggle="salon"><span class="p4-lamp">☼</span><span class="p4-lamptext">Salon</span><span class="p4-power" id="lightStatesalon">Wyłączone</span></button>
-     <button class="focusable p4-action p4-light" id="lightBtnstol" data-light-toggle="stol"><span class="p4-lamp">☼</span><span class="p4-lamptext">Nad stołem</span><span class="p4-power" id="lightStatestol">Wyłączone</span></button>
-     <button class="focusable p4-action p4-light" id="lightBtnkuchnia" data-light-toggle="kuchnia"><span class="p4-lamp">☼</span><span class="p4-lamptext">Kuchnia / hol</span><span class="p4-power" id="lightStatekuchnia">Wyłączone</span></button>
-     <button class="focusable p4-action p4-light" id="lightBtnlazienka" data-light-toggle="lazienka"><span class="p4-lamp">☼</span><span class="p4-lamptext">Łazienka</span><span class="p4-power" id="lightStatelazienka">Wyłączone</span></button>
-     <button class="focusable p4-action p4-light" id="lightBtnsypialnia" data-light-toggle="sypialnia"><span class="p4-lamp">☼</span><span class="p4-lamptext">Sypialnia</span><span class="p4-power" id="lightStatesypialnia">Wyłączone</span></button>
-    </div>
-   </div>
-   <div class="p4-panel">
-    <div class="p4-ac-head"><div><div class="eyebrow">KLIMATYZACJA</div><div class="p4-panel-title">Ustaw swoją temperaturę</div></div><button id="acToggle" class="focusable p4-action p4-ac-on" data-ac-toggle="1">○ Wyłączona</button></div>
-    <div class="p4-ac-body">
-     <button class="focusable p4-action p4-temp-step" data-temp-zone="ac" data-step="-0.5" aria-label="Klimatyzacja minus pół stopnia">−</button>
-     <div class="p4-ac-target"><div class="p4-temp-number"><span id="targetac">23</span><small>°C</small></div><div class="p4-temp-caption">Temperatura zadana</div></div>
-     <button class="focusable p4-action p4-temp-step" data-temp-zone="ac" data-step="0.5" aria-label="Klimatyzacja plus pół stopnia">+</button>
-    </div>
-    <div class="p4-range"><span>Ustawienie obiektu <strong id="baseac">23°C</strong></span><span>Zakres <strong id="rangeac">21–25°C</strong></span></div>
-    <div class="p4-ac-shortcuts">
-      <div class="p4-ac-quickrow"><span>TRYB</span><button class="focusable p4-action p4-climate-option" data-ac-mode="heat">Grzanie</button><button class="focusable p4-action p4-climate-option" data-ac-mode="cool">Chłodzenie</button><button class="focusable p4-action p4-climate-option" data-ac-mode="dry">Osuszanie</button></div>
-      <div class="p4-ac-quickrow"><span>NAWIEW</span><button class="focusable p4-action p4-climate-option" data-ac-fan="auto">Auto</button><button class="focusable p4-action p4-climate-option" data-ac-fan="1">1</button><button class="focusable p4-action p4-climate-option" data-ac-fan="3">3</button><button class="focusable p4-action p4-climate-option" data-ac-fan="5">5</button></div>
-      <div id="sisuWindowGuard" class="p4-window-guard">Zabezpieczenie okien aktywne</div>
-    </div>
-   </div>
+ <div class="comfort-premium-head">
+  <div>
+   <div class="eyebrow">TWÓJ KOMFORT · TWOJE ZASADY</div>
+   <h1>Komfort <em>apartamentu.</em></h1>
+   <p>Steruj oświetleniem, ogrzewaniem i klimatyzacją w prosty sposób.</p>
   </div>
-  <div class="p4-heating-grid">
-   <div class="p4-heatroom">
-    <div class="eyebrow">OGRZEWANIE · STREFA 01</div>
-    <h2>Salon</h2>
-    <div class="p4-measured">Temperatura w pokoju: <strong id="measuredsalon">—</strong></div>
-    <div class="p4-roomcontrols">
-     <button class="focusable p4-action p4-temp-step" data-temp-zone="salon" data-step="-0.5" aria-label="Salon minus pół stopnia">−</button>
-     <div class="p4-temp-number"><span id="targetsalon">22</span><small>°C</small></div>
-     <button class="focusable p4-action p4-temp-step" data-temp-zone="salon" data-step="0.5" aria-label="Salon plus pół stopnia">+</button>
-    </div>
-    <div class="p4-roomfoot"><span>Baza: <b id="basesalon">22°C</b></span><span>Limit: <b id="rangesalon">20–24°C</b></span></div>
-   </div>
-   <div class="p4-heatroom">
-    <div class="eyebrow">OGRZEWANIE · STREFA 02</div>
-    <h2>Sypialnia</h2>
-    <div class="p4-measured">Temperatura w pokoju: <strong id="measuredsypialnia">—</strong></div>
-    <div class="p4-roomcontrols">
-     <button class="focusable p4-action p4-temp-step" data-temp-zone="sypialnia" data-step="-0.5" aria-label="Sypialnia minus pół stopnia">−</button>
-     <div class="p4-temp-number"><span id="targetsypialnia">22</span><small>°C</small></div>
-     <button class="focusable p4-action p4-temp-step" data-temp-zone="sypialnia" data-step="0.5" aria-label="Sypialnia plus pół stopnia">+</button>
-    </div>
-    <div class="p4-roomfoot"><span>Baza: <b id="basesypialnia">22°C</b></span><span>Limit: <b id="rangesypialnia">20–24°C</b></span></div>
-   </div>
-   <div class="p4-heatroom">
-    <div class="eyebrow">OGRZEWANIE · STREFA 03</div>
-    <h2>Łazienka</h2>
-    <div class="p4-measured">Temperatura w pokoju: <strong id="measuredlazienka">—</strong></div>
-    <div class="p4-roomcontrols">
-     <button class="focusable p4-action p4-temp-step" data-temp-zone="lazienka" data-step="-0.5" aria-label="Łazienka minus pół stopnia">−</button>
-     <div class="p4-temp-number"><span id="targetlazienka">22</span><small>°C</small></div>
-     <button class="focusable p4-action p4-temp-step" data-temp-zone="lazienka" data-step="0.5" aria-label="Łazienka plus pół stopnia">+</button>
-    </div>
-    <div class="p4-roomfoot"><span>Baza: <b id="baselazienka">22°C</b></span><span>Limit: <b id="rangelazienka">20–24°C</b></span></div>
-   </div>
-  </div>
+  <div class="comfort-season"><span>❄</span><div><strong>Tryb sezonowy: Zima</strong><small>Aktywne: ogrzewanie · klimatyzacja tylko grzanie</small></div></div>
  </div>
+ <div class="comfort-status"><div><span class="comfort-status-icon">♨</span><strong>22,0°C</strong><small>w apartamencie</small></div><i></i><div><span class="comfort-status-icon">▦</span><strong>Wszystkie okna zamknięte</strong><span class="comfort-ok">✓</span></div></div>
+ <div class="comfort-premium-grid">
+  <article class="comfort-card lights-card">
+   <div class="comfort-card-title"><span>◉</span><h2>Oświetlenie</h2></div>
+   <div class="comfort-light-row"><span>Salon</span><b id="lightStatesalon">2 włączone</b></div>
+   <div class="comfort-light-row"><span>Sypialnia</span><b id="lightStatesypialnia">Wyłączone</b></div>
+   <div class="comfort-light-row"><span>Łazienka</span><b id="lightStatelazienka">Wyłączone</b></div>
+   <button class="focusable comfort-main-btn" id="openLightsPanel">Steruj światłami <span>›</span></button>
+   <div class="comfort-hidden-controls" id="lightsPanel">
+    <button class="focusable" id="lightBtnsalon" data-light-toggle="salon">Salon</button>
+    <button class="focusable" id="lightBtnstol" data-light-toggle="stol">Nad stołem</button>
+    <button class="focusable" id="lightBtnkuchnia" data-light-toggle="kuchnia">Kuchnia / hol</button>
+    <button class="focusable" id="lightBtnlazienka" data-light-toggle="lazienka">Łazienka</button>
+    <button class="focusable" id="lightBtnsypialnia" data-light-toggle="sypialnia">Sypialnia</button>
+   </div>
+  </article>
+  <article class="comfort-card heating-card">
+   <div class="comfort-card-title"><span>♨</span><h2>Ogrzewanie</h2></div>
+   <p class="comfort-card-copy">Ustaw temperaturę w apartamencie</p>
+   <div class="comfort-temp"><span id="targetsalon">22</span><small>°C</small></div>
+   <div class="comfort-temp-controls">
+    <button class="focusable p4-action" data-temp-zone="salon" data-step="-0.5">−</button>
+    <button class="focusable p4-action" data-temp-zone="salon" data-step="0.5">+</button>
+   </div>
+   <div class="comfort-temp-status" id="temperatureHintsalon" aria-live="polite">Zmiany co 0,5°C · zatwierdzenie po 3 s</div>
+  </article>
+  <article class="comfort-card ac-card">
+   <div class="comfort-card-title"><span>▭</span><h2>Klimatyzacja</h2></div>
+   <div class="comfort-mode">🔥 <strong>Tryb: Grzanie</strong></div>
+   <div class="comfort-temp"><span id="targetac">22</span><small>°C</small></div>
+   <div class="comfort-temp-controls">
+    <button class="focusable p4-action" data-temp-zone="ac" data-step="-0.5">−</button>
+    <button class="focusable p4-action" data-temp-zone="ac" data-step="0.5">+</button>
+   </div>
+   <div class="comfort-temp-status" id="temperatureHintac" aria-live="polite">Zmiany co 0,5°C · zatwierdzenie po 3 s</div>
+   <div class="comfort-ac-power">
+    <button class="focusable p4-action" data-ac-power="on">⏻ Włącz</button>
+    <button class="focusable p4-action" data-ac-power="off">⏻ Wyłącz</button>
+   </div>
+   <button id="acToggle" data-ac-toggle="1" class="hidden" aria-hidden="true"></button>
+  </article>
+ </div>
+ <div id="measuredsalon" hidden>21,6°C</div><div id="measuredsypialnia" hidden>21,6°C</div><div id="measuredlazienka" hidden>21,6°C</div>
+ <div id="targetsypialnia" hidden>22</div><div id="targetlazienka" hidden>22</div><div id="guestNotice" hidden>WEB TEST</div>
 </section>
 
   <section class="view" id="view-info" aria-label="Informacje o pobycie">
@@ -249,7 +271,7 @@
   </div>
   <div class="p4-info-right">
    <div class="p4-address"><span class="p4-kicker">ADRES TWOJEGO POBYTU</span><div><h2>Włodkowica 23</h2><p>50-072 Wrocław<br>Dzielnica Czterech Wyznań</p></div><button class="p4-rowlink focusable p4-action" data-go="map">Zobacz na mapie &nbsp; ↗</button></div>
-   <div class="p4-stay"><span class="p4-kicker">TWÓJ POBYT</span><div class="p4-datepair"><div class="p4-dateitem"><span>ZAMELDOWANIE</span><strong id="infoCheckin">—</strong></div><div class="p4-datearrow">⟶</div><div class="p4-dateitem"><span>WYMELDOWANIE</span><strong id="infoCheckout">—</strong></div></div><small id="infoStayHint">Daty pobytu pojawią się po ich udostępnieniu przez obsługę.</small></div>
+   <div class="p4-stay"><span class="p4-kicker">TWÓJ POBYT</span><div class="stay-summary"><strong id="infoStayRange">—</strong><span id="infoStayNights">—</span></div><div class="p4-datepair"><div class="p4-dateitem"><span>ZAMELDOWANIE</span><strong id="infoCheckin">—</strong><small>od <b id="infoCheckinTime">15:00</b></small></div><div class="p4-datearrow">⟶</div><div class="p4-dateitem p4-checkout-item"><span>WYMELDOWANIE</span><strong id="infoCheckout">—</strong><small>do <b id="infoCheckoutTime">11:00</b></small><button class="focusable late-checkout-btn" id="lateCheckoutBtn">Przedłuż do 13:00 · 50 zł</button><em id="lateCheckoutStatus"></em></div></div><small id="infoStayHint">Daty pobytu pojawią się po ich udostępnieniu przez obsługę.</small></div>
   </div>
  </div>
 </section>
@@ -257,7 +279,7 @@
 <nav id="globalDock" aria-label="Menu SISU23">
  <button class="dock-link focusable" data-go="watch"><span class="dock-icon">▣</span><strong>Oglądaj TV</strong><small>Filmy · Telewizja</small></button>
  <button class="dock-link focusable" data-go="music"><span class="dock-icon">♫</span><strong>Muzyka</strong><small>Radio · Relaks</small></button>
- <button class="dock-link focusable" data-go="food"><span class="dock-icon">♨</span><strong>Zjedz na miejscu</strong><small>Kantyna · IDA</small></button>
+ <button class="dock-link focusable" data-go="food"><span class="dock-icon">♨</span><strong>Zjedz coś</strong><small>Kantyna · IDA</small></button>
  <button class="dock-link focusable" data-go="map"><span class="dock-icon">⌖</span><strong>Wrocław</strong><small>Mapa · Atrakcje</small></button>
  <button class="dock-link focusable" data-go="comfort"><span class="dock-icon">☷</span><strong>Komfort</strong><small>Twój apartament</small></button>
  <button class="dock-link focusable" data-go="info"><span class="dock-icon">ⓘ</span><strong>Informacje</strong><small>Pobyt · Kontakt</small></button>
@@ -285,7 +307,11 @@
 <script src="guest_config.js"></script>
 <script src="app.js"></script>
 <script src="menus_v030.js"></script>
-<script src="browser_preview.js"></script>
+<script src="browser_preview_clean_v2.js"></script>
+<script src="browser_fit_v2.js"></script>
+<script src="hotel_demo_preview.js"></script>
+<script src="late_checkout_preview.js"></script>
+<script src="kantyna_video_v085.js"></script>
 
 <div id="sw-demo" role="dialog" aria-label="Powitanie SISU23">
 <div class="hero-shade"></div>

@@ -18,7 +18,9 @@
   var d=new Date(),hh=('0'+d.getHours()).slice(-2),mm=('0'+d.getMinutes()).slice(-2);
   $('clock').textContent=hh+':'+mm;
   if($('homeClock'))$('homeClock').textContent=hh+':'+mm;
-  if($('homeDate'))$('homeDate').textContent=d.toLocaleDateString('pl-PL',{weekday:'long',day:'numeric',month:'long'});
+  var dateText=d.toLocaleDateString('pl-PL',{weekday:'long',day:'numeric',month:'long'});
+  if($('homeDate'))$('homeDate').textContent=dateText;
+  if($('topDate'))$('topDate').textContent=dateText;
 
  }
  tick();setInterval(tick,10000);
@@ -83,38 +85,47 @@
  }
  document.addEventListener('focusin',setFocusClass);
  function visibleButtons(){
-  var list=Array.prototype.slice.call(document.querySelectorAll('button.focusable'));
-  return list.filter(function(e){
-   if(modalOpen)return !!e.closest('#modal');
-   if(e.closest('#modal'))return false;
-   if(window.SISU23TVPairing&&window.SISU23TVPairing.active())return !!e.closest('#tvPairLayer');
-   if(e.disabled||e.offsetWidth===0||e.offsetHeight===0)return false;
-   return true;
+  var selector=modalOpen?'#modal button.focusable':'button.focusable';
+  var items=Array.prototype.slice.call(document.querySelectorAll(selector));
+  return items.filter(function(el){
+   if(el.disabled||el.hidden||el.getAttribute('aria-hidden')==='true')return false;
+   if(window.SISU23TVPairing&&window.SISU23TVPairing.active())return !!el.closest('#tvPairLayer');
+   if(el.closest('#modal'))return modalOpen;
+   if(modalOpen)return false;
+   var view=el.closest('.view');
+   if(view&&!view.classList.contains('active'))return false;
+   var panel=el.closest('#lightsPanel');
+   if(panel&&!panel.classList.contains('open'))return false;
+   if(el.offsetWidth===0||el.offsetHeight===0)return false;
+   var cs=window.getComputedStyle(el);
+   if(cs.visibility==='hidden'||cs.display==='none')return false;
+   var r=el.getBoundingClientRect();
+   return r.width>4&&r.height>4&&r.bottom>0&&r.right>0&&r.top<window.innerHeight&&r.left<window.innerWidth;
   });
  }
  function navigate(dir){
   var elems=visibleButtons(),origin=document.activeElement;
-  if(!origin||elems.indexOf(origin)<0){if(elems.length)elems[0].focus();return}
-  var r=origin.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;
-  var horizontal=(dir==='left'||dir==='right');
-  var best=null,bestScore=Infinity;
-  for(var i=0;i<elems.length;i++){
-   var b=elems[i];if(b===origin)continue;
-   var x=b.getBoundingClientRect(),bx=x.left+x.width/2,by=x.top+x.height/2;
-   var dx=bx-cx,dy=by-cy;
-   var primary=dir==='right'?dx:dir==='left'?-dx:dir==='down'?dy:-dy;
-   if(primary<=4)continue;
-   var overlap=horizontal
-    ? Math.min(r.bottom,x.bottom)-Math.max(r.top,x.top)
-    : Math.min(r.right,x.right)-Math.max(r.left,x.left);
-   var minSpan=horizontal?Math.min(r.height,x.height):Math.min(r.width,x.width);
-   var aligned=overlap>Math.max(4,minSpan*0.25);
-   if(!aligned)continue;
-   var side=horizontal?Math.abs(dy):Math.abs(dx);
-   var score=primary+side*4;
-   if(score<bestScore){best=b;bestScore=score}
+  if(!elems.length)return;
+  if(elems.indexOf(origin)<0){
+   var start=document.querySelector('#view-'+screen+' button.focusable');
+   if(!start||elems.indexOf(start)<0)start=elems[0];
+   start.focus();return;
   }
-  if(best)best.focus();
+  var a=origin.getBoundingClientRect(),cx=(a.left+a.right)/2,cy=(a.top+a.bottom)/2;
+  var horizontal=dir==='left'||dir==='right';
+  var options=[];
+  elems.forEach(function(el){
+   if(el===origin)return;
+   var b=el.getBoundingClientRect(),x=(b.left+b.right)/2,y=(b.top+b.bottom)/2;
+   var forward=dir==='left'?cx-x:dir==='right'?x-cx:dir==='up'?cy-y:y-cy;
+   if(forward<=2)return;
+   var cross=horizontal?Math.abs(y-cy):Math.abs(x-cx);
+   var overlap=horizontal?Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top):Math.min(a.right,b.right)-Math.max(a.left,b.left);
+   var aligned=overlap>0;
+   options.push({el:el,score:(aligned?0:10000)+forward+cross*(aligned?2.5:5),cross:cross});
+  });
+  options.sort(function(a,b){return a.score-b.score});
+  if(options.length)options[0].el.focus();
  }
  function pickPoint(point){
   var v=placePositions[point];if(!v)return;

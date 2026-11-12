@@ -1,0 +1,4 @@
+.topmeta{flex:0 0 auto!important;min-width:152px!important;padding:7px 14px!important;margin-left:12px;border:1px solid rgba(225,181,110,.45)!important;border-radius:14px;background:rgba(10,13,17,.72);text-align:center!important;box-shadow:0 8px 24px rgba(0,0,0,.24)}
+.topmeta .topclock{margin:0!important;font:normal 30px/1 Georgia,serif!important;color:#f5e7d2!important;letter-spacing:.02em}
+.topmeta .topdate{margin-top:5px;color:#cdbdA5;font-size:10px;line-height:1.2;letter-spacing:.04em;text-transform:capitalize;white-space:nowrap}
+@media(max-width:1200px){.topmeta{min-width:126px!important;padding:6px 10px!important}.topmeta .topclock{font-size:24px!important}.topmeta .topdate{font-size:8px}}

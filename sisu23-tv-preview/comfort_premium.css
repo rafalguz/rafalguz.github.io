@@ -1,0 +1,25 @@
+#view-comfort{padding:22px 46px 30px;background:linear-gradient(90deg,rgba(4,10,17,.96),rgba(4,10,17,.76)),url('assets/sisu23_night_wide.jpg') center/cover no-repeat}
+.comfort-premium-head{display:flex;justify-content:space-between;align-items:flex-start;gap:30px;margin-bottom:18px}
+.comfort-premium-head h1{font-family:Georgia,serif;font-size:48px;line-height:1;margin:8px 0 10px;color:#f3e7d0;font-weight:500}
+.comfort-premium-head h1 em{font-style:normal;color:#e6b86a}
+.comfort-premium-head p{font-size:18px;color:#f4eadb;margin:0}
+.comfort-season{display:flex;align-items:center;gap:14px;min-width:335px;padding:15px 20px;border:1px solid rgba(235,193,116,.55);border-radius:18px;background:rgba(10,14,19,.78);box-shadow:0 10px 30px rgba(0,0,0,.25)}
+.comfort-season>span{font-size:34px}.comfort-season strong{display:block;color:#fff3df;font-size:18px}.comfort-season small{display:block;margin-top:4px;color:#bfc5cc;font-size:12px}
+.comfort-status{display:flex;align-items:center;gap:24px;width:max-content;padding:12px 24px;border:1px solid rgba(235,193,116,.32);border-radius:17px;background:rgba(11,14,18,.82);margin-bottom:18px}
+.comfort-status>div{display:flex;align-items:center;gap:12px}.comfort-status strong{font-family:Georgia,serif;color:#f7ecd9;font-size:25px}.comfort-status small{color:#ddd}.comfort-status i{display:block;width:1px;height:36px;background:rgba(255,255,255,.3)}
+.comfort-status-icon{font-size:25px;color:#efbe6d}.comfort-ok{display:grid;place-items:center;width:28px;height:28px;border:2px solid #28c66f;border-radius:50%;color:#28c66f;font-weight:700}
+.comfort-premium-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px}
+.comfort-card{position:relative;min-height:330px;padding:24px 28px;border:1.5px solid rgba(237,187,100,.72);border-radius:22px;background:linear-gradient(145deg,rgba(25,24,22,.93),rgba(8,15,23,.95));box-shadow:0 20px 60px rgba(0,0,0,.35);overflow:hidden}
+.comfort-card:after{content:"";position:absolute;right:-70px;bottom:-100px;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,rgba(226,139,49,.18),transparent 65%);pointer-events:none}
+.comfort-card-title{display:flex;align-items:center;gap:15px;margin-bottom:22px}.comfort-card-title>span{font-size:34px;color:#efb95e}.comfort-card-title h2{font-family:Georgia,serif;font-size:31px;font-weight:500;color:#f4ead7;margin:0}
+.comfort-light-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;font-size:19px;color:#f6ead9}.comfort-light-row b{font-weight:500;font-size:15px;padding:8px 16px;border-radius:18px;background:rgba(255,255,255,.08);color:#e8dfd2}
+.comfort-main-btn{position:absolute;left:28px;right:28px;bottom:22px;display:flex;align-items:center;justify-content:center;gap:18px;padding:14px;border:0;border-radius:16px;background:linear-gradient(#ffd788,#e7a842);font-weight:700;font-size:19px;color:#17120b}
+.comfort-main-btn span{font-size:27px}.comfort-card-copy{text-align:center;color:#ded7cc;font-size:17px;margin:8px 0 18px}
+.comfort-temp{text-align:center;font-family:Georgia,serif;color:#f5ead8;font-size:75px;line-height:1.05;margin:16px 0 18px}.comfort-temp small{font-size:34px}
+.comfort-temp-controls{display:flex;justify-content:center;gap:62px}.comfort-temp-controls button{width:108px;height:54px;border:1px solid #e2ad5b;border-radius:18px;background:rgba(42,42,40,.75);color:#f7e3bc;font-size:36px}
+.comfort-mode{text-align:center;color:#eeb45a;font-size:21px;margin:-4px 0 4px}
+.comfort-ac-power{display:grid;grid-template-columns:1fr 1fr;margin:18px auto 0;max-width:330px;border:1px solid #e6b25f;border-radius:18px;overflow:hidden}.comfort-ac-power button{padding:13px 8px;background:rgba(30,29,27,.85);border:0;color:#f6e8d2;font-size:17px}.comfort-ac-power button:first-child{border-right:1px solid rgba(230,178,95,.6)}
+.comfort-hidden-controls{display:none;position:absolute;inset:72px 22px 72px;padding:12px;grid-template-columns:1fr 1fr;gap:9px;background:rgba(8,12,17,.97);border-radius:16px;z-index:3}.comfort-hidden-controls.open{display:grid}.comfort-hidden-controls button{border:1px solid rgba(231,180,96,.45);border-radius:12px;background:#151a20;color:#f2e6d3;font-size:16px}
+.comfort-hidden-controls button.is-on{background:#5b3b16;color:#ffd98e}
+#view-comfort button:focus{outline:2px solid #ffd17c;outline-offset:3px}
+@media(max-width:1200px){.comfort-premium-grid{gap:12px}.comfort-card{padding:20px}.comfort-temp{font-size:60px}.comfort-premium-head h1{font-size:40px}}

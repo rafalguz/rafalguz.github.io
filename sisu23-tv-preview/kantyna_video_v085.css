@@ -1,0 +1,20 @@
+/* KANTYNA promo video — left panel only. Reservation panel stays unchanged. */
+#view-kantyna .kantyna-video-display{
+  position:relative!important;display:flex!important;align-items:center!important;justify-content:center!important;
+  flex:1 1 0!important;min-height:0!important;overflow:hidden!important;padding:10px!important;
+  background:radial-gradient(circle at 50% 44%,#17171a 0,#090d12 68%,#05080c 100%)!important;
+}
+#view-kantyna .kantyna-video-display:before{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(180deg,rgba(0,0,0,.10),rgba(0,0,0,.02) 55%,rgba(0,0,0,.28));
+  z-index:1;
+}
+#view-kantyna .kantyna-video-display video{
+  position:relative;z-index:0;display:block!important;width:auto!important;height:100%!important;
+  max-width:100%!important;max-height:100%!important;object-fit:contain!important;object-position:center!important;
+  background:#05070a!important;border-radius:13px!important;box-shadow:0 15px 42px rgba(0,0,0,.44)!important;
+}
+@media(max-height:820px){
+ #view-kantyna .kantyna-video-display{padding:6px!important}
+ #view-kantyna .kantyna-video-display video{border-radius:9px!important}
+}
