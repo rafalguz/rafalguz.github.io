@@ -173,13 +173,13 @@
 
  var sisuRadioPlayer=null,sisuRadioSelected='',sisuRadioWanted=false,sisuRadioRetry=null,sisuRadioStallTimer=null;
  var radioStreams={
-  groove:'https://ice5.somafm.com/groovesalad-128-mp3',
-  beat:'https://ice5.somafm.com/beatblender-128-mp3',
-  lush:'https://ice5.somafm.com/lush-128-mp3',
+  groove:'https://media-ssl.musicradio.com/ChillMP3',
+  beat:'https://listen.radioking.com/radio/571682/stream/631712',
+  lush:'https://0nlineradio.radioho.st/lounge-hotel-lounge?ref=sisu23',
   eska:'https://ic1.smcdn.pl/2180-1.mp3',
   chillizet:'https://ch.cdn.eurozet.pl/chi-net.mp3'
  };
- var radioTitles={groove:'Groove Salad',beat:'Beat Blender',lush:'Lush',eska:'Radio ESKA',chillizet:'Chillizet'};
+ var radioTitles={groove:'Smooth Chill',beat:'Sunset Chillout Lounge',lush:'Hotel Lounge',eska:'Radio ESKA',chillizet:'Chillizet'};
  function radioNotice(text){if($('musicNotice'))$('musicNotice').textContent=text}
  function radioClearTimers(){
   if(sisuRadioRetry){clearTimeout(sisuRadioRetry);sisuRadioRetry=null}
