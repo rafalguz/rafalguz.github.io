@@ -171,7 +171,7 @@
   }else{toast('Podgląd demonstracyjny. Otwarcie '+names[app]+' dostępne na telewizorze.')}
  }
 
- var sisuRadioPlayer=null,sisuRadioSelected='',sisuRadioWanted=false,sisuRadioRetry=null;
+ var sisuRadioPlayer=null,sisuRadioSelected='',sisuRadioWanted=false,sisuRadioRetry=null,sisuRadioStallTimer=null;
  var radioStreams={
   groove:'https://ice1.somafm.com/groovesalad-128-mp3',
   beat:'https://ice1.somafm.com/beatblender-128-mp3',
@@ -181,54 +181,81 @@
  };
  var radioTitles={groove:'Groove Salad',beat:'Beat Blender',lush:'Lush',eska:'Radio ESKA',chillizet:'Chillizet'};
  function radioNotice(text){if($('musicNotice'))$('musicNotice').textContent=text}
- function radioScheduleRetry(){
+ function radioClearTimers(){
+  if(sisuRadioRetry){clearTimeout(sisuRadioRetry);sisuRadioRetry=null}
+  if(sisuRadioStallTimer){clearTimeout(sisuRadioStallTimer);sisuRadioStallTimer=null}
+ }
+ function radioScheduleRetry(delay){
   if(!sisuRadioWanted||!sisuRadioSelected)return;
-  if(sisuRadioRetry)clearTimeout(sisuRadioRetry);
+  if(sisuRadioRetry)return;
   sisuRadioRetry=setTimeout(function(){
    sisuRadioRetry=null;
    if(!sisuRadioWanted||!sisuRadioSelected)return;
    radioStart(sisuRadioSelected,true);
-  },2500);
+  },delay||5000);
+ }
+ function radioWatchStall(){
+  if(!sisuRadioWanted||!sisuRadioPlayer||sisuRadioStallTimer)return;
+  sisuRadioStallTimer=setTimeout(function(){
+   sisuRadioStallTimer=null;
+   if(!sisuRadioWanted||!sisuRadioPlayer)return;
+   if(sisuRadioPlayer.paused||sisuRadioPlayer.ended||sisuRadioPlayer.readyState<2){
+    radioNotice('Przywracanie połączenia z '+radioTitles[sisuRadioSelected]+'...');
+    radioScheduleRetry(1000);
+   }
+  },12000);
  }
  function radioStart(station,retry){
   if(!radioStreams[station])return;
   if(!sisuRadioPlayer){
    sisuRadioPlayer=new Audio();
-   sisuRadioPlayer.preload='none';
+   sisuRadioPlayer.preload='auto';
    sisuRadioPlayer.addEventListener('playing',function(){
-    if(sisuRadioSelected)radioNotice('Gra: '+radioTitles[sisuRadioSelected]+' · Radio pozostanie włączone.');
+    if(sisuRadioStallTimer){clearTimeout(sisuRadioStallTimer);sisuRadioStallTimer=null}
+    if(sisuRadioRetry){clearTimeout(sisuRadioRetry);sisuRadioRetry=null}
+    if(sisuRadioSelected)radioNotice('Gra: '+radioTitles[sisuRadioSelected]+' · Połączenie stabilne.');
    });
-   sisuRadioPlayer.addEventListener('error',radioScheduleRetry);
-   sisuRadioPlayer.addEventListener('stalled',radioScheduleRetry);
-   sisuRadioPlayer.addEventListener('ended',radioScheduleRetry);
-   sisuRadioPlayer.addEventListener('suspend',function(){if(sisuRadioWanted&&!sisuRadioPlayer.paused)radioScheduleRetry()});
+   sisuRadioPlayer.addEventListener('canplay',function(){
+    if(sisuRadioStallTimer){clearTimeout(sisuRadioStallTimer);sisuRadioStallTimer=null}
+   });
+   sisuRadioPlayer.addEventListener('waiting',radioWatchStall);
+   sisuRadioPlayer.addEventListener('stalled',radioWatchStall);
+   sisuRadioPlayer.addEventListener('error',function(){radioScheduleRetry(5000)});
+   sisuRadioPlayer.addEventListener('ended',function(){radioScheduleRetry(1500)});
+   /* suspend is normal for live audio when the browser has enough data.
+      It must NOT restart the stream. */
   }
-  sisuRadioWanted=true;sisuRadioSelected=station;
+  sisuRadioWanted=true;
+  var changed=sisuRadioSelected!==station;
+  sisuRadioSelected=station;
   try{
-   sisuRadioPlayer.pause();
-   sisuRadioPlayer.src='';
-   sisuRadioPlayer.load();
-   sisuRadioPlayer.src=radioStreams[station]+'?sisu='+Date.now();
+   if(changed||retry||!sisuRadioPlayer.src){
+    sisuRadioPlayer.pause();
+    sisuRadioPlayer.src=radioStreams[station];
+    sisuRadioPlayer.load();
+   }
    var p=sisuRadioPlayer.play();
    radioNotice((retry?'Ponowne łączenie: ':'Łączenie ze stacją ')+radioTitles[station]+'...');
-   if(p&&p.catch)p.catch(function(){radioScheduleRetry()});
-  }catch(e){radioScheduleRetry()}
+   if(p&&p.catch)p.catch(function(){radioScheduleRetry(5000)});
+  }catch(e){radioScheduleRetry(5000)}
  }
  function radioPick(station){
   if(station==='stop'){
    sisuRadioWanted=false;
-   if(sisuRadioRetry){clearTimeout(sisuRadioRetry);sisuRadioRetry=null}
-   if(sisuRadioPlayer){try{sisuRadioPlayer.pause();sisuRadioPlayer.src='';sisuRadioPlayer.load()}catch(e){}}
+   radioClearTimers();
+   if(sisuRadioPlayer){try{sisuRadioPlayer.pause();sisuRadioPlayer.removeAttribute('src');sisuRadioPlayer.load()}catch(e){}}
    sisuRadioSelected='';
    radioNotice('Odtwarzanie zatrzymane.');
    return;
   }
+  radioClearTimers();
   radioStart(station,false);
  }
  setInterval(function(){
   if(!sisuRadioWanted||!sisuRadioSelected||!sisuRadioPlayer)return;
-  if(sisuRadioPlayer.paused||sisuRadioPlayer.ended||sisuRadioPlayer.readyState<2)radioScheduleRetry();
- },15000);
+  if(sisuRadioPlayer.error||sisuRadioPlayer.ended)radioScheduleRetry(3000);
+  else if(sisuRadioPlayer.paused)radioScheduleRetry(3000);
+ },30000);
  document.addEventListener('click',function(e){
   var n=e.target;
   while(n&&n!==document&&(!n.getAttribute||!(n.getAttribute('data-go')||n.getAttribute('data-food')||n.getAttribute('data-point')||n.getAttribute('data-map-action')||n.getAttribute('data-launch')||n.getAttribute('data-show-welcome')||n.getAttribute('data-alert')||n.getAttribute('data-modal-map')||n.getAttribute('data-radio'))))n=n.parentNode;
