@@ -173,9 +173,9 @@
 
  var sisuRadioPlayer=null,sisuRadioSelected='',sisuRadioWanted=false,sisuRadioRetry=null,sisuRadioStallTimer=null;
  var radioStreams={
-  groove:'https://ice1.somafm.com/groovesalad-128-mp3',
-  beat:'https://ice1.somafm.com/beatblender-128-mp3',
-  lush:'https://ice1.somafm.com/lush-128-mp3',
+  groove:'https://ice5.somafm.com/groovesalad-128-mp3',
+  beat:'https://ice5.somafm.com/beatblender-128-mp3',
+  lush:'https://ice5.somafm.com/lush-128-mp3',
   eska:'https://ic1.smcdn.pl/2180-1.mp3',
   chillizet:'https://ch.cdn.eurozet.pl/chi-net.mp3'
  };
