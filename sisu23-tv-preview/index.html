@@ -19,6 +19,7 @@
 <link rel="stylesheet" href="comfort_premium.css">
 <link rel="stylesheet" href="browser_clock_fix.css">
 <link rel="stylesheet" href="restaurant_booking_test.css">
+<link rel="stylesheet" href="restaurants_v094.css">
 <link rel="stylesheet" href="stay_summary_v081.css">
 <link rel="stylesheet" href="late_checkout_v082.css">
 <link rel="stylesheet" href="comfort_fit_v083.css">
@@ -113,83 +114,100 @@
   </section>
 
   <section class="view" id="view-food" aria-label="Restauracje SISU23">
- <div class="lux-pagehead"><div><span class="eyebrow">SISU23 · TWOJE KULINARNE ODKRYCIA</span>
- <h1>Zjedz <em>na miejscu.</em></h1><p>Kantyna i IDA. Zobacz potrawy oraz otwórz aktualną kartę na swoim telefonie.</p>
+ <div class="lux-pagehead"><div><span class="eyebrow">SISU23 · WYBRANE DLA GOŚCI</span>
+ <h1>Zjedz <em>coś dobrego.</em></h1><p>Dwie restauracje, dwa różne klimaty. Otwórz lokal, zobacz zdjęcia i przejdź prosto do rezerwacji online.</p>
  </div></div>
  <div class="rebuild-restaurants">
-  <button class="rebuild-restaurant focusable" data-go="kantyna" aria-label="Kantyna – zdjęcia i menu">
-   <span class="rebuild-restaurant-head"><strong>KANTYNA</strong><small>NA PARTERZE SISU23 · WŁODKOWICA 23</small></span>
-   <span class="rebuild-photo-area"><img src="assets/kantyna_real_gallery.jpg" alt="Kantyna, zdjęcia dań i wnętrza — pełne zdjęcie"></span>
-   <span class="rebuild-restaurant-foot"><span>Autorska kuchnia polska i europejska.</span><b>ZOBACZ MENU &nbsp; ›</b></span>
+  <button class="food-premium-card focusable" data-go="kantyna" aria-label="Kantyna — zdjęcia i rezerwacja TheFork">
+   <span class="food-card-image">
+    <img src="assets/kantyna_hero.webp" alt="Kantyna Wrocław — restauracja przy Włodkowica 23">
+    <span class="food-card-badges"><span class="food-chip">W BUDYNKU SISU23</span><span class="food-chip">THEFORK</span></span>
+   </span>
+   <span class="food-card-copy"><small>WŁODKOWICA 23</small><h2>KANTYNA</h2><p>Nowoczesna kuchnia polska i europejska, autorskie dania i swobodny wieczorny klimat.</p>
+    <span class="food-card-footer"><span>Film · zdjęcia · rezerwacja online</span><b>OTWÓRZ &nbsp; ›</b></span>
+   </span>
   </button>
-  <button class="rebuild-restaurant focusable" data-go="ida" aria-label="IDA kuchnia i wino – zdjęcia i menu">
-   <span class="rebuild-restaurant-head"><strong>IDA</strong><small>KUCHNIA I WINO · ŁAZIENNA 4</small></span>
-   <span class="rebuild-photo-area"><img src="assets/ida_real_gallery.jpg" alt="IDA, zdjęcia dań — pełne zdjęcie"></span>
-   <span class="rebuild-restaurant-foot"><span>Sezonowe smaki kuchni polskiej.</span><b>ZOBACZ MENU &nbsp; ›</b></span>
+  <button class="food-premium-card focusable" data-go="ida" aria-label="IDA kuchnia i wino — zdjęcia i rezerwacja TheFork">
+   <span class="food-card-image">
+    <img src="assets/ida_hero.jpg" alt="IDA kuchnia i wino — wnętrze restauracji">
+    <span class="food-card-badges"><span class="food-chip">KUCHNIA POLSKA</span><span class="food-chip">THEFORK</span></span>
+   </span>
+   <span class="food-card-copy"><small>ŁAZIENNA 4</small><h2>IDA <span style="font-size:.55em;color:#d5bd98">kuchnia i wino</span></h2><p>Sezonowa kuchnia polska w nowoczesnej odsłonie, otwarta kuchnia i dopracowana karta win.</p>
+    <span class="food-card-footer"><span>Zdjęcia · informacje · rezerwacja online</span><b>OTWÓRZ &nbsp; ›</b></span>
+   </span>
   </button>
  </div>
 </section>
 
-  <section class="view" id="view-kantyna" aria-label="KANTYNA — menu i rezerwacja">
+<section class="view" id="view-kantyna" aria-label="KANTYNA — zdjęcia i rezerwacja">
  <div class="qr-restaurant-grid">
-  <div class="qr-restaurant-photo">
-   <div class="qr-restaurant-photo-top">
+  <div class="restaurant-media-card">
+   <div class="restaurant-media-head">
     <button class="qr-back focusable" data-go="food" aria-label="Powrót do wyboru restauracji">‹ &nbsp; Wszystkie restauracje</button>
     <h1>KANTYNA</h1><div class="qr-location">RESTAURACJA W BUDYNKU · WŁODKOWICA 23</div>
    </div>
-   <div class="kantyna-video-display"><video id="kantynaPromoVideo" src="assets/kantyna_promo.mp4" autoplay muted loop playsinline preload="auto" aria-label="Film promocyjny restauracji KANTYNA"></video></div>
+   <div class="restaurant-media-stage">
+    <video id="kantynaPromoVideo" src="assets/kantyna_promo.mp4" autoplay muted loop playsinline preload="auto" disableRemotePlayback aria-label="Film promocyjny restauracji KANTYNA"></video>
+    <span class="restaurant-photo-credit">materiał: Kantyna / publikacje restauracji</span>
+   </div>
+   <div class="restaurant-thumb-strip">
+    <img src="assets/kantyna_food_1.webp" alt="Kantyna — danie">
+    <img src="assets/kantyna_food_2.webp" alt="Kantyna — danie">
+   </div>
   </div>
-  <div class="kantyna-booking-card" id="kantynaBooking">
-   <span class="qr-eyebrow">REZERWACJA DLA GOŚCIA SISU23</span>
+  <div class="restaurant-booking-panel">
+   <span class="booking-eyebrow">REZERWACJA ONLINE · THEFORK</span>
    <h2>Zarezerwuj stolik</h2>
-   <div class="kantyna-guest">
-    <span>Rezerwacja apartamentu</span>
-    <strong id="kantynaGuestName">Pobieranie danych…</strong>
-    <small id="kantynaGuestStay">HotelowyExpert</small>
+   <p class="booking-lead">Sprawdź aktualną dostępność i wybierz godzinę bezpośrednio w TheFork. To jest właściwy system rezerwacji Kantyny.</p>
+   <div class="booking-restaurant-summary"><b>LOKAL</b><strong>Kantyna</strong><b>ADRES</b><strong>Pawła Włodkowica 23</strong><b>ŹRÓDŁO</b><strong>Gość SISU23 · apartament 401</strong></div>
+   <div class="booking-steps">
+    <div class="booking-step"><b>1</b><span>Otwórz TheFork</span></div>
+    <div class="booking-step"><b>2</b><span>Wybierz datę, godzinę i osoby</span></div>
+    <div class="booking-step"><b>3</b><span>Potwierdź rezerwację</span></div>
    </div>
-   <div class="kantyna-book-row">
-    <span>Liczba osób</span>
-    <div class="kantyna-stepper">
-     <button class="focusable" id="kantynaPersonsMinus">−</button>
-     <strong id="kantynaPersons">2</strong>
-     <button class="focusable" id="kantynaPersonsPlus">+</button>
-    </div>
+   <div class="booking-source-card"><span>KOD ŹRÓDŁA REZERWACJI</span><strong>SISU 401</strong><small>Jeżeli TheFork pokaże pole „Uwagi” lub „Specjalne życzenia”, wpisz ten kod. Dzięki temu restauracja rozpozna rezerwację z SISU.</small></div>
+   <div class="booking-actions">
+    <a class="thefork-cta focusable" data-thefork="kantyna" href="https://www.thefork.com/restaurant/kantyna-r866976" target="_blank" rel="noopener noreferrer">Sprawdź dostępność w TheFork &nbsp; ›</a>
+    <button class="copy-source-btn focusable" data-copy-source="SISU 401">Kopiuj kod SISU 401</button>
    </div>
-   <div class="kantyna-label">Kiedy?</div>
-   <div class="kantyna-date-grid">
-    <button class="focusable kantyna-date is-selected" data-kantyna-date="today">Dzisiaj</button>
-    <button class="focusable kantyna-date" data-kantyna-date="tomorrow">Jutro</button>
-   </div>
-   <div class="kantyna-label">Godzina</div>
-   <div class="kantyna-time-grid">
-    <button class="focusable kantyna-time" data-kantyna-time="18:00">18:00</button>
-    <button class="focusable kantyna-time" data-kantyna-time="18:30">18:30</button>
-    <button class="focusable kantyna-time is-selected" data-kantyna-time="19:00">19:00</button>
-    <button class="focusable kantyna-time" data-kantyna-time="19:30">19:30</button>
-    <button class="focusable kantyna-time" data-kantyna-time="20:00">20:00</button>
-    <button class="focusable kantyna-time" data-kantyna-time="20:30">20:30</button>
-   </div>
-   <button class="focusable kantyna-reserve-btn" id="kantynaReserveBtn">Zarezerwuj stolik <span>›</span></button>
-   <div class="kantyna-book-status" id="kantynaBookStatus">Łączenie z HotelowyExpert…</div>
+   <div class="booking-trust">Rezerwacja zostanie dokończona w serwisie TheFork. SISU nie pobiera płatności za rezerwację stolika.</div>
   </div>
  </div>
 </section>
-<section class="view" id="view-ida" aria-label="IDA — menu i rezerwacja">
+
+<section class="view" id="view-ida" aria-label="IDA — zdjęcia i rezerwacja">
  <div class="qr-restaurant-grid">
-  <div class="qr-restaurant-photo">
-   <div class="qr-restaurant-photo-top">
+  <div class="restaurant-media-card">
+   <div class="restaurant-media-head">
     <button class="qr-back focusable" data-go="food" aria-label="Powrót do wyboru restauracji">‹ &nbsp; Wszystkie restauracje</button>
     <h1>IDA</h1><div class="qr-location">KUCHNIA I WINO · ŁAZIENNA 4</div>
    </div>
-   <div class="qr-photo-display"><img src="assets/ida_real_gallery.jpg" alt="Zdjęcia restauracji IDA bez przycięcia"></div>
+   <div class="restaurant-media-stage">
+    <img src="assets/ida_hero.jpg" alt="IDA kuchnia i wino — wnętrze restauracji">
+    <span class="restaurant-photo-credit">zdjęcie: Michelin Guide / IDA</span>
+   </div>
+   <div class="restaurant-thumb-strip">
+    <img src="assets/ida_food_2.jpg" alt="IDA — danie">
+    <img src="assets/ida_real_gallery.jpg" alt="IDA — restauracja i dania">
+   </div>
   </div>
-  <div class="qr-restaurant-card">
-   <span class="qr-eyebrow">MENU NA TWOIM TELEFONIE</span>
-   <h2>Zeskanuj kod QR</h2>
-   <p>Skieruj aparat telefonu na kod. Otworzysz kartę restauracji.</p>
-   <div class="qr-code-box"><img src="assets/ida_menu_qr_hd.png" alt="Kod QR do menu restauracji IDA"></div>
-   <div class="qr-reserve"><span>REZERWACJA STOLIKA</span><strong>+48 608 728 260</strong></div>
-   <div class="qr-hint">Aktualne menu, ceny i dostępność potwierdza restauracja.</div>
+  <div class="restaurant-booking-panel">
+   <span class="booking-eyebrow">REZERWACJA ONLINE · THEFORK</span>
+   <h2>Zarezerwuj stolik</h2>
+   <p class="booking-lead">IDA ma aktywny profil rezerwacyjny TheFork. Po przejściu zobaczysz bieżące wolne terminy i potwierdzisz stolik bezpośrednio w TheFork.</p>
+   <div class="booking-restaurant-summary"><b>LOKAL</b><strong>IDA kuchnia i wino</strong><b>ADRES</b><strong>Łazienna 4, Wrocław</strong><b>ŹRÓDŁO</b><strong>Gość SISU23 · apartament 401</strong></div>
+   <div class="booking-steps">
+    <div class="booking-step"><b>1</b><span>Otwórz TheFork</span></div>
+    <div class="booking-step"><b>2</b><span>Wybierz datę, godzinę i osoby</span></div>
+    <div class="booking-step"><b>3</b><span>Potwierdź rezerwację</span></div>
+   </div>
+   <div class="booking-source-card"><span>KOD ŹRÓDŁA REZERWACJI</span><strong>SISU 401</strong><small>Jeżeli TheFork pokaże pole „Uwagi” lub „Specjalne życzenia”, wpisz ten kod, żeby IDA wiedziała, że rezerwacja pochodzi z apartamentów SISU.</small></div>
+   <div class="booking-actions">
+    <a class="thefork-cta focusable" data-thefork="ida" href="https://www.thefork.com/restaurant/ida-kuchnia-i-wino-r866974" target="_blank" rel="noopener noreferrer">Sprawdź dostępność w TheFork &nbsp; ›</a>
+    <a class="booking-secondary focusable" href="https://idakuchniaiwino.pl/" target="_blank" rel="noopener noreferrer">Menu i informacje o IDA</a>
+    <button class="copy-source-btn focusable" data-copy-source="SISU 401">Kopiuj kod SISU 401</button>
+   </div>
+   <div class="booking-trust">Rezerwacja zostanie dokończona w serwisie TheFork. Dane restauracji i dostępność pochodzą z systemu rezerwacyjnego.</div>
   </div>
  </div>
 </section>
@@ -312,6 +330,7 @@
 <script src="hotel_demo_preview.js"></script>
 <script src="late_checkout_preview.js"></script>
 <script src="kantyna_video_v087.js"></script>
+<script src="restaurants_v094.js"></script>
 
 <div id="sw-demo" role="dialog" aria-label="Powitanie SISU23">
 <div class="hero-shade"></div>
