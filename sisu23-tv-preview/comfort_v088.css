@@ -1,0 +1,177 @@
+/* SISU23 comfort v0.8.8 — compact premium layout for browser */
+#view-comfort.active{
+  justify-content:flex-start!important;
+}
+#view-comfort .comfort-premium-grid{
+  flex:0 0 auto!important;
+  height:520px!important;
+  min-height:0!important;
+  align-items:stretch!important;
+  gap:18px!important;
+}
+#view-comfort .comfort-card{
+  height:100%!important;
+  min-height:0!important;
+  padding:24px 26px!important;
+  border-radius:20px!important;
+  overflow:hidden!important;
+}
+#view-comfort .comfort-card-title{
+  margin-bottom:18px!important;
+  padding-bottom:14px!important;
+  border-bottom:1px solid rgba(214,188,145,.16)!important;
+}
+#view-comfort .comfort-card-title h2{
+  font-size:28px!important;
+}
+#view-comfort .comfort-card-title>span{
+  font-size:27px!important;
+}
+
+/* Lights: content should finish naturally, not stick to the bottom */
+#view-comfort .lights-card{
+  display:flex!important;
+  flex-direction:column!important;
+}
+#view-comfort .comfort-light-row{
+  padding:11px 0!important;
+  font-size:18px!important;
+  border-bottom:1px solid rgba(255,255,255,.055)!important;
+}
+#view-comfort .comfort-light-row:last-of-type{
+  border-bottom:0!important;
+}
+#view-comfort .comfort-light-row b{
+  min-width:92px!important;
+  text-align:center!important;
+  font-size:12px!important;
+  padding:7px 12px!important;
+}
+#view-comfort .comfort-main-btn{
+  position:static!important;
+  left:auto!important;
+  right:auto!important;
+  bottom:auto!important;
+  width:100%!important;
+  margin-top:22px!important;
+  min-height:54px!important;
+  padding:12px 16px!important;
+  border-radius:14px!important;
+  font-size:16px!important;
+}
+#view-comfort .lights-card .comfort-hidden-controls.open{
+  inset:72px 18px 18px!important;
+}
+
+/* Heating and AC share one visual rhythm */
+#view-comfort .heating-card,
+#view-comfort .ac-card{
+  align-items:stretch!important;
+}
+#view-comfort .heating-card .comfort-card-copy{
+  margin:18px 0 4px!important;
+  font-size:15px!important;
+}
+#view-comfort .comfort-mode{
+  margin:16px 0 0!important;
+  font-size:18px!important;
+}
+#view-comfort .comfort-temp{
+  font-size:70px!important;
+  line-height:1!important;
+  margin:18px 0 16px!important;
+}
+#view-comfort .comfort-temp small{
+  font-size:30px!important;
+}
+#view-comfort .comfort-temp-controls{
+  gap:12px!important;
+}
+#view-comfort .comfort-temp-controls button{
+  width:112px!important;
+  height:62px!important;
+  border-radius:14px!important;
+  font-size:36px!important;
+}
+#view-comfort .comfort-temp-status{
+  min-height:20px!important;
+  margin-top:12px!important;
+  font-size:13px!important;
+}
+#view-comfort .heating-card .comfort-temp-status,
+#view-comfort .ac-card .comfort-temp-status{
+  margin-top:12px!important;
+}
+#view-comfort .comfort-ac-power{
+  width:100%!important;
+  max-width:300px!important;
+  margin:16px auto 0!important;
+  border-radius:13px!important;
+}
+#view-comfort .comfort-ac-power button{
+  padding:11px 10px!important;
+  font-size:15px!important;
+}
+
+/* Make the upper status strip lighter and less dominant */
+#view-comfort .comfort-status{
+  margin-bottom:14px!important;
+  padding:7px 16px!important;
+  gap:15px!important;
+}
+#view-comfort .comfort-status strong{
+  font-size:19px!important;
+}
+#view-comfort .comfort-status small{
+  font-size:11px!important;
+}
+#view-comfort .comfort-status-icon{
+  font-size:18px!important;
+}
+#view-comfort .comfort-status i{
+  height:24px!important;
+}
+#view-comfort .comfort-ok{
+  width:24px!important;
+  height:24px!important;
+}
+#view-comfort .comfort-season{
+  min-width:300px!important;
+  padding:9px 14px!important;
+  border-radius:13px!important;
+}
+#view-comfort .comfort-season>span{
+  font-size:24px!important;
+}
+#view-comfort .comfort-season strong{
+  font-size:15px!important;
+}
+#view-comfort .comfort-season small{
+  font-size:9px!important;
+}
+
+/* Browser viewport uses a transformed 1920x1080 shell. Keep cards compact even
+   when the real browser viewport triggers legacy max-height media queries. */
+@media(max-height:900px){
+  #view-comfort .comfort-premium-grid{
+    height:405px!important;
+  }
+  #view-comfort .comfort-card{
+    padding:20px 22px!important;
+  }
+  #view-comfort .comfort-card-title{
+    margin-bottom:14px!important;
+    padding-bottom:11px!important;
+  }
+  #view-comfort .comfort-temp{
+    font-size:64px!important;
+    margin:14px 0 13px!important;
+  }
+  #view-comfort .comfort-temp-controls button{
+    width:104px!important;
+    height:56px!important;
+  }
+  #view-comfort .comfort-main-btn{
+    margin-top:18px!important;
+  }
+}
