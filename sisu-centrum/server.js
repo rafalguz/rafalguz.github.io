@@ -321,7 +321,9 @@ function createHotelExpert({dataDir,send,resolveDevice}){
     try{
       const o=JSON.parse(fs.readFileSync(OPTIONS,'utf8'));
       return {enabled:o.hotel_expert_enabled===true,base:String(o.hotel_expert_base_url||'').replace(/\/$/,''),
-        key:String(o.hotel_expert_api_key||''),writeKey:String(o.hotel_expert_write_api_key||''),room401:String(o.hotel_expert_room_401||'')};
+        key:String(o.hotel_expert_api_key||''),writeKey:String(o.hotel_expert_write_api_key||''),
+        authMode:String(o.hotel_expert_auth_mode||'axl_key'),wpUser:String(o.hotel_expert_wp_user||''),
+        wpAppPassword:String(o.hotel_expert_wp_app_password||''),room401:String(o.hotel_expert_room_401||'')};
     }catch{return {enabled:false,base:'',key:'',writeKey:'',room401:''};}
   }
   function device(req,res){
@@ -331,17 +333,29 @@ function createHotelExpert({dataDir,send,resolveDevice}){
     return tv;
   }
   async function api(cfg,route,method='GET',body=null,useWrite=false){
-    const apiKey=useWrite?cfg.writeKey:cfg.key;
-    if(!cfg.enabled||!cfg.base||!apiKey)throw Object.assign(Error(useWrite?'Brak klucza zapisu HotelowyExpert':'Integracja HotelowyExpert nie jest skonfigurowana'),{status:503});
+    if(!cfg.enabled||!cfg.base)throw Object.assign(Error('Integracja AlfaPMS nie jest skonfigurowana'),{status:503});
     const sep=cfg.base.includes('?')?'&':'?';
     let response;
     try{
-      const headers={'X-AXL-Key':apiKey,Accept:'application/json'};
+      const headers={Accept:'application/json'};
+      if(useWrite){
+        if(!cfg.writeKey)throw Object.assign(Error('Brak klucza zapisu AlfaPMS'),{status:503});
+        headers['X-AXL-Key']=cfg.writeKey;
+      }else if(cfg.authMode==='wp_basic'){
+        if(!cfg.wpUser||!cfg.wpAppPassword)throw Object.assign(Error('Brak danych odczytu AlfaPMS'),{status:503});
+        headers.Authorization='Basic '+Buffer.from(cfg.wpUser+':'+cfg.wpAppPassword,'utf8').toString('base64');
+      }else{
+        if(!cfg.key)throw Object.assign(Error('Brak klucza odczytu AlfaPMS'),{status:503});
+        headers['X-AXL-Key']=cfg.key;
+      }
       if(body!==null)headers['Content-Type']='application/json';
       response=await fetch(cfg.base+sep+'rest_route='+encodeURIComponent('/agency-xl/v1'+route),{
         method,headers,body:body===null?undefined:JSON.stringify(body),signal:AbortSignal.timeout(9000),redirect:'manual'
       });
-    }catch{throw Object.assign(Error('HotelowyExpert nie odpowiada'),{status:503});}
+    }catch(e){
+      if(Number.isInteger(e&&e.status))throw e;
+      throw Object.assign(Error('AlfaPMS nie odpowiada'),{status:503});
+    }
     if(!response.ok)throw Object.assign(Error('HotelowyExpert odrzucił żądanie ('+response.status+')'),{status:502});
     if(response.status===204)return {};
     return response.json().catch(()=>({}));

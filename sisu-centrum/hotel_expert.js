@@ -13,6 +13,9 @@ module.exports=function createHotelExpert({dataDir,send,resolveDevice}){
         enabled:o.hotel_expert_enabled===true,
         base:String(o.hotel_expert_base_url||'').replace(/\/$/,''),
         key:String(o.hotel_expert_api_key||''),
+        authMode:String(o.hotel_expert_auth_mode||'axl_key'),
+        wpUser:String(o.hotel_expert_wp_user||''),
+        wpAppPassword:String(o.hotel_expert_wp_app_password||''),
         room401:String(o.hotel_expert_room_401||'')
       };
     }catch{return {enabled:false,base:'',key:'',room401:''};}
@@ -26,15 +29,25 @@ module.exports=function createHotelExpert({dataDir,send,resolveDevice}){
     return tv;
   }
   async function api(cfg,route){
-    if(!cfg.enabled||!cfg.base||!cfg.key)throw Object.assign(Error('Integracja HotelowyExpert nie jest skonfigurowana'),{status:503});
+    if(!cfg.enabled||!cfg.base)throw Object.assign(Error('Integracja AlfaPMS nie jest skonfigurowana'),{status:503});
     const sep=cfg.base.includes('?')?'&':'?';
     let r;
     try{
+      const headers={Accept:'application/json'};
+      if(cfg.authMode==='wp_basic'){
+        if(!cfg.wpUser||!cfg.wpAppPassword)throw Object.assign(Error('Brak danych odczytu AlfaPMS'),{status:503});
+        headers.Authorization='Basic '+Buffer.from(cfg.wpUser+':'+cfg.wpAppPassword,'utf8').toString('base64');
+      }else{
+        if(!cfg.key)throw Object.assign(Error('Brak klucza odczytu AlfaPMS'),{status:503});
+        headers['X-AXL-Key']=cfg.key;
+      }
       r=await fetch(cfg.base+sep+'rest_route='+encodeURIComponent('/agency-xl/v1'+route),{
-        headers:{'X-AXL-Key':cfg.key,Accept:'application/json'},
-        signal:AbortSignal.timeout(9000),redirect:'manual'
+        headers,signal:AbortSignal.timeout(9000),redirect:'manual'
       });
-    }catch{throw Object.assign(Error('HotelowyExpert nie odpowiada'),{status:503});}
+    }catch(e){
+      if(Number.isInteger(e&&e.status))throw e;
+      throw Object.assign(Error('AlfaPMS nie odpowiada'),{status:503});
+    }
     if(!r.ok)throw Object.assign(Error('HotelowyExpert odrzucił odczyt ('+r.status+')'),{status:502});
     return r.json().catch(()=>{throw Object.assign(Error('Nieprawidłowa odpowiedź HotelowyExpert'),{status:502});});
   }
