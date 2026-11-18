@@ -1,0 +1,58 @@
+/* SISU23 comfort v0.8.9 — lights visible immediately */
+#view-comfort .lights-card{
+  display:flex!important;
+  flex-direction:column!important;
+}
+#view-comfort .lights-card .comfort-card-title{
+  flex:0 0 auto!important;
+  margin-bottom:14px!important;
+}
+#view-comfort .lights-card .comfort-lights-always{
+  display:grid!important;
+  position:static!important;
+  inset:auto!important;
+  flex:1 1 auto!important;
+  min-height:0!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  grid-template-rows:repeat(3,minmax(0,1fr))!important;
+  gap:12px!important;
+  padding:10px!important;
+  margin:0!important;
+  background:rgba(5,10,16,.72)!important;
+  border:1px solid rgba(84,111,139,.24)!important;
+  border-radius:16px!important;
+  z-index:auto!important;
+}
+#view-comfort .lights-card .comfort-lights-always button{
+  min-width:0!important;
+  min-height:0!important;
+  height:auto!important;
+  padding:12px 10px!important;
+  border:1px solid #526b84!important;
+  border-radius:13px!important;
+  background:#151b22!important;
+  color:#eadfce!important;
+  font-size:18px!important;
+  font-weight:600!important;
+  text-align:center!important;
+}
+#view-comfort .lights-card .comfort-lights-always button.is-on{
+  background:linear-gradient(145deg,#5f421e,#3e2d19)!important;
+  border-color:#d7a856!important;
+  color:#ffdc9a!important;
+  box-shadow:inset 0 0 0 1px rgba(255,214,137,.1)!important;
+}
+#view-comfort .lights-card .comfort-lights-always button:focus{
+  outline:3px solid #ffd788!important;
+  outline-offset:2px!important;
+}
+@media(max-height:900px){
+  #view-comfort .lights-card .comfort-lights-always{
+    gap:9px!important;
+    padding:8px!important;
+  }
+  #view-comfort .lights-card .comfort-lights-always button{
+    font-size:16px!important;
+    border-radius:11px!important;
+  }
+}
