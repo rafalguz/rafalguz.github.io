@@ -1,17 +1,37 @@
 /* SISU23 browser preview — isolated from real apartment control, no test toolbar. */
 (function(){
 'use strict';
-var states={salon:false,stol:false,kuchnia:false,lazienka:false,sypialnia:false};
+var allLights=[
+ {id:'salon',name:'Salon'},{id:'stol',name:'Nad stołem'},{id:'kuchnia',name:'Kuchnia / hol'},
+ {id:'lazienka',name:'Łazienka'},{id:'sypialnia',name:'Sypialnia'},
+ {id:'lustro',name:'Lustro'},{id:'kinkiet',name:'Kinkiet'},{id:'lampka',name:'Lampka nocna'},
+ {id:'wejscie',name:'Wejście'},{id:'taras',name:'Taras'},{id:'biurko',name:'Biurko'},{id:'dekor',name:'Oświetlenie dekoracyjne'}
+];
+var q=/[?&]lights=(\d+)/.exec(location.search||''),lightCount=q?Math.max(1,Math.min(12,Number(q[1])||5)):5;
+var lightList=allLights.slice(0,lightCount),states={};
+for(var li=0;li<lightList.length;li++)states[lightList[li].id]=false;
 var temps={ac:22,salon:22,sypialnia:22,lazienka:22};
 var acOn=false,acMode='heat',acFan='auto';
 var tempTimers={};
 function $(id){return document.getElementById(id)}
 function toast(msg){var t=$('toast');if(!t)return;t.textContent=msg;t.classList.add('show');clearTimeout(window.__previewToast);window.__previewToast=setTimeout(function(){t.classList.remove('show')},2400)}
+function buildLights(){
+ var panel=$('lightsPanel');if(!panel)return;
+ panel.innerHTML='';
+ panel.classList.remove('lights-layout-2','lights-layout-3','lights-overflow','lights-empty');
+ panel.classList.add(lightList.length<=8?'lights-layout-2':'lights-layout-3');
+ if(lightList.length>12)panel.classList.add('lights-overflow');
+ for(var i=0;i<lightList.length;i++){
+  var item=lightList[i],b=document.createElement('button');
+  b.className='focusable';b.type='button';b.setAttribute('data-light-toggle',item.id);
+  b.setAttribute('aria-label',item.name);b.textContent=item.name;panel.appendChild(b);
+ }
+}
 function render(){
+ buildLights();
  Object.keys(states).forEach(function(z){
-  var b=$('lightBtn'+z),s=$('lightState'+z);
+  var b=document.querySelector('[data-light-toggle="'+z.replace(/"/g,'\"')+'"]');
   if(b){b.disabled=false;b.classList.toggle('is-on',states[z]);b.setAttribute('aria-pressed',states[z]?'true':'false')}
-  if(s)s.textContent=states[z]?'Włączone':'Wyłączone';
  });
  var ac=$('acToggle');
  if(ac){ac.disabled=false;ac.classList.toggle('is-on',acOn);ac.textContent=acOn?'● Włączona':'○ Wyłączona'}
@@ -49,9 +69,5 @@ document.addEventListener('click',function(e){
  render();e.preventDefault();
 },true);
 window.SISU23Comfort={version:'browser-preview',setRoom:function(){},refresh:function(){},getState:function(){return {preview:true,lights:states,temps:temps}}};
-document.addEventListener('DOMContentLoaded',function(){
- render();
- var open=$('openLightsPanel'),panel=$('lightsPanel');
- if(open&&panel)open.addEventListener('click',function(){panel.classList.toggle('open');open.classList.toggle('active');open.querySelector('span').textContent=panel.classList.contains('open')?'‹':'›'});
-});
+document.addEventListener('DOMContentLoaded',function(){render();});
 })();

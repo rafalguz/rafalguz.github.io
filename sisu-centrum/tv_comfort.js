@@ -1,12 +1,17 @@
 'use strict';
-// Explicit TV guest allowlist for pilot apartment 401. No HA credentials leave this server.
-const LIGHTS=Object.freeze({
-  salon:'switch.qs_zigbee_sec01_single_gang_4_switch_1',
-  stol:'switch.qs_zigbee_sec01_single_gang_3_switch_1',
-  kuchnia:'switch.qs_zigbee_sec01_single_gang_2_switch_1',
-  lazienka:'switch.qs_zigbee_sec01_single_gang_switch_1',
-  sypialnia:'switch.qs_zigbee_sec01_single_gang_5_switch'
+// Room-scoped device allowlist. The TV receives only safe ids/names/states; HA entity ids stay server-side.
+// Add lights for another apartment here (or move them to the management UI later) — the TV UI needs no rebuild.
+const ROOM_LIGHTS=Object.freeze({
+  '401':Object.freeze([
+    Object.freeze({id:'salon',name:'Salon',entity:'switch.qs_zigbee_sec01_single_gang_4_switch_1'}),
+    Object.freeze({id:'stol',name:'Nad stołem',entity:'switch.qs_zigbee_sec01_single_gang_3_switch_1'}),
+    Object.freeze({id:'kuchnia',name:'Kuchnia / hol',entity:'switch.qs_zigbee_sec01_single_gang_2_switch_1'}),
+    Object.freeze({id:'lazienka',name:'Łazienka',entity:'switch.qs_zigbee_sec01_single_gang_switch_1'}),
+    Object.freeze({id:'sypialnia',name:'Sypialnia',entity:'switch.qs_zigbee_sec01_single_gang_5_switch'})
+  ])
 });
+function roomLights(room){return ROOM_LIGHTS[String(room)]||[];}
+function roomLight(room,id){return roomLights(room).find(x=>x.id===id)||null;}
 const CLIMATE=Object.freeze({
   ac:'climate.401_apartament',
   salon:'climate.zg253_trv_2',
@@ -38,8 +43,12 @@ module.exports=function createTvComfort({haApi,send,jsonBody,resolveDevice,audit
   function device(req,res){
     const tv=resolveDevice(req);
     if(!tv){send(res,401,{error:'Telewizor nie jest sparowany'});return null;}
-    if(tv.mode!=='room'||String(tv.room)!=='401'){
-      send(res,403,{error:'Sterowanie dostępne wyłącznie w przypisanym apartamencie 401'});return null;
+    if(tv.mode!=='room'){
+      send(res,403,{error:'Sterowanie dostępne wyłącznie w przypisanym apartamencie'});return null;
+    }
+    const room=String(tv.room);
+    if(!roomLights(room).length&&room!=='401'){
+      send(res,403,{error:'Urządzenia tego apartamentu nie są jeszcze skonfigurowane'});return null;
     }
     return tv;
   }
@@ -69,26 +78,29 @@ module.exports=function createTvComfort({haApi,send,jsonBody,resolveDevice,audit
       fan:typeof s?.attributes?.fan_mode==='string'?s.attributes.fan_mode:null
     };
   }
-  function stateView(states){
-    const lights={};
-    for(const [zone,id] of Object.entries(LIGHTS)){
-      const s=states.get(id);
-      lights[zone]={available:usable(s),on:usable(s)&&s.state==='on'};
+  function stateView(states,room){
+    const lights={},lightList=[];
+    for(const item of roomLights(room)){
+      const s=states.get(item.entity),available=usable(s),on=available&&s.state==='on';
+      lights[item.id]={available,on,name:item.name};
+      lightList.push({id:item.id,name:item.name,available,on});
     }
     const climate={};
-    for(const zone of Object.keys(CLIMATE))climate[zone]=climateState(states,zone);
+    if(String(room)==='401')for(const zone of Object.keys(CLIMATE))climate[zone]=climateState(states,zone);
     return {
-      ok:true,room:'401',mode:'room',checkedAt:new Date().toISOString(),
-      seasonal:{season:seasonLabel(),mode:seasonalMode()},lights,climate,
-      windows:{acBlocked:anyWindowNotClosed(states,ALL_WINDOWS),
+      ok:true,room:String(room),mode:'room',checkedAt:new Date().toISOString(),
+      seasonal:{season:seasonLabel(),mode:seasonalMode()},lights,lightList,climate,
+      windows:String(room)==='401'?{acBlocked:anyWindowNotClosed(states,ALL_WINDOWS),
         salonOpen:anyWindowNotClosed(states,WINDOWS.salon),
-        sypialniaOpen:anyWindowNotClosed(states,WINDOWS.sypialnia)}
+        sypialniaOpen:anyWindowNotClosed(states,WINDOWS.sypialnia)}:
+        {acBlocked:false,salonOpen:false,sypialniaOpen:false}
     };
   }
-  async function action(body,states){
+  async function action(room,body,states){
     const kind=body.kind,zone=body.zone,value=body.value;
     let domain,service,entity,data={};
     if(kind==='heating_target'){
+      if(String(room)!=='401')throw err(403,'Ogrzewanie tego apartamentu nie jest jeszcze skonfigurowane');
       const n=validTarget(value,'salon');
       if(n===null)throw err(400,'Nastawa ogrzewania musi być w zakresie 19–23°C co 0,5°C');
       const applied=[];
@@ -103,15 +115,17 @@ module.exports=function createTvComfort({haApi,send,jsonBody,resolveDevice,audit
       return {ok:true,kind,zone:'heating',value:n,applied};
     }
     if(kind==='light'){
-      entity=Object.prototype.hasOwnProperty.call(LIGHTS,zone)?LIGHTS[zone]:null;
+      const item=roomLight(room,zone);entity=item&&item.entity;
       if(!entity||!['on','off'].includes(value))throw err(400,'Nieprawidłowe sterowanie światłem');
       domain='switch';service=value==='on'?'turn_on':'turn_off';
     }else if(kind==='mode'&&zone==='ac'){
+      if(String(room)!=='401')throw err(403,'Klimatyzacja tego apartamentu nie jest jeszcze skonfigurowana');
       const allowed=seasonalMode();
       if(value!=='off'&&value!==allowed)throw err(400,'Dostępny jest tylko tryb sezonowy: '+allowed);
       entity=CLIMATE.ac;domain='climate';service='set_hvac_mode';data.hvac_mode=value;
       if(value!=='off'&&anyWindowNotClosed(states,ALL_WINDOWS))throw err(409,'Zamknij wszystkie okna przed włączeniem klimatyzacji');
     }else if(kind==='target'){
+      if(String(room)!=='401')throw err(403,'Temperatura tego apartamentu nie jest jeszcze skonfigurowana');
       entity=Object.prototype.hasOwnProperty.call(CLIMATE,zone)?CLIMATE[zone]:null;
       const n=validTarget(value,zone);
       if(!entity||n===null)throw err(400,'Nastawa przekracza dozwolony zakres obiektu (co 0,5°C)');
@@ -120,6 +134,7 @@ module.exports=function createTvComfort({haApi,send,jsonBody,resolveDevice,audit
         throw err(409,'Zamknij okno przed zmianą temperatury grzejnika');
       domain='climate';service='set_temperature';data.temperature=n;
     }else if(kind==='fan'&&zone==='ac'){
+      if(String(room)!=='401')throw err(403,'Nawiew tego apartamentu nie jest jeszcze skonfigurowany');
       if(!FANS.has(value))throw err(400,'Nieprawidłowy poziom nawiewu');
       if(anyWindowNotClosed(states,ALL_WINDOWS))throw err(409,'Klimatyzacja zablokowana przez otwarte okno');
       entity=CLIMATE.ac;domain='climate';service='set_fan_mode';data.fan_mode=value;
@@ -134,13 +149,14 @@ module.exports=function createTvComfort({haApi,send,jsonBody,resolveDevice,audit
       send(res,405,{error:'Metoda nieobsługiwana'});return true;
     }
     const tv=device(req,res);if(!tv)return true;
+    const room=String(tv.room);
     if(req.method==='GET'){
-      send(res,200,stateView(await load()));return true;
+      send(res,200,stateView(await load(),room));return true;
     }
     if(!limit(tv)){send(res,429,{error:'Za dużo poleceń. Spróbuj za chwilę.'});return true;}
     const body=await jsonBody(req);
-    const result=await action(body,await load());
-    audit('tv:'+String(tv.id||'401'),'tv_comfort',{room:401,kind:result.kind,zone:result.zone,value:result.value});
+    const result=await action(room,body,await load());
+    audit('tv:'+String(tv.id||room),'tv_comfort',{room:Number(room),kind:result.kind,zone:result.zone,value:result.value});
     send(res,200,result);
     return true;
   }
