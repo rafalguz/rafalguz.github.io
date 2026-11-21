@@ -1,18 +1,7 @@
 #!/bin/sh
 set -eu
-TARGET="http://192.168.1.168"
-
-echo "=== SIGNUP EMPTY JSON ==="
-curl -sS -i --max-time 8 -H 'Content-Type: application/json' -d '{}' "$TARGET/api/v1/users/signup" | head -n 80 || true
-
-echo "=== SIGNUP EMPTY FORM ==="
-curl -sS -i --max-time 8 -F 'username=' -F 'password=' "$TARGET/api/v1/users/signup" | head -n 80 || true
-
-echo "=== LOGIN EMPTY FORM ==="
-curl -sS -i --max-time 8 -F 'username=' -F 'password=' "$TARGET/api/v1/login/cookie" | head -n 80 || true
-
-echo "=== USER SESSION ==="
-curl -sS -i --max-time 8 "$TARGET/api/v1/login/user-session" | head -n 60 || true
-
+HOST="192.168.1.168"
+echo "=== SSH CHECK ==="
+sshpass -p smlight ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=8 smlight@$HOST 'echo SSH_OK; uname -a; id; echo ===FILES===; find /etc /opt /data /home -maxdepth 4 -type f \( -iname "*zigbee*" -o -iname "*z2m*" -o -iname "configuration.yaml" -o -iname "*mqtt*" \) 2>/dev/null | head -n 200; echo ===PROCESSES===; ps w | grep -Ei "zigbee|mqtt|node" | grep -v grep | head -n 80' || true
 echo "=== DONE ==="
 sleep infinity
