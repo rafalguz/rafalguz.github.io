@@ -1,0 +1,12 @@
+name: SMHUB Tool
+version: 0.1.0
+slug: smhub-tool
+description: Temporary diagnostics for SMHUB gateways
+startup: application
+boot: manual
+arch:
+  - amd64
+init: false
+host_network: true
+options: {}
+schema: {}
