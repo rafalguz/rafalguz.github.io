@@ -1,5 +1,5 @@
 name: SMHUB Tool
-version: 0.1.0
+version: 0.1.1
 slug: smhub-tool
 description: Temporary diagnostics for SMHUB gateways
 startup: application
@@ -8,5 +8,8 @@ arch:
   - amd64
 init: false
 host_network: true
-options: {}
-schema: {}
+options:
+  mqtt_password: ""
+schema:
+  mqtt_password:
+    type: password
