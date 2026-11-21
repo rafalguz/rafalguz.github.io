@@ -1,8 +1,8 @@
 #!/bin/sh
 set -eu
-HOST="192.168.1.139"
-echo "=== WORKING SMHUB MQTT ==="
+HOST="192.168.1.168"
+echo "=== SECOND Z2M LOG ==="
 sshpass -p smlight ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=8 smlight@$HOST \
-  'grep -E "^(mqtt:|  server:|  user:|  base_topic:|  client_id:)" /opt/zigbee2mqtt/data/configuration.yaml | grep -v password || true; echo ===NET===; ip route 2>/dev/null | head -n 20' || true
+  'tail -n 220 /tmp/zigbee2mqtt.log 2>/dev/null | sed -E "s/(password[^:]*:).*/\\1 <redacted>/I"' || true
 echo "=== DONE ==="
 sleep infinity
