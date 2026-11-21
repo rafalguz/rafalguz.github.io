@@ -20,5 +20,10 @@ until tailscale --socket="$TS_SOCKET" funnel --bg --https=443 http://127.0.0.1:8
   echo 'SISU: Check Tailscale admin for Funnel/HTTPS permission'
   sleep 45
 done
+echo 'SISU: Enabling temporary Funnel for SMHUB 2 on HTTPS 8443'
+until tailscale --socket="$TS_SOCKET" funnel --bg --https=8443 http://192.168.1.168:80; do
+  echo 'SISU: Waiting for Funnel/HTTPS permission on port 8443'
+  sleep 15
+done
 tailscale --socket="$TS_SOCKET" funnel status
 wait "$PID"
