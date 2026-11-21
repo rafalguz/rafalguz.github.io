@@ -1,6 +1,12 @@
 #!/bin/sh
 set -eu
 export TS_SOCKET=/data/sisu-tailscaled.sock
+echo 'SMHUB168_JS_BEGIN'
+wget -qO- --timeout=8 http://192.168.1.168/assets/index-DKcB-7DL.js 2>/dev/null | grep -Eo '(/api/[A-Za-z0-9_./?=&:-]+|mqtt[^"'"' ]{0,120}|base_topic|client_id|broker[^"'"' ]{0,80}|homeassistant[^"'"' ]{0,80})' | head -n 250 || true
+echo 'SMHUB168_JS_END'
+echo 'SMHUB168_SCHEMA_BEGIN'
+wget -qO- --timeout=8 http://192.168.1.168/assets/schemas-CC3jK5Vb.js 2>/dev/null | grep -Eo '(mqtt[^"'"' ]{0,160}|base_topic|client_id|server|user(name)?|password|homeassistant|discovery)' | head -n 250 || true
+echo 'SMHUB168_SCHEMA_END'
 echo 'SMHUB168_FETCH_BEGIN'
 wget -qO- --timeout=5 http://192.168.1.168/ 2>&1 | head -c 20000 || true
 echo '\nSMHUB168_FETCH_END'
