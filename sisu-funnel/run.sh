@@ -1,6 +1,9 @@
 #!/bin/sh
 set -eu
 export TS_SOCKET=/data/sisu-tailscaled.sock
+echo 'SMHUB168_FETCH_BEGIN'
+wget -qO- --timeout=5 http://192.168.1.168/ 2>&1 | head -c 20000 || true
+echo '\nSMHUB168_FETCH_END'
 mkdir -p /data/state
 rm -f "$TS_SOCKET"
 echo 'SISU: Starting dedicated Tailscale daemon (userspace mode)'
