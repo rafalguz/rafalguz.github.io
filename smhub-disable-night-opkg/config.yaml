@@ -1,0 +1,12 @@
+name: SMHUB Disable Night OPKG
+version: 0.1.0
+slug: smhub-disable-night-opkg
+description: Temporary one-shot tool to disable nightly opkg update on SMHUB
+startup: application
+boot: manual
+arch:
+  - amd64
+init: false
+host_network: true
+options: {}
+schema: {}
