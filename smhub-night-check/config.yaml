@@ -1,0 +1,12 @@
+name: SMHUB Night Check
+version: 0.1.0
+slug: smhub-night-check
+description: Temporary read-only overnight diagnostics for SMHUB gateways
+startup: application
+boot: manual
+arch:
+  - amd64
+init: false
+host_network: true
+options: {}
+schema: {}
