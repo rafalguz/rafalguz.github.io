@@ -53,6 +53,7 @@ module.exports=function createTvAlarm({dataDir,send,jsonBody,resolveDevice,haApi
      alarm:s.alarm&&typeof s.alarm==='object'?s.alarm:null};
  }
  let db=safeLoad();
+ let firstPmsConfirmation=true;
  let chain=Promise.resolve();
  function serialize(fn){
    const work=chain.then(fn,fn);
@@ -115,6 +116,10 @@ module.exports=function createTvAlarm({dataDir,send,jsonBody,resolveDevice,haApi
          await stop();
        }
      }
+   }
+   if(firstPmsConfirmation){
+     logger.info('SISU alarm 401: PMS sync OK, active_reservation='+String(!!reservation));
+     firstPmsConfirmation=false;
    }
    return {current,reservation};
  }
