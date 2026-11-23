@@ -383,6 +383,47 @@ function createHotelExpert({dataDir,send,resolveDevice}){
     cache.set(key,{at:now,data});
     return data;
   }
+  // PMS-backed reservation identity for the alarm. Includes checkout morning
+  // until the actual departure time (unlike the legacy guest card's day filter).
+  let alarmRawCache=null;
+  async function alarmGuest(room){
+    const cfg=opts();
+    if(Number(room)!==401)throw Object.assign(Error('Budzik 401 only'),{status:403});
+    const now=Date.now();
+    if(!alarmRawCache||now-alarmRawCache.at>30000){
+      const [properties,rdata]=await Promise.all([api(cfg,'/properties'),api(cfg,'/reservations')]);
+      alarmRawCache={at:Date.now(),
+        properties:Array.isArray(properties)?properties:(Array.isArray(properties&&properties.value)?properties.value:[]),
+        reservations:Array.isArray(rdata)?rdata:(Array.isArray(rdata&&rdata.rezerwacje)?rdata.rezerwacje:[])};
+    }
+    const property=alarmRawCache.properties.find(x=>String(x&&x.code)===String(cfg.room401));
+    if(!property)throw Object.assign(Error('No PMS mapping for apartment 401'),{status:503});
+    const f=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Warsaw',year:'numeric',month:'2-digit',
+      day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
+    const parts={};
+    for(const q of f.formatToParts(new Date(now)))if(q.type!=='literal')parts[q.type]=q.value;
+    const local=parts.year+'-'+parts.month+'-'+parts.day+' '+parts.hour+':'+parts.minute;
+    const hh=(value,def)=>/^(?:[01]\d|2[0-3]):[0-5]\d/.test(String(value||''))?String(value).slice(0,5):def;
+    const valid=/^\d{4}-\d{2}-\d{2}$/;
+    const closed=new Set(['cancelled','canceled','anulowana','anulowany','no_show',
+      'checked_out','wymeldowany','rejected','odrzucona']);
+    const eligible=alarmRawCache.reservations.filter(x=>{
+      if(!x||String(x.apartament)!==String(property.id))return false;
+      if(closed.has(String(x.status||'').toLowerCase()))return false;
+      if(!valid.test(String(x.przyjazd||''))||!valid.test(String(x.wyjazd||'')))return false;
+      const arrival=String(x.przyjazd)+' '+hh(x.godzina_przyjazdu,'15:00');
+      const departure=String(x.wyjazd)+' '+hh(x.godzina_wyjazdu,'11:00');
+      return arrival<=local && local<departure;
+    }).sort((a,b)=>String(b.przyjazd+' '+hh(b.godzina_przyjazdu,'15:00')).localeCompare(
+                         String(a.przyjazd+' '+hh(a.godzina_przyjazdu,'15:00'))));
+    if(eligible.length>1)throw Object.assign(Error('Niejednoznaczne rezerwacje 401'),{status:409});
+    const record=eligible[0]||null;
+    return {reservation:record?{
+      id:record.id,arrival:record.przyjazd,departure:record.wyjazd,
+      arrivalTime:hh(record.godzina_przyjazdu,'15:00'),
+      departureTime:hh(record.godzina_wyjazdu,'11:00')
+    }:null};
+  }
   async function patchReservation(id,changes){
     const cfg=opts();
     const result=await api(cfg,'/reservations/'+encodeURIComponent(String(id)),'PATCH',changes,true);
@@ -397,7 +438,7 @@ function createHotelExpert({dataDir,send,resolveDevice}){
     catch(e){send(res,Number.isInteger(e.status)?e.status:500,{error:e.message||'Błąd HotelowyExpert'});}
     return true;
   }
-  return {handle:handleHotel,guest,patchReservation};
+  return {handle:handleHotel,guest,alarmGuest,patchReservation};
 }
 function createLateCheckout({dataDir,send,jsonBody,resolveDevice,hotelExpert}){
   const OPTIONS=path.join(dataDir,'options.json');
@@ -529,6 +570,7 @@ const tvComfort=require('./tv_comfort')({haApi,send,jsonBody,audit,resolveDevice
 const hotelExpert=createHotelExpert({dataDir:DATA,send,resolveDevice:tvRegistry.resolveDevice});
 const lateCheckout=createLateCheckout({dataDir:DATA,send,jsonBody,resolveDevice:tvRegistry.resolveDevice,hotelExpert});
 const tvWelcome=require('./tv_welcome')({dataDir:DATA,haApi,resolveDevice:tvRegistry.resolveDevice,send,jsonBody});
+const tvAlarm=require('./tv_alarm')({dataDir:DATA,send,jsonBody,resolveDevice:tvRegistry.resolveDevice,haApi,hotelExpert});
 const hallAnnouncements=require('./hall_announcements')({haApi,send,requireUser,csrfOk,jsonBody,audit,invalidateOverview,hallAudio:DEVICES.hallAudio,haToken:HA_TOKEN});
 
 async function handle(req,res){
@@ -541,6 +583,7 @@ async function handle(req,res){
   if(await tvComfort.handle(req,res,p))return;
   if(await hotelExpert.handle(req,res,p))return;
   if(await lateCheckout.handle(req,res,p))return;
+  if(await tvAlarm.handle(req,res,p))return;
   if(await hallAnnouncements.handle(req,res,p))return;
   if(req.method==='GET'&&['/','/app.js','/app.css','/tv_updates_admin.js','/tv_updates_admin.css'].includes(p)){
     const file=p==='/'?'index.html':p.slice(1);
