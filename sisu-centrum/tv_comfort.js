@@ -132,6 +132,13 @@ module.exports=function createTvComfort({haApi,send,jsonBody,resolveDevice,audit
       if(value!=='off'&&value!==allowed)throw err(400,'Dostępny jest tylko tryb sezonowy: '+allowed);
       entity=CLIMATE.ac;domain='climate';service='set_hvac_mode';data.hvac_mode=value;
       if(value!=='off'&&anyWindowNotClosed(states,ALL_WINDOWS))throw err(409,'Zamknij wszystkie okna przed włączeniem klimatyzacji');
+      if(value!=='off'){
+        const previous=states.get(CLIMATE.ac)?.attributes?.temperature;
+        if(!numeric(previous)||previous<RANGE.ac[0]||previous>RANGE.ac[1]){
+          // Keep the physical AC target inside the 401 guest range even when reactivated from an old 24°C setpoint.
+          await haApi('/services/climate/set_temperature','POST',{entity_id:CLIMATE.ac,temperature:BASE.ac});
+        }
+      }
     }else if(kind==='target'){
       if(String(room)!=='401')throw err(403,'Temperatura tego apartamentu nie jest jeszcze skonfigurowana');
       entity=Object.prototype.hasOwnProperty.call(CLIMATE,zone)?CLIMATE[zone]:null;
