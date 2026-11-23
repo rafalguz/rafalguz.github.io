@@ -66,10 +66,12 @@ module.exports=function makeWelcome({dataDir,haApi,resolveDevice,send,jsonBody})
       send(res,409,{ok:false,error:'Test event expired'});return true;
     }
     const labels={opened:'ekran powitania otwarty',playing:'MP3: zdarzenie playing',
-      ended:'MP3: odtwarzanie zakończone',error:'MP3: błąd odtwarzania',blocked:'MP3: odtwarzanie zablokowane'};
+      progress:'MP3: odtwarzanie trwa ponad 4 s',ended:'MP3: odtwarzanie zakończone',
+      error:'MP3: błąd odtwarzania',blocked:'MP3: odtwarzanie zablokowane',
+      timeout:'MP3: przekroczono czas odtwarzania',stopped:'MP3: odtwarzanie zatrzymane'};
     if(!Object.hasOwn(labels,stage)){send(res,400,{ok:false,error:'Invalid stage'});return true;}
     await testStatus('TV 401: '+labels[stage]);
-    if(stage==='ended'||stage==='error'||stage==='blocked')pendingTest=null;
+    if(['ended','error','blocked','timeout','stopped'].includes(stage))pendingTest=null;
     send(res,200,{ok:true});return true;
   }
   function persist() {
