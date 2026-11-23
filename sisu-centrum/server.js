@@ -317,14 +317,25 @@ async function control401(body){
 function createHotelExpert({dataDir,send,resolveDevice}){
   const OPTIONS=path.join(dataDir,'options.json');
   const cache=new Map(), TTL=60000;
+  let alarmPmsConfigLogged=false;
   function opts(){
     try{
       const o=JSON.parse(fs.readFileSync(OPTIONS,'utf8'));
+      if(!alarmPmsConfigLogged){
+        alarmPmsConfigLogged=true;
+        console.info('SISU PMS: options readable, enabled='+String(o.hotel_expert_enabled===true)+', endpoint_present='+String(!!o.hotel_expert_base_url));
+      }
       return {enabled:o.hotel_expert_enabled===true,base:String(o.hotel_expert_base_url||'').replace(/\/$/,''),
         key:String(o.hotel_expert_api_key||''),writeKey:String(o.hotel_expert_write_api_key||''),
         authMode:String(o.hotel_expert_auth_mode||'axl_key'),wpUser:String(o.hotel_expert_wp_user||''),
         wpAppPassword:String(o.hotel_expert_wp_app_password||''),room401:String(o.hotel_expert_room_401||'')};
-    }catch{return {enabled:false,base:'',key:'',writeKey:'',room401:''};}
+    }catch(e){
+      if(!alarmPmsConfigLogged){
+        alarmPmsConfigLogged=true;
+        console.warn('SISU PMS: cannot read options ('+String(e&&e.code||e&&e.name||'unknown')+')');
+      }
+      return {enabled:false,base:'',key:'',writeKey:'',room401:''};
+    }
   }
   function device(req,res){
     const tv=resolveDevice(req);
