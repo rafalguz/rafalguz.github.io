@@ -44,7 +44,7 @@ module.exports=function makeTvRegistry({dataDir,rooms,send,requireUser,csrfOk,js
     // Tizen file:// apps have Origin:null. TV endpoints use bearer credentials only, never cookies.
     res.setHeader('Access-Control-Allow-Origin','*');
     res.setHeader('Access-Control-Allow-Headers','Authorization, Content-Type');
-    res.setHeader('Access-Control-Allow-Methods','GET,POST,OPTIONS');
+    res.setHeader('Access-Control-Allow-Methods','GET,POST,PUT,DELETE,OPTIONS');
     res.setHeader('Vary','Origin');
   }
   function tokenDevice(req){
