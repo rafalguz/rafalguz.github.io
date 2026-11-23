@@ -13,7 +13,7 @@ const LIGHT_NAMES=Object.freeze({
 function roomLights(room,states){
   if(String(room)!=='401'||!states)return [];
   return [...states.keys()].filter(entity=>
-    /^switch\\.401_[a-z0-9_]+_(swiatlo|oswietlenie)$/.test(entity)
+    /^switch\.401_[a-z0-9_]+_(swiatlo|oswietlenie)$/.test(entity)
   ).map(entity=>{
     const slug=entity.slice('switch.401_'.length),def=LIGHT_NAMES[slug];
     return {id:def?def[0]:slug,name:def?def[1]:slug.replace(/_(swiatlo|oswietlenie)$/,'').replace(/_/g,' '),entity};
