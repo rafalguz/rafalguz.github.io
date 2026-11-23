@@ -67,6 +67,8 @@ module.exports=function makeWelcome({dataDir,haApi,resolveDevice,send,jsonBody})
     }
     const labels={opened:'ekran powitania otwarty',playing:'MP3: zdarzenie playing',
       progress:'MP3: odtwarzanie trwa ponad 4 s',ended:'MP3: odtwarzanie zakończone',
+      server:'Dr Daria: nagranie pobrane z serwera i zbuforowane',
+      offline:'Dr Daria: odtwarzanie z lokalnej kopii',
       error:'MP3: błąd odtwarzania',blocked:'MP3: odtwarzanie zablokowane',
       timeout:'MP3: przekroczono czas odtwarzania',stopped:'MP3: odtwarzanie zatrzymane'};
     if(!Object.hasOwn(labels,stage)){send(res,400,{ok:false,error:'Invalid stage'});return true;}
