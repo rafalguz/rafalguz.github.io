@@ -4,9 +4,10 @@ const root=document.getElementById('app');
 const notices=document.getElementById('toast-stack');
 const API_BASE=new URL('./',document.currentScript?.src||location.href);
 const ASSET_BASE=new URL('./',document.currentScript?.src||window.location.href);
-const S={user:null,csrf:null,configured:true,tab:'apartments',floor:0,query:'',focusRoom:null,overview:null,users:[],tvs:[],tvPending:[],tvRooms:[],busy:false,updated:null};
+const S={user:null,csrf:null,configured:true,tab:'apartments',floor:0,query:'',focusRoom:null,overview:null,users:[],tvs:[],tvPending:[],tvRooms:[],pmsReservations:[],busy:false,updated:null};
 const FLOORS=[4,3,2,1];
 const STATUSES=['Nieustalony','Oczekuje na przyjazd','Zameldowany','Do sprzątania','Sprzątanie','Gotowy'];
+const LANGUAGES=[['pl','Polski'],['en','English'],['de','Deutsch'],['cs','Čeština'],['uk','Українська'],['it','Italiano'],['fr','Français'],['es','Español'],['no','Norsk'],['nl','Nederlands']];
 let overviewRequestId=0;
 let hallDraft={text:'',voice:'AgnieszkaNeural',id:null};
 let followUpTimers=[];
@@ -56,11 +57,11 @@ function nav(id,name,icon){
 function kpi(n,title,desc){
  return '<div class="panel metric"><strong>'+esc(n)+'</strong><b>'+title+'</b><small>'+desc+'</small></div>';
 }
-function pageTitle(){return {apartments:'Apartamenty',room401:'Apartament 401',operations:'Obsługa i statusy',alerts:'Okna i czujniki',music:'Muzyka w holu',staff:'Kontrola dostępu',tvs:'Telewizory SISU23',updates:'Aktualizacje TV'}[S.tab]||'Centrum zarządzania'}
+function pageTitle(){return {apartments:'Apartamenty',room401:'Apartament 401',operations:'Obsługa i statusy',pms:'Pobyty i języki',alerts:'Okna i czujniki',music:'Muzyka w holu',staff:'Kontrola dostępu',tvs:'Telewizory SISU23',updates:'Aktualizacje TV'}[S.tab]||'Centrum zarządzania'}
 function layout(content){
  const role=S.user.role==='admin'?'Administrator':'Manager';
  return '<div class="shell"><aside class="side"><div class="brand"><span class="logo">SISU</span><small>BOUTIQUE APARTMENTS<br>WŁODKOWICA</small></div><div class="label">CENTRUM ZARZĄDZANIA</div><nav>'+
- nav('apartments','Apartamenty','⌂')+nav('room401','Sterowanie 401','◈')+nav('operations','Obsługa','▤')+nav('alerts','Czujniki','◇')+nav('music','Muzyka holu','♫')+
+ nav('apartments','Apartamenty','⌂')+nav('room401','Sterowanie 401','◈')+nav('operations','Obsługa','▤')+nav('pms','Języki pobytów','A')+nav('alerts','Czujniki','◇')+nav('music','Muzyka holu','♫')+
  (S.user.role==='admin'?nav('tvs','Telewizory','▣')+nav('updates','Aktualizacje TV','↻'):'')+
  (S.user.role==='admin'?nav('staff','Personel','♙'):'')+
  '</nav><div class="sidefoot"><span class="statusdot '+(connected()?'ok':'')+'"></span>'+ (connected()?'Home Assistant połączony':'Oczekiwanie na odczyty')+
@@ -237,6 +238,19 @@ function alerts(){
  v.motion.map(x=>deviceRow(x.name,x.state,labelForState(x.state,'Ruch','Brak ruchu'))).join('')+
  '</div></div>';
 }
+function pmsPage(){
+ const list=S.pmsReservations||[];
+ const options=r=>'<option value="auto" '+(!r.assigned?'selected':'')+'>Domyślny · Polski</option>'+
+   LANGUAGES.map(([code,name])=>'<option value="'+code+'" '+(r.assigned&&r.language===code?'selected':'')+'>'+esc(name)+'</option>').join('');
+ const rows=list.length?list.map(r=>
+   '<div class="opsitem"><h3>'+esc(r.room)+'</h3><small>'+esc(r.arrival)+' → '+esc(r.departure)+'</small>'+
+   '<small>'+(r.number?'Rezerwacja '+esc(r.number):'Rezerwacja #'+esc(r.id))+' · '+esc(r.status)+'</small>'+
+   '<select class="input" data-action="pms-language" data-reservation-id="'+esc(r.id)+'" aria-label="Język pobytu '+esc(r.room)+'">'+options(r)+'</select></div>'
+ ).join(''):'<div class="empty">Brak bieżących lub przyszłych rezerwacji z ALFA PMS.</div>';
+ return '<p class="lead">ALFA PMS wskazuje rezerwację i apartament. SISU zapisuje przy niej tylko kod języka — bez nazwiska, telefonu i e-maila. Telewizor automatycznie przełącza interfejs i właściwe nagranie powitalne.</p>'+
+ '<div class="sectiontitle"><div><span class="label">ALFA PMS / SISU23</span><h2>Pobyty i języki</h2></div><small>'+list.length+' rezerwacji · 10 języków</small></div>'+
+ '<div class="operations">'+rows+'</div>';
+}
 function staff(){
  const list=S.users||[];
  return '<p class="lead">Konta personelu są niezależne od Home Assistanta. Nie tworzymy kont dla gości. Hasła przechowywane są w postaci silnych skrótów kryptograficznych.</p>'+
@@ -291,6 +305,14 @@ async function loadUpdates(){
  try{await window.SISUTVAdmin.load(request);if(S.tab==='updates')render()}
  catch(e){toast('Aktualizacje TV: '+e.message,true)}
 }
+async function loadPms(){
+ try{
+  const data=await request('/api/pms/reservations');
+  S.pmsReservations=data.reservations||[];
+  S.updated=new Date().toLocaleTimeString('pl-PL');
+  if(S.tab==='pms')render();
+ }catch(e){S.pmsReservations=[];toast('ALFA PMS: '+e.message,true);if(S.tab==='pms')render();}
+}
 async function loadTvs(){
  if(S.user?.role!=='admin')return;
  try{
@@ -305,6 +327,7 @@ function render(){
  let content=dashboard();
  if(S.tab==='room401')content=hvac();
  if(S.tab==='operations')content=operations();
+ if(S.tab==='pms')content=pmsPage();
  if(S.tab==='alerts')content=alerts();
  if(S.tab==='music')content=musicPage();
  if(S.tab==='staff')content=staff();
@@ -357,10 +380,10 @@ async function doAction(cb){
 root.addEventListener('click',async e=>{
  const el=e.target.closest('[data-action]');if(!el)return;
  const a=el.dataset.action;
- if(a==='tab'){S.tab=el.dataset.tab;S.focusRoom=null;render();if(S.tab==='staff')await loadUsers();else if(S.tab==='tvs')await loadTvs();else if(S.tab==='updates')await loadUpdates();else void loadData(true);return;}
+ if(a==='tab'){S.tab=el.dataset.tab;S.focusRoom=null;render();if(S.tab==='staff')await loadUsers();else if(S.tab==='tvs')await loadTvs();else if(S.tab==='updates')await loadUpdates();else if(S.tab==='pms')await loadPms();else void loadData(true);return;}
  if(a==='floor'){S.floor=Number(el.dataset.floor);render();return;}
  if(a==='room'){const number=Number(el.dataset.room);S.tab=number===401?'room401':'operations';S.focusRoom=number===401?null:number;render();void loadData(true);return;}
- if(a==='refresh'){await doAction(()=>loadData(false,true));if(S.tab==='staff')await loadUsers();if(S.tab==='tvs')await loadTvs();if(S.tab==='updates')await loadUpdates();return;}
+ if(a==='refresh'){if(S.tab==='pms')await doAction(()=>loadPms());else await doAction(()=>loadData(false,true));if(S.tab==='staff')await loadUsers();if(S.tab==='tvs')await loadTvs();if(S.tab==='updates')await loadUpdates();return;}
  if(a==='logout'){cancelFollowUpRefreshes();++overviewRequestId;await doAction(async()=>{await request('/api/logout',{});S.user=null;S.csrf=null;S.overview=null;S.tab='apartments';render()});return;}
  if(a==='tv-refresh'){await loadTvs();return;}
  if(a==='tv-update-preview'){try{window.SISUTVAdmin.preview(root);toast('Podgląd szkicu odświeżony.')}catch(e){toast(e.message,true)}return;}
@@ -505,6 +528,12 @@ root.addEventListener('click',async e=>{
  }
 });
 root.addEventListener('change',async e=>{
+ if(e.target.dataset.action==='pms-language'){
+  const reservationId=Number(e.target.dataset.reservationId),language=String(e.target.value||'auto');
+  const ok=await doAction(async()=>{await request('/api/pms/language',{reservationId,language});toast(language==='auto'?'Przywrócono domyślny język polski.':'Język pobytu zapisany.');await loadPms()});
+  if(!ok)await loadPms();
+  return;
+ }
  if(e.target.id==='tv-update-upload'){
   try{const asset=await window.SISUTVAdmin.upload(e.target,S.csrf,ASSET_BASE);if(asset)toast('Plik dodany do biblioteki. Zapisz szkic, aby użyć go w TV.')}
   catch(err){toast(err.message,true)}
@@ -593,6 +622,7 @@ root.addEventListener('submit',async e=>{
 setInterval(()=>{
  if(!S.busy&&S.user&&document.visibilityState==='visible'&&S.tab!=='staff'){
   if(S.tab==='tvs'){void loadTvs();return;}
+  if(S.tab==='pms'){void loadPms();return;}
   if(S.tab==='updates')return;
   const active=document.activeElement;
   if(active&&['INPUT','SELECT','TEXTAREA'].includes(active.tagName))return;

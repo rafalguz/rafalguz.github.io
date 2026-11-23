@@ -5,7 +5,7 @@ const crypto=require('node:crypto');
 const fs=require('node:fs');
 const path=require('node:path');
 
-module.exports=function makeTvRegistry({dataDir,rooms,send,requireUser,csrfOk,jsonBody,audit,clientKey}) {
+module.exports=function makeTvRegistry({dataDir,rooms,send,requireUser,csrfOk,jsonBody,audit,clientKey,getRoomContext}) {
   const allowed=new Set(rooms.map(Number));
   const dbPath=path.join(dataDir,'sisu-tvs.json');
   const PAIR_TTL=10*60*1000;
@@ -61,11 +61,16 @@ module.exports=function makeTvRegistry({dataDir,rooms,send,requireUser,csrfOk,js
       online:!!(last&&Date.now()-new Date(last).getTime()<ONLINE_TTL),
       registeredAt:d.registeredAt};
   }
-  function config(d){
+  async function config(d){
+    let stay={room:String(d.room),language:'',stayId:'',stayStatus:'unknown'};
+    if(typeof getRoomContext==='function'){
+      try{stay=await getRoomContext(String(d.room))}catch{}
+    }
     return {ok:true,deviceId:d.id,room:String(d.room),mode:d.mode,
       appVersion:d.version||'',controlsEnabled:d.mode==='room'&&String(d.room)==='401',
       capabilities:d.mode==='room'&&String(d.room)==='401'?{lights:['salon','stol','kuchnia','lazienka','sypialnia'],climate:['ac','salon','sypialnia','lazienka']}:{lights:[],climate:[]},
-      notice:d.mode==='demo'?'Tryb testowy — bez sterowania urządzeniami':String(d.room)==='401'?'Sterowanie apartamentem 401 aktywne':'Sterowanie nieaktywne do czasu przypisania urządzeń przez administratora'};
+      notice:d.mode==='demo'?'Tryb testowy — bez sterowania urządzeniami':String(d.room)==='401'?'Sterowanie apartamentem 401 aktywne':'Sterowanie nieaktywne do czasu przypisania urządzeń przez administratora',
+      ...stay};
   }
   function quota(key,max,period=10*60000){
     // Per pairing request; 30 televisions may share a single Funnel proxy IP.
@@ -111,12 +116,12 @@ module.exports=function makeTvRegistry({dataDir,rooms,send,requireUser,csrfOk,js
       db.devices.push(d);
       persist();pending.delete(id);
       seen.set(d.id,new Date().toISOString());
-      return reply(res,200,{ok:true,status:'paired',token,config:config(d)});
+      return reply(res,200,{ok:true,status:'paired',token,config:await config(d)});
     }
     if(req.method==='GET'&&p==='/api/tv/config'){
       const d=tokenDevice(req);
       if(!d)return reply(res,401,{error:'Telewizor nieprzypisany'});
-      return reply(res,200,config(d));
+      return reply(res,200,await config(d));
     }
     if(req.method==='POST'&&p==='/api/tv/heartbeat'){
       const d=tokenDevice(req);
@@ -129,7 +134,7 @@ module.exports=function makeTvRegistry({dataDir,rooms,send,requireUser,csrfOk,js
       if(!d.lastSeen||Date.now()-new Date(d.lastSeen).getTime()>10*60000||v!==d.lastVersion){
         d.lastSeen=now;d.lastVersion=v;persist();
       }
-      return reply(res,200,config(d));
+      return reply(res,200,await config(d));
     }
     if(p==='/api/tvs'&&req.method==='GET'){
       const ctx=requireUser(req,res,['admin']);if(!ctx)return true;

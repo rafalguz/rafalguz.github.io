@@ -314,9 +314,32 @@ async function control401(body){
   await haApi('/services/'+domain+'/'+action,'POST',{entity_id:entity,...data});
   return {kind,name:name||null,value,entity};
 }
-function createHotelExpert({dataDir,send,resolveDevice}){
+function createHotelExpert({dataDir,send,resolveDevice,requireUser,csrfOk,jsonBody,audit}){
   const OPTIONS=path.join(dataDir,'options.json');
+  const LANGUAGE_FILE=path.join(dataDir,'sisu-reservation-languages.json');
+  const STAY_SECRET_FILE=path.join(dataDir,'sisu-stay-secret');
+  const LANGUAGES=new Set(['pl','en','de','cs','uk','it','fr','es','no','nl']);
   const cache=new Map(), TTL=60000;
+  let languageDb={reservations:{}};
+  try{const x=JSON.parse(fs.readFileSync(LANGUAGE_FILE,'utf8'));if(x&&x.reservations&&typeof x.reservations==='object')languageDb=x;}catch{}
+  function saveLanguages(){
+    const tmp=LANGUAGE_FILE+'.tmp-'+process.pid;
+    fs.writeFileSync(tmp,JSON.stringify(languageDb),{encoding:'utf8',mode:0o600});
+    fs.renameSync(tmp,LANGUAGE_FILE);
+  }
+  function staySecret(){
+    try{const v=fs.readFileSync(STAY_SECRET_FILE,'utf8').trim();if(/^[a-f0-9]{64}$/.test(v))return v;}catch{}
+    const v=crypto.randomBytes(32).toString('hex');
+    fs.writeFileSync(STAY_SECRET_FILE,v,{encoding:'utf8',mode:0o600});
+    return v;
+  }
+  function languageCode(v){
+    v=String(v||'').trim().toLowerCase().replace(/_/g,'-');
+    if(v==='nb'||v==='nn')v='no';if(v==='cz')v='cs';v=v.split('-')[0];
+    return LANGUAGES.has(v)?v:'pl';
+  }
+  function languageFor(id){const x=languageDb.reservations[String(id)];return x&&LANGUAGES.has(x.language)?x.language:'pl';}
+  function opaqueStayId(room,r){return crypto.createHmac('sha256',staySecret()).update([r.id,room,r.arrival||r.przyjazd,r.departure||r.wyjazd].join('|')).digest('hex').slice(0,32);}
   let alarmPmsConfigLogged=false;
   function opts(){
     try{
@@ -376,9 +399,9 @@ function createHotelExpert({dataDir,send,resolveDevice}){
     if(hit&&now-hit.at<TTL)return hit.data;
     const properties=await api(cfg,'/properties');
     const list=Array.isArray(properties)?properties:(Array.isArray(properties&&properties.value)?properties.value:[]);
-    const code=room===401?cfg.room401:'';
+    const code=String(room)==='401'&&cfg.room401?String(cfg.room401):String(room);
     const property=list.find(x=>String(x&&x.code)===code);
-    if(!property)throw Object.assign(Error('Brak mapowania apartamentu 401 w HotelowyExpert'),{status:404});
+    if(!property)throw Object.assign(Error('Brak mapowania apartamentu '+String(room)+' w HotelowyExpert'),{status:404});
     const rdata=await api(cfg,'/reservations');
     const reservations=Array.isArray(rdata)?rdata:(Array.isArray(rdata&&rdata.rezerwacje)?rdata.rezerwacje:[]);
     const today=new Date().toISOString().slice(0,10);
@@ -399,7 +422,7 @@ function createHotelExpert({dataDir,send,resolveDevice}){
   let alarmRawCache=null;
   async function alarmGuest(room){
     const cfg=opts();
-    if(Number(room)!==401)throw Object.assign(Error('Budzik 401 only'),{status:403});
+    if(!/^\d{3}$/.test(String(room)))throw Object.assign(Error('Nieprawidłowy apartament'),{status:400});
     const now=Date.now();
     if(!alarmRawCache||now-alarmRawCache.at>30000){
       const [properties,rdata]=await Promise.all([api(cfg,'/properties'),api(cfg,'/reservations')]);
@@ -407,8 +430,9 @@ function createHotelExpert({dataDir,send,resolveDevice}){
         properties:Array.isArray(properties)?properties:(Array.isArray(properties&&properties.value)?properties.value:[]),
         reservations:Array.isArray(rdata)?rdata:(Array.isArray(rdata&&rdata.rezerwacje)?rdata.rezerwacje:[])};
     }
-    const property=alarmRawCache.properties.find(x=>String(x&&x.code)===String(cfg.room401));
-    if(!property)throw Object.assign(Error('No PMS mapping for apartment 401'),{status:503});
+    const roomCode=String(room)==='401'&&cfg.room401?String(cfg.room401):String(room);
+    const property=alarmRawCache.properties.find(x=>String(x&&x.code)===roomCode);
+    if(!property)throw Object.assign(Error('Brak mapowania apartamentu '+String(room)+' w PMS'),{status:503});
     const f=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Warsaw',year:'numeric',month:'2-digit',
       day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
     const parts={};
@@ -441,7 +465,79 @@ function createHotelExpert({dataDir,send,resolveDevice}){
     cache.clear();
     return result;
   }
+  function warsawDay(){
+    const f=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Warsaw',year:'numeric',month:'2-digit',day:'2-digit'});
+    const p={};for(const q of f.formatToParts(new Date()))if(q.type!=='literal')p[q.type]=q.value;
+    return p.year+'-'+p.month+'-'+p.day;
+  }
+  function addDays(day,n){const d=new Date(day+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10);}
+  async function getRoomContext(room){
+    room=String(room);
+    const empty={room,language:'pl',stayId:'',stayStatus:'vacant'};
+    try{
+      let reservation=(await alarmGuest(Number(room))).reservation;
+      if(!reservation){
+        const byDate=await guest(Number(room));
+        reservation=byDate&&byDate.reservation||null;
+      }
+      if(!reservation)return empty;
+      return {room,language:languageFor(reservation.id),stayId:opaqueStayId(room,reservation),stayStatus:'active'};
+    }catch{
+      return {room,language:'',stayId:'',stayStatus:'unknown',pmsError:true};
+    }
+  }
+  async function publicReservations(){
+    const cfg=opts();
+    const [properties,rdata]=await Promise.all([api(cfg,'/properties'),api(cfg,'/reservations')]);
+    const props=Array.isArray(properties)?properties:(Array.isArray(properties&&properties.value)?properties.value:[]);
+    const reservations=Array.isArray(rdata)?rdata:(Array.isArray(rdata&&rdata.rezerwacje)?rdata.rezerwacje:[]);
+    const roomById=new Map(props.map(x=>[String(x&&x.id),String(x&&x.code||'')]));
+    const today=warsawDay(),limit=addDays(today,60);
+    const closed=new Set(['cancelled','canceled','anulowana','anulowany','no_show','checked_out','wymeldowany','rejected','odrzucona']);
+    return reservations.filter(r=>{
+      const room=roomById.get(String(r&&r.apartament))||'';
+      return /^\d{3}$/.test(room)&&!closed.has(String(r&&r.status||'').toLowerCase())&&
+        String(r&&r.wyjazd||'')>=today&&String(r&&r.przyjazd||'')<=limit;
+    }).map(r=>{
+      const room=roomById.get(String(r.apartament)),saved=languageDb.reservations[String(r.id)];
+      return {id:String(r.id),room,number:String(r.numer||''),arrival:String(r.przyjazd||''),departure:String(r.wyjazd||''),
+        status:String(r.status||''),language:saved&&LANGUAGES.has(saved.language)?saved.language:'pl',assigned:!!(saved&&LANGUAGES.has(saved.language))};
+    }).sort((a,b)=>a.arrival.localeCompare(b.arrival)||Number(a.room)-Number(b.room));
+  }
+  async function setReservationLanguage(id,language){
+    id=String(id||'');
+    if(!/^\d+$/.test(id))throw Object.assign(Error('Nieprawidłowa rezerwacja'),{status:400});
+    if(language==='auto'){
+      delete languageDb.reservations[id];saveLanguages();cache.clear();
+      return {reservationId:id,language:'pl',assigned:false};
+    }
+    language=String(language||'').toLowerCase();
+    if(!LANGUAGES.has(language))throw Object.assign(Error('Nieobsługiwany język'),{status:400});
+    const cfg=opts(),reservation=await api(cfg,'/reservations/'+encodeURIComponent(id));
+    if(Number(reservation&&reservation.id)!==Number(id))throw Object.assign(Error('Rezerwacja nie istnieje w ALFA PMS'),{status:404});
+    languageDb.reservations[id]={language,updatedAt:new Date().toISOString()};
+    saveLanguages();cache.clear();
+    return {reservationId:id,language,assigned:true};
+  }
   async function handleHotel(req,res,p){
+    if(p==='/api/pms/reservations'){
+      const ctx=requireUser(req,res,['admin','manager']);if(!ctx)return true;
+      if(req.method!=='GET'){send(res,405,{error:'Metoda nieobsługiwana'});return true;}
+      try{send(res,200,{ok:true,languages:[...LANGUAGES],reservations:await publicReservations(),checkedAt:new Date().toISOString()});}
+      catch(e){send(res,Number.isInteger(e.status)?e.status:503,{error:e.message||'Błąd ALFA PMS'});}
+      return true;
+    }
+    if(p==='/api/pms/language'){
+      const ctx=requireUser(req,res,['admin','manager']);if(!ctx)return true;
+      if(req.method!=='POST'){send(res,405,{error:'Metoda nieobsługiwana'});return true;}
+      if(!csrfOk(req,res,ctx))return true;
+      try{
+        const body=await jsonBody(req),result=await setReservationLanguage(body.reservationId,String(body.language||''));
+        audit(ctx.user.id,'pms_language',{reservationId:result.reservationId,language:body.language==='auto'?'auto':result.language});
+        send(res,200,{ok:true,...result});
+      }catch(e){send(res,Number.isInteger(e.status)?e.status:400,{error:e.message||'Nie udało się zapisać języka'});}
+      return true;
+    }
     if(p!=='/api/tv/hotel/guest')return false;
     if(req.method!=='GET'){send(res,405,{error:'Metoda nieobsługiwana'});return true;}
     const tv=device(req,res);if(!tv)return true;
@@ -449,7 +545,7 @@ function createHotelExpert({dataDir,send,resolveDevice}){
     catch(e){send(res,Number.isInteger(e.status)?e.status:500,{error:e.message||'Błąd HotelowyExpert'});}
     return true;
   }
-  return {handle:handleHotel,guest,alarmGuest,patchReservation};
+  return {handle:handleHotel,guest,alarmGuest,patchReservation,getRoomContext,publicReservations,setReservationLanguage};
 }
 function createLateCheckout({dataDir,send,jsonBody,resolveDevice,hotelExpert}){
   const OPTIONS=path.join(dataDir,'options.json');
@@ -570,15 +666,17 @@ function createLateCheckout({dataDir,send,jsonBody,resolveDevice,hotelExpert}){
   }
   return {handle};
 }
+let hotelExpert=null;
 const tvRegistry=require('./tv_registry')({
-  dataDir:DATA,rooms:ROOMS,send,requireUser,csrfOk,jsonBody,audit,clientKey
+  dataDir:DATA,rooms:ROOMS,send,requireUser,csrfOk,jsonBody,audit,clientKey,
+  getRoomContext:async room=>hotelExpert?hotelExpert.getRoomContext(room):{room:String(room),language:'',stayId:'',stayStatus:'unknown'}
 });
 const tvWatchdog=require('./tv_watchdog')({targets:tvRegistry.watchdogTargets});
 const tvContent=require('./tv_content')({
   dataDir:DATA,rooms:ROOMS,send,requireUser,csrfOk,jsonBody,audit,resolveDevice:tvRegistry.resolveDevice
 });
 const tvComfort=require('./tv_comfort')({haApi,send,jsonBody,audit,resolveDevice:tvRegistry.resolveDevice});
-const hotelExpert=createHotelExpert({dataDir:DATA,send,resolveDevice:tvRegistry.resolveDevice});
+hotelExpert=createHotelExpert({dataDir:DATA,send,resolveDevice:tvRegistry.resolveDevice,requireUser,csrfOk,jsonBody,audit});
 const lateCheckout=createLateCheckout({dataDir:DATA,send,jsonBody,resolveDevice:tvRegistry.resolveDevice,hotelExpert});
 const tvWelcome=require('./tv_welcome')({dataDir:DATA,haApi,resolveDevice:tvRegistry.resolveDevice,send,jsonBody});
 const tvAlarm=require('./tv_alarm')({dataDir:DATA,send,jsonBody,resolveDevice:tvRegistry.resolveDevice,haApi,hotelExpert});
