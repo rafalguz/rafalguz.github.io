@@ -15,4 +15,4 @@ COPY default-media /app/default-media
 RUN mkdir -p /data && chown -R node:node /data /app
 ENV NODE_ENV=production
 EXPOSE 8098
-CMD ["sh", "-c", "chown node:node /data && exec su-exec node node /app/server.js"]
+CMD ["sh", "-c", "chown node:node /data && if [ -f /data/options.json ]; then chown node:node /data/options.json && chmod 600 /data/options.json; fi && exec su-exec node node /app/server.js"]
