@@ -13,6 +13,65 @@ module.exports=function makeWelcome({dataDir,haApi,resolveDevice,send,jsonBody})
     const stored=JSON.parse(fs.readFileSync(FILE,'utf8'));
     if(stored&&typeof stored==='object'&&!Array.isArray(stored))claims=stored;
   }
+  // Isolated manual test path: only a paired TV in apartment 401 can poll.
+  // A Home Assistant input_button triggers an explicit one-shot request.
+  // It never changes TTLock arrival claims, room status, or guest reservations.
+  const TEST_TRIGGER='input_button.sisu_401_test_powitania_tv';
+  const TEST_STATUS='input_text.sisu_401_test_powitania_status';
+  const TEST_DB=path.join(dataDir,'sisu-welcome-manual-tests.json');
+  let lastTestPress='';
+  let pendingTest=null;
+  try{
+    const old=JSON.parse(fs.readFileSync(TEST_DB,'utf8'));
+    if(typeof old.lastTestPress==='string')lastTestPress=old.lastTestPress;
+  }catch(e){if(e.code!=='ENOENT')console.warn('SISU welcome test state unavailable:',e.message);}
+  function saveTestClaim(){
+    const tmp=TEST_DB+'.tmp-'+process.pid;
+    fs.writeFileSync(tmp,JSON.stringify({lastTestPress}),{mode:0o600});
+    fs.renameSync(tmp,TEST_DB);
+  }
+  async function testStatus(value){
+    try{await haApi('/services/input_text/set_value','POST',{entity_id:TEST_STATUS,value:value.slice(0,240)});}
+    catch(e){console.warn('SISU welcome test report:',e.message);}
+  }
+  async function handleManual(req,res,p){
+    if(p!=='/api/tv/welcome/test/poll'&&p!=='/api/tv/welcome/test/ack')return false;
+    const d=resolveDevice(req);
+    if(!d||d.mode!=='room'||String(d.room)!=='401'){
+      send(res,403,{ok:false,error:'Test only for paired TV 401'});return true;
+    }
+    if(p==='/api/tv/welcome/test/poll'){
+      if(req.method!=='GET'){send(res,405,{ok:false});return true;}
+      const states=await haApi('/states');
+      if(!Array.isArray(states))throw Error('Home Assistant unavailable');
+      const entry=states.find(x=>x.entity_id===TEST_TRIGGER);
+      const press=String(entry?.state||'');
+      const age=Date.now()-Date.parse(press);
+      if(!Number.isFinite(age)||age<(-15000)||age>150000||lastTestPress===press){
+        send(res,200,{ok:true,play:false});return true;
+      }
+      // Claim before sending: no duplicate replay after TV or server restart.
+      lastTestPress=press;saveTestClaim();
+      const eventId=crypto.randomBytes(16).toString('hex');
+      pendingTest={eventId,deviceId:d.id,created:Date.now()};
+      await testStatus('TV 401: polecenie testowe dostarczone do aplikacji');
+      send(res,200,{ok:true,play:true,eventId});return true;
+    }
+    if(req.method!=='POST'){send(res,405,{ok:false});return true;}
+    const body=await jsonBody(req);
+    const stage=String(body?.stage||'');
+    const eventId=String(body?.eventId||'');
+    if(!pendingTest||pendingTest.eventId!==eventId||pendingTest.deviceId!==d.id
+        ||Date.now()-pendingTest.created>120000){
+      send(res,409,{ok:false,error:'Test event expired'});return true;
+    }
+    const labels={opened:'ekran powitania otwarty',playing:'MP3: zdarzenie playing',
+      ended:'MP3: odtwarzanie zakończone',error:'MP3: błąd odtwarzania',blocked:'MP3: odtwarzanie zablokowane'};
+    if(!Object.hasOwn(labels,stage)){send(res,400,{ok:false,error:'Invalid stage'});return true;}
+    await testStatus('TV 401: '+labels[stage]);
+    if(stage==='ended'||stage==='error'||stage==='blocked')pendingTest=null;
+    send(res,200,{ok:true});return true;
+  }
   function persist() {
     fs.mkdirSync(dataDir,{recursive:true,mode:0o700});
     const tmp=FILE+'.tmp-'+process.pid;
@@ -39,6 +98,7 @@ module.exports=function makeWelcome({dataDir,haApi,resolveDevice,send,jsonBody})
     }
   })();
   async function handle(req,res,p) {
+    if(await handleManual(req,res,p))return true;
     if(p!=='/api/tv/welcome/claim')return false;
     if(req.method!=='POST'){send(res,405,{error:'Method not allowed'});return true;}
     const d=resolveDevice(req);
