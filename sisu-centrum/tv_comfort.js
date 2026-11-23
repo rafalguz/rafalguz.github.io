@@ -1,27 +1,35 @@
 'use strict';
 // Room-scoped device allowlist. The TV receives only safe ids/names/states; HA entity ids stay server-side.
 // Add lights for another apartment here (or move them to the management UI later) — the TV UI needs no rebuild.
-const ROOM_LIGHTS=Object.freeze({
-  '401':Object.freeze([
-    Object.freeze({id:'salon',name:'Salon',entity:'switch.qs_zigbee_sec01_single_gang_4_switch_1'}),
-    Object.freeze({id:'stol',name:'Nad stołem',entity:'switch.qs_zigbee_sec01_single_gang_3_switch_1'}),
-    Object.freeze({id:'kuchnia',name:'Kuchnia / hol',entity:'switch.qs_zigbee_sec01_single_gang_2_switch_1'}),
-    Object.freeze({id:'lazienka',name:'Łazienka',entity:'switch.qs_zigbee_sec01_single_gang_switch_1'}),
-    Object.freeze({id:'sypialnia',name:'Sypialnia',entity:'switch.qs_zigbee_sec01_single_gang_5_switch'})
-  ])
+// Pilot only: room 401. Select switches only when their entity_id clearly represents lighting.
+// Additional 401 lighting relays named with the same convention become visible automatically.
+const LIGHT_NAMES=Object.freeze({
+  salon_swiatlo:['salon','Salon'],
+  salon_nad_stolem_swiatlo:['stol','Nad stołem'],
+  przedpokoj_oswietlenie:['kuchnia','Przedpokój'],
+  lazienka_oswietlenie:['lazienka','Łazienka'],
+  sypialnia_swiatlo:['sypialnia','Sypialnia']
 });
-function roomLights(room){return ROOM_LIGHTS[String(room)]||[];}
-function roomLight(room,id){return roomLights(room).find(x=>x.id===id)||null;}
+function roomLights(room,states){
+  if(String(room)!=='401'||!states)return [];
+  return [...states.keys()].filter(entity=>
+    /^switch\\.401_[a-z0-9_]+_(swiatlo|oswietlenie)$/.test(entity)
+  ).map(entity=>{
+    const slug=entity.slice('switch.401_'.length),def=LIGHT_NAMES[slug];
+    return {id:def?def[0]:slug,name:def?def[1]:slug.replace(/_(swiatlo|oswietlenie)$/,'').replace(/_/g,' '),entity};
+  }).sort((a,b)=>a.name.localeCompare(b.name,'pl'));
+}
+function roomLight(room,id,states){return roomLights(room,states).find(x=>x.id===id)||null;}
 const CLIMATE=Object.freeze({
   ac:'climate.401_apartament',
-  salon:'climate.zg253_trv_2',
-  sypialnia:'climate.zg253_trv_3',
-  lazienka:'climate.zg253_trv'
+  salon:'climate.401_salon_termostat',
+  sypialnia:'climate.401_sypialnia_termostat',
+  lazienka:'climate.401_lazienka_termostat'
 });
 const WINDOWS=Object.freeze({
-  salon:['binary_sensor.contact_sensor_drzwi','binary_sensor.contact_sensor_2_drzwi',
-    'binary_sensor.contact_sensor_4_drzwi','binary_sensor.contact_sensor_5_drzwi'],
-  sypialnia:['binary_sensor.contact_sensor_3_drzwi']
+  salon:['binary_sensor.401_salon_okno_prawe_kontaktron_1_contact','binary_sensor.401_salon_okno_prawe_kontaktron_2_contact',
+    'binary_sensor.401_salon_okno_lewe_kontaktron_1_contact','binary_sensor.401_salon_okno_lewe_kontaktron_2_contact'],
+  sypialnia:['binary_sensor.401_sypialnia_okno_dachowe_kontaktron_1_contact']
 });
 const BASE=Object.freeze({ac:22,salon:22,sypialnia:22,lazienka:22});
 const RANGE=Object.freeze({ac:[21,23],salon:[19,23],sypialnia:[19,23],lazienka:[19,23]});
@@ -47,7 +55,7 @@ module.exports=function createTvComfort({haApi,send,jsonBody,resolveDevice,audit
       send(res,403,{error:'Sterowanie dostępne wyłącznie w przypisanym apartamencie'});return null;
     }
     const room=String(tv.room);
-    if(!roomLights(room).length&&room!=='401'){
+    if(room!=='401'){
       send(res,403,{error:'Urządzenia tego apartamentu nie są jeszcze skonfigurowane'});return null;
     }
     return tv;
@@ -80,7 +88,7 @@ module.exports=function createTvComfort({haApi,send,jsonBody,resolveDevice,audit
   }
   function stateView(states,room){
     const lights={},lightList=[];
-    for(const item of roomLights(room)){
+    for(const item of roomLights(room,states)){
       const s=states.get(item.entity),available=usable(s),on=available&&s.state==='on';
       lights[item.id]={available,on,name:item.name};
       lightList.push({id:item.id,name:item.name,available,on});
@@ -115,7 +123,7 @@ module.exports=function createTvComfort({haApi,send,jsonBody,resolveDevice,audit
       return {ok:true,kind,zone:'heating',value:n,applied};
     }
     if(kind==='light'){
-      const item=roomLight(room,zone);entity=item&&item.entity;
+      const item=roomLight(room,zone,states);entity=item&&item.entity;
       if(!entity||!['on','off'].includes(value))throw err(400,'Nieprawidłowe sterowanie światłem');
       domain='switch';service=value==='on'?'turn_on':'turn_off';
     }else if(kind==='mode'&&zone==='ac'){
@@ -129,6 +137,7 @@ module.exports=function createTvComfort({haApi,send,jsonBody,resolveDevice,audit
       entity=Object.prototype.hasOwnProperty.call(CLIMATE,zone)?CLIMATE[zone]:null;
       const n=validTarget(value,zone);
       if(!entity||n===null)throw err(400,'Nastawa przekracza dozwolony zakres obiektu (co 0,5°C)');
+      if(zone!=='ac'&&!Number.isInteger(n))throw err(400,'Termostaty 401 obsługują nastawy co 1°C');
       if(zone==='ac'&&anyWindowNotClosed(states,ALL_WINDOWS))throw err(409,'Klimatyzacja zablokowana przez otwarte okno');
       if(zone!=='ac'&&WINDOWS[zone]&&anyWindowNotClosed(states,WINDOWS[zone]))
         throw err(409,'Zamknij okno przed zmianą temperatury grzejnika');
