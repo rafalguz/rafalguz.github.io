@@ -89,9 +89,10 @@ function cardsRooms(){
    const live=r.number===401&&connected();
    const data=room401();
    const windows=live?data.windows.filter(w=>w.state==='on').length:0;
+   const missingWindows=live?data.windows.filter(w=>!['on','off'].includes(w.state)).length:0;
    return '<button class="room '+(live?'live':'')+'" data-action="room" data-room="'+r.number+'"><span><b>'+r.number+'</b>'+(live?'<small class="liveflag">LIVE</small>':'')+'</span>'+
    '<small>'+(live?'Salon: '+temp(data.temperature):'Urządzenia do podłączenia')+'</small>'+
-   '<small>'+(live?(windows?'Otwarte okna: '+windows:'Okna zamknięte'):'Piętro '+r.floor)+'</small>'+
+   '<small>'+(live?(windows?'Otwarte okna: '+windows:missingWindows?'Brak odczytu: '+missingWindows:'Okna zamknięte'):'Piętro '+r.floor)+'</small>'+
    '<span class="roomstatus">'+esc(r.status)+'</span></button>';
   }).join('')+'</div></section>';
  }).join('');
@@ -217,7 +218,7 @@ function hvac(){
  cmd('light',x.name,'on','Włącz',x.state==='on',blocked||!x.available)+
  '</div></div>').join('')+'</div></div></div>'+
  '<div class="split roominfo"><div class="panel"><h3>Okna</h3>'+
- v.windows.map(x=>deviceRow(x.name,x.state,labelForState(x.state,'Otwarte','Zamknięte'),x.state==='on'?'class="warn"':'class="ok"')).join('')+
+ v.windows.map(x=>deviceRow(x.name,x.state,labelForState(x.state,'Otwarte','Zamknięte'),x.state==='off'?'class="ok"':'class="warn"')).join('')+
  '</div><div class="panel"><h3>Ruch</h3>'+
  v.motion.map(x=>deviceRow(x.name,x.state,labelForState(x.state,'Ruch','Brak ruchu'))).join('')+
  '</div></div>';
@@ -231,11 +232,25 @@ function operations(){
 }
 function alerts(){
  const v=room401();if(!v)return'<div class="empty">Brak danych z Home Assistant.</div>';
- return '<p class="lead">Odczyty urządzeń na żywo. Żadne wskazania nie są symulowane.</p>'+
+ const door=v.door||{state:'unavailable',available:false};
+ const bridge=v.zigbeeBridge||{state:'unavailable',available:false};
+ const batteries=Array.isArray(v.batteries)?v.batteries:[];
+ const signal=Array.isArray(v.signal)?v.signal:[];
+ const windowStatus=x=>deviceRow(x.name,x.state,labelForState(x.state,'Otwarte','Zamknięte'),x.state==='off'?'class="ok"':'class="warn"');
+ const batteryStatus=x=>deviceRow(x.name,x.state,x.available?x.state+'%':'Brak danych',!x.available||Number(x.state)<20?'class="warn"':'class="ok"');
+ const qualityStatus=x=>deviceRow(x.name,x.state,x.available?x.state+' LQI':'Brak danych',!x.available||Number(x.state)<10?'class="warn"':'class="ok"');
+ return '<p class="lead">Rzeczywiste odczyty Zigbee2MQTT z apartamentu 401: '+v.windows.length+' okien, 1 kontaktron drzwi i '+v.motion.length+' czujniki ruchu. Brak danych jest sygnalizowany jako usterka, a nie jako zamknięte okno.</p>'+
  '<div class="split"><div class="panel"><h3>Kontaktrony okien · 401</h3>'+
- v.windows.map(x=>deviceRow(x.name,x.state,labelForState(x.state,'Otwarte','Zamknięte'),x.state==='on'?'class="warn"':'class="ok"')).join('')+
- '</div><div class="panel"><h3>Czujniki ruchu · 401</h3>'+
- v.motion.map(x=>deviceRow(x.name,x.state,labelForState(x.state,'Ruch','Brak ruchu'))).join('')+
+ v.windows.map(windowStatus).join('')+
+ '</div><div class="panel"><h3>Ruch i drzwi · 401</h3>'+
+ deviceRow('Drzwi wejściowe',door.state,labelForState(door.state,'Otwarte','Zamknięte'),door.state==='off'?'class="ok"':'class="warn"')+
+ v.motion.map(x=>deviceRow(x.name,x.state,labelForState(x.state,'Ruch','Brak ruchu'),x.available?'':'class="warn"')).join('')+
+ '</div></div>'+
+ '<div class="split" style="margin-top:16px"><div class="panel"><h3>Baterie czujników</h3>'+
+ (batteries.length?batteries.map(batteryStatus).join(''):'<p>Brak danych o bateriach</p>')+
+ '</div><div class="panel"><h3>Łączność Zigbee</h3>'+
+ deviceRow('SMHUB nr 1',bridge.state,labelForState(bridge.state,'Połączona','Rozłączona'),bridge.state==='on'?'class="ok"':'class="warn"')+
+ signal.map(qualityStatus).join('')+
  '</div></div>';
 }
 function pmsPage(){
