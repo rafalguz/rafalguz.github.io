@@ -51,27 +51,48 @@ const DEVICES = Object.freeze({
   tv:'media_player.401_salon_telewizor_ue55u8072huxxh',
   tvPower:'media_player.401_salon_401_salon_telewizor',
   hallAudio:'media_player.smart_audio_player_2',
+  door:'binary_sensor.401_drzwi_wejsciowe_kontaktron_contact',
+  zigbeeBridge:'binary_sensor.zigbee2mqtt_bridge_connection_state',
   windows:{
-    'Salon prawe':'binary_sensor.contact_sensor_drzwi',
-    'Salon lewe':'binary_sensor.contact_sensor_2_drzwi',
-    'Sypialnia dachowe':'binary_sensor.contact_sensor_3_drzwi'
+    'Salon prawe 1':'binary_sensor.401_salon_okno_prawe_kontaktron_1_contact',
+    'Salon prawe 2':'binary_sensor.401_salon_okno_prawe_kontaktron_2_contact',
+    'Salon lewe 1':'binary_sensor.401_salon_okno_lewe_kontaktron_1_contact',
+    'Salon lewe 2':'binary_sensor.401_salon_okno_lewe_kontaktron_2_contact',
+    'Sypialnia dachowe':'binary_sensor.401_sypialnia_okno_dachowe_kontaktron_1_contact'
   },
   motion:{
-    'Salon':'binary_sensor.pir_motion_sensor_3_ruch',
-    'Sypialnia':'binary_sensor.pir_motion_sensor_4_ruch',
-    'Łazienka':'binary_sensor.pir_motion_sensor_ruch'
+    'Salon':'binary_sensor.401_salon_pir_occupancy',
+    'Sypialnia':'binary_sensor.401_sypialnia_pir_occupancy',
+    'Łazienka':'binary_sensor.401_lazienka_pir_occupancy',
+    'Przedpokój':'binary_sensor.401_przedpokoj_pir_occupancy'
+  },
+  batteries:{
+    'Salon prawe okno 1':'sensor.401_salon_okno_prawe_kontaktron_1_battery',
+    'Salon prawe okno 2':'sensor.401_salon_okno_prawe_kontaktron_2_battery',
+    'Salon lewe okno 1':'sensor.401_salon_okno_lewe_kontaktron_1_battery',
+    'Salon lewe okno 2':'sensor.401_salon_okno_lewe_kontaktron_2_battery',
+    'Sypialnia dachowe':'sensor.401_sypialnia_okno_dachowe_kontaktron_1_battery',
+    'Drzwi wejściowe':'sensor.401_drzwi_wejsciowe_kontaktron_battery',
+    'PIR salon':'sensor.401_salon_pir_battery',
+    'PIR sypialnia':'sensor.401_sypialnia_pir_battery',
+    'PIR łazienka':'sensor.401_lazienka_pir_battery',
+    'PIR przedpokój':'sensor.401_przedpokoj_pir_battery'
+  },
+  signal:{
+    'Salon prawe okno 2':'sensor.0xa4c1387cbec14040_linkquality',
+    'Salon lewe okno 2':'sensor.0xa4c138ca93d7662c_linkquality'
   },
   lights:{
-    'Salon':'switch.qs_zigbee_sec01_single_gang_4_switch_1',
-    'Nad stołem':'switch.qs_zigbee_sec01_single_gang_3_switch_1',
-    'Przedpokój':'switch.qs_zigbee_sec01_single_gang_2_switch_1',
-    'Sypialnia':'switch.qs_zigbee_sec01_single_gang_5_switch',
-    'Łazienka':'switch.qs_zigbee_sec01_single_gang_switch_1'
+    'Salon':'switch.401_salon_swiatlo',
+    'Nad stołem':'switch.401_salon_nad_stolem_swiatlo',
+    'Przedpokój':'switch.401_przedpokoj_oswietlenie',
+    'Sypialnia':'switch.401_sypialnia_swiatlo',
+    'Łazienka':'switch.401_lazienka_oswietlenie'
   },
   heating:{
-    'Salon':'climate.zg253_trv_2',
-    'Sypialnia':'climate.zg253_trv_3',
-    'Łazienka':'climate.zg253_trv'
+    'Salon':'climate.401_salon_termostat',
+    'Sypialnia':'climate.401_sypialnia_termostat',
+    'Łazienka':'climate.401_lazienka_termostat'
   }
 });
 const sessions = new Map();
@@ -278,7 +299,7 @@ function extractStates(states){
     },
     room401:{
       temperature:state(DEVICES.temp)&&Number.isFinite(Number(state(DEVICES.temp).state))?Number(state(DEVICES.temp).state):null,
-      ac:one(DEVICES.ac),tv,windows:list(DEVICES.windows),motion:list(DEVICES.motion),lights:list(DEVICES.lights),heating:list(DEVICES.heating)
+      ac:one(DEVICES.ac),tv,door:one(DEVICES.door),zigbeeBridge:one(DEVICES.zigbeeBridge),windows:list(DEVICES.windows),motion:list(DEVICES.motion),batteries:list(DEVICES.batteries),signal:list(DEVICES.signal),lights:list(DEVICES.lights),heating:list(DEVICES.heating)
     }
   };
 }
