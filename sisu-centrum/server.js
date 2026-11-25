@@ -670,6 +670,27 @@ function createLateCheckout({dataDir,send,jsonBody,resolveDevice,hotelExpert}){
   }
   async function handle(req,res,p){
     if(!['/api/tv/late-checkout','/api/tv/late-checkout/start','/api/tv/late-checkout/check'].includes(p))return false;
+    // 402: a safe, read-only payment preview. Never accept real BLIK codes,
+    // create PayU orders or change PMS reservations until production is verified.
+    const paired=resolveDevice(req);
+    if(paired&&paired.mode==='room'&&String(paired.room)==='402'){
+      if(p!=='/api/tv/late-checkout'||req.method!=='GET'){
+        send(res,503,{ok:false,error:'Płatności BLIK nie są jeszcze aktywne. Żadna opłata nie została pobrana.'});return true;
+      }
+      try{
+        const cfg=opts(),r=(await hotelExpert.alarmGuest(402)).reservation;
+        if(!r){send(res,200,{ok:true,room:'402',available:false,paymentMode:'preview',reason:'Brak aktywnej rezerwacji'});return true;}
+        const checkout=r.departureTime||cfg.defaultCheckout;
+        const next=addHours(checkout,cfg.hours);
+        const minutes=t=>Number(t.slice(0,2))*60+Number(t.slice(3));
+        const valid=typeof next==='string'&&minutes(next)>minutes(checkout);
+        send(res,200,{ok:true,room:'402',available:valid,paid:false,paymentMode:'preview',
+          arrival:r.arrival,departure:r.departure,checkinTime:r.arrivalTime||cfg.defaultCheckin,
+          checkoutTime:checkout,newCheckout:valid?next:null,priceGrosz:cfg.price,hours:cfg.hours,
+          reason:valid?'Podgląd płatności BLIK – bez pobierania pieniędzy.':'Przedłużenie wymaga kontaktu z obsługą.'});
+      }catch(e){send(res,503,{ok:false,error:'Nie można pobrać danych pobytu.'});}
+      return true;
+    }
     const tv=device(req,res);if(!tv)return true;
     try{
       const cfg=opts(),g=await hotelExpert.guest(Number(tv.room)),reservation=g&&g.reservation;
