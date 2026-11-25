@@ -23,7 +23,7 @@ const same=(a,b)=>!!a&&!!b&&pin(a.passcode)===pin(b.passcode)&&
   stamp(a.start_date)===stamp(b.start_date)&&stamp(a.end_date)===stamp(b.end_date)&&
   !!String(a.name||'').trim()&&String(a.name).trim()===String(b.name||'').trim();
 function datesMatch(c,r){return !!r&&day(stamp(c.start_date))===r.arrival&&day(stamp(c.end_date))===r.departure;}
-module.exports=function createArrival({dataDir,rooms,haApi,getStay,hasUniqueSalon,logger=console,autoPoll=true,now=Date.now,sleep=ms=>new Promise(r=>setTimeout(r,ms))}){
+module.exports=function createArrival({dataDir,rooms,haApi,getStay,hasUniqueSalon,launchApp,logger=console,autoPoll=true,now=Date.now,sleep=ms=>new Promise(r=>setTimeout(r,ms))}){
   const FILE=path.join(dataDir,'sisu-guest-arrival-v2.json');
   fs.mkdirSync(dataDir,{recursive:true,mode:0o700});
   let db={seen:{},pending:{},completed:{},prepared:{}};
@@ -71,7 +71,8 @@ module.exports=function createArrival({dataDir,rooms,haApi,getStay,hasUniqueSalo
         await sleep(2000);
       }
       if(db.completed[room]===key||(await getStay(room))?.key!==key)return false;
-      await service('media_player','play_media',p.local,{media_content_type:'app',media_content_id:APP});
+      if(launchApp){if(!await launchApp(room))return false;}
+      else await service('media_player','play_media',p.local,{media_content_type:'app',media_content_id:APP});
       db.prepared[room]={key,at:now()};save();
       logger.info('SISU arrival '+room+': TV preparation sent');
       return true;
