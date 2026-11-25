@@ -247,7 +247,7 @@ function createRoomAlarm({dataDir,send,jsonBody,resolveDevice,haApi,hotelExpert,
 module.exports=function createTvAlarm(options){
  const primary=createRoomAlarm({...options,room:'401'});
  const secondary=createRoomAlarm({...options,room:'402'});
- return {...primary,maintenance402:secondary.maintenance,verifyStay402:secondary.currentStayKey,
+ return {...primary,maintenance402:secondary.maintenance,verifyStay401:primary.currentStayKey,verifyStay402:secondary.currentStayKey,
    async handle(req,res,p){
      if(p!=='/api/tv/alarm'&&p!=='/api/tv/alarm/ack')return false;
      const device=options.resolveDevice(req);
