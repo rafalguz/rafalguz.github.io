@@ -251,13 +251,15 @@ async function getOverview(fresh=false){
 }
 async function haApi(endpoint,method='GET',payload){
   if(!HA_TOKEN)throw Object.assign(Error('Brak połączenia serwerowego z Home Assistant'),{status:503});
-  if(!/^\/(states|services\/[a-z_]+\/[a-z_]+)$/.test(endpoint))throw Object.assign(Error('Niedozwolone żądanie HA'),{status:400});
+  const arrivalRead=/^\/states\/(?:input_text\.sisu_przyjazd_(?:wejscie|401|402)|media_player\.(?:401_salon_telewizor_ue55u8072huxxh|apartament_402_402_salon_telewizor_ue55u8072huxxh))$/.test(endpoint)&&method==='GET';
+  const ttRead=/^\/services\/ttlock\/list_(?:passcodes|records)\?return_response$/.test(endpoint)&&method==='POST';
+  if(!arrivalRead&&!ttRead&&!/^\/(states|services\/[a-z_]+\/[a-z_]+)$/.test(endpoint))throw Object.assign(Error('Niedozwolone żądanie HA'),{status:400});
   let response;
   try{
     response=await fetch(HA_URL+endpoint,{
       method, headers:{Authorization:'Bearer '+HA_TOKEN,Accept:'application/json','Content-Type':'application/json'},
       ...(payload?{body:JSON.stringify(payload)}:{}),
-      signal:AbortSignal.timeout(9000),
+      signal:AbortSignal.timeout(ttRead?40000:9000),
       redirect:'manual'
     });
   }catch{throw Object.assign(Error('Serwer Home Assistant nie odpowiada'),{status:503});}
@@ -736,7 +738,15 @@ const tvComfort=require('./tv_comfort')({haApi,send,jsonBody,audit,resolveDevice
 hotelExpert=createHotelExpert({dataDir:DATA,send,resolveDevice:tvRegistry.resolveDevice,requireUser,csrfOk,jsonBody,audit});
 const lateCheckout=createLateCheckout({dataDir:DATA,send,jsonBody,resolveDevice:tvRegistry.resolveDevice,hotelExpert});
 const tvAlarm=require('./tv_alarm')({dataDir:DATA,send,jsonBody,resolveDevice:tvRegistry.resolveDevice,haApi,hotelExpert});
-const tvWelcome=require('./tv_welcome')({dataDir:DATA,haApi,resolveDevice:tvRegistry.resolveDevice,send,jsonBody,
+const arrival=require('./tv_arrival')({dataDir:DATA,rooms:ROOMS,haApi,hasUniqueSalon:tvRegistry.hasUniqueSalon,
+  getStay:async room=>{
+    if(!['401','402'].includes(String(room)))return null;
+    const reservation=(await hotelExpert.alarmGuest(Number(room))).reservation;
+    if(!reservation)return null;
+    const key=await (String(room)==='401'?tvAlarm.verifyStay401():tvAlarm.verifyStay402());
+    return {reservation,key,context:await hotelExpert.getRoomContext(String(room))};
+  }});
+const tvWelcome=require('./tv_welcome')({dataDir:DATA,haApi,resolveDevice:tvRegistry.resolveDevice,send,jsonBody,arrival,
   getWelcomeStay402:async()=>({key:await tvAlarm.verifyStay402(),context:await hotelExpert.getRoomContext('402')})});
 const hallAnnouncements=require('./hall_announcements')({haApi,send,requireUser,csrfOk,jsonBody,audit,invalidateOverview,hallAudio:DEVICES.hallAudio,haToken:HA_TOKEN});
 
