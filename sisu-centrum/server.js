@@ -384,7 +384,7 @@ function createHotelExpert({dataDir,send,resolveDevice,requireUser,csrfOk,jsonBo
   function device(req,res){
     const tv=resolveDevice(req);
     if(!tv){send(res,401,{error:'Telewizor nie jest sparowany'});return null;}
-    if(tv.mode!=='room'||String(tv.room)!=='401'){send(res,403,{error:'Dane pobytu dostępne tylko dla przypisanego apartamentu'});return null;}
+    if(tv.mode!=='room'||!['401','402'].includes(String(tv.room))){send(res,403,{error:'Dane pobytu dostępne tylko dla przypisanego apartamentu'});return null;}
     return tv;
   }
   async function api(cfg,route,method='GET',body=null,useWrite=false){
@@ -477,7 +477,9 @@ function createHotelExpert({dataDir,send,resolveDevice,requireUser,csrfOk,jsonBo
     return {reservation:record?{
       id:record.id,arrival:record.przyjazd,departure:record.wyjazd,
       arrivalTime:hh(record.godzina_przyjazdu,'15:00'),
-      departureTime:hh(record.godzina_wyjazdu,'11:00')
+      departureTime:hh(record.godzina_wyjazdu,'11:00'),
+      guestName:typeof record.gosc==='string'?record.gosc:null,
+      persons:Number(record.osob)||1,children:Number(record.dzieci)||0,status:record.status||null
     }:null};
   }
   async function patchReservation(id,changes){
@@ -562,7 +564,20 @@ function createHotelExpert({dataDir,send,resolveDevice,requireUser,csrfOk,jsonBo
     if(p!=='/api/tv/hotel/guest')return false;
     if(req.method!=='GET'){send(res,405,{error:'Metoda nieobsługiwana'});return true;}
     const tv=device(req,res);if(!tv)return true;
-    try{send(res,200,await guest(Number(tv.room)));}
+    try{
+      if(String(tv.room)==='402'){
+        // Read only the active stay in this TV's assigned room. No guest contact
+        // details or raw reservation identifier are needed by the TV display.
+        const context=await alarmGuest(402);
+        const r=context.reservation;
+        const reservation=r?{
+          guestName:r.guestName,arrival:r.arrival,departure:r.departure,
+          arrivalTime:r.arrivalTime,departureTime:r.departureTime,
+          persons:r.persons,children:r.children,status:r.status
+        }:null;
+        send(res,200,{ok:true,room:'402',source:'HotelowyExpert',reservation});
+      }else send(res,200,await guest(Number(tv.room)));
+    }
     catch(e){send(res,Number.isInteger(e.status)?e.status:500,{error:e.message||'Błąd HotelowyExpert'});}
     return true;
   }
