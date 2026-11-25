@@ -735,8 +735,9 @@ const tvContent=require('./tv_content')({
 const tvComfort=require('./tv_comfort')({haApi,send,jsonBody,audit,resolveDevice:tvRegistry.resolveDevice});
 hotelExpert=createHotelExpert({dataDir:DATA,send,resolveDevice:tvRegistry.resolveDevice,requireUser,csrfOk,jsonBody,audit});
 const lateCheckout=createLateCheckout({dataDir:DATA,send,jsonBody,resolveDevice:tvRegistry.resolveDevice,hotelExpert});
-const tvWelcome=require('./tv_welcome')({dataDir:DATA,haApi,resolveDevice:tvRegistry.resolveDevice,send,jsonBody});
 const tvAlarm=require('./tv_alarm')({dataDir:DATA,send,jsonBody,resolveDevice:tvRegistry.resolveDevice,haApi,hotelExpert});
+const tvWelcome=require('./tv_welcome')({dataDir:DATA,haApi,resolveDevice:tvRegistry.resolveDevice,send,jsonBody,
+  getWelcomeStay402:async()=>({key:await tvAlarm.verifyStay402(),context:await hotelExpert.getRoomContext('402')})});
 const hallAnnouncements=require('./hall_announcements')({haApi,send,requireUser,csrfOk,jsonBody,audit,invalidateOverview,hallAudio:DEVICES.hallAudio,haToken:HA_TOKEN});
 
 async function handle(req,res){
