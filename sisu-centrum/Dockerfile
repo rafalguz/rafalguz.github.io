@@ -5,6 +5,7 @@ COPY server.js /app/server.js
 COPY tv_registry.js /app/tv_registry.js
 COPY tv_alarm.js /app/tv_alarm.js
 COPY tv_watchdog.js /app/tv_watchdog.js
+COPY tv_autostart.js /app/tv_autostart.js
 COPY tv_welcome.js /app/tv_welcome.js
 COPY tv_arrival.js /app/tv_arrival.js
 COPY tv_comfort.js /app/tv_comfort.js
