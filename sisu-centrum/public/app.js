@@ -9,6 +9,13 @@ const FLOORS=[4,3,2,1];
 const STATUSES=['Nieustalony','Oczekuje na przyjazd','Zameldowany','Do sprzątania','Sprzątanie','Gotowy'];
 const LANGUAGES=[['pl','Polski'],['en','English'],['de','Deutsch'],['cs','Čeština'],['uk','Українська'],['it','Italiano'],['fr','Français'],['es','Español'],['no','Norsk'],['nl','Nederlands']];
 let overviewRequestId=0;
+let tvRequestId=0;
+let tvDraft={code:'',room:'',mode:'room',name:''};
+const tvRoomDraft=new Map();
+function rememberTvField(el){
+ if(el.closest?.('#tv-approve')&&Object.prototype.hasOwnProperty.call(tvDraft,el.name))tvDraft[el.name]=el.value;
+ if(el.matches?.('[data-tv-room]'))tvRoomDraft.set(el.dataset.tvRoom,el.value);
+}
 let hallDraft={text:'',voice:'AgnieszkaNeural',id:null};
 let followUpTimers=[];
 function cancelFollowUpRefreshes(){
@@ -286,16 +293,17 @@ function tvPage(){
  const list=S.tvs||[];
  const pending=S.tvPending||[];
  const roomNumbers=(S.tvRooms&&S.tvRooms.length?S.tvRooms:rooms().map(r=>r.number));
- const options=roomNumbers.map(n=>'<option value="'+n+'">'+n+'</option>').join('');
+ const options=roomNumbers.map(n=>'<option value="'+n+'" '+(String(n)===tvDraft.room?'selected':'')+'>'+n+'</option>').join('');
  const now=Date.now();
  const rows=list.length?list.map(d=>
   '<div class="tv-device"><div class="tv-device-icon">▣</div><div class="tv-device-info"><b>'+esc(d.name)+' · '+esc(d.room)+'</b>'+
   '<small>'+esc(d.mode==='demo'?'TRYB TESTOWY':'APARTAMENT')+' · v'+esc(d.version||'—')+' · '+esc(d.deviceId)+'</small>'+
   '<small>Ostatnio widziany: '+esc(d.lastSeen?new Date(d.lastSeen).toLocaleString('pl-PL'):'Brak danych')+'</small></div>'+
   '<span class="tv-indicator '+(d.online?'online':'')+'">'+(d.online?'Online':'Offline')+'</span>'+
-  '<select class="input tv-room-select" data-tv-room="'+esc(d.id)+'">'+roomNumbers.map(n=>'<option value="'+n+'" '+(d.room===n?'selected':'')+'>'+n+'</option>').join('')+'</select>'+
+  '<select class="input tv-room-select" data-tv-room="'+esc(d.id)+'">'+roomNumbers.map(n=>'<option value="'+n+'" '+(String(n)===(tvRoomDraft.get(d.id)||String(d.room))?'selected':'')+'>'+n+'</option>').join('')+'</select>'+
   '<button class="btn subtle" data-action="tv-reassign" data-id="'+esc(d.id)+'">Zmień pokój</button>'+
-  '<button class="btn danger" data-action="tv-revoke" data-id="'+esc(d.id)+'">Odłącz</button></div>'
+  '<button class="btn subtle" data-action="tv-rename" data-id="'+esc(d.id)+'">Zmień nazwę</button>'+
+   '<button class="btn danger" data-action="tv-revoke" data-id="'+esc(d.id)+'">Odłącz</button></div>'
  ).join(''):'<div class="empty">Nie ma jeszcze przypisanych telewizorów. Pierwszy sparujemy testowo w salonie.</div>';
  const waiting=pending.length?pending.map(x=>
   '<div class="tv-pending-row"><strong>Kod '+esc(x.code)+'</strong><span>ID '+esc(x.deviceId)+' · v'+esc(x.version||'—')+'</span>'+
@@ -303,13 +311,14 @@ function tvPage(){
  ).join(''):'<p class="muted">Brak telewizorów oczekujących na parowanie.</p>';
  return '<div class="tv-admin"><div class="panel tv-intro">'+
   '<h3>Jeden system, 30 niezależnych apartamentów</h3><p>Po pierwszym uruchomieniu SISU23 TV pokazuje 8-cyfrowy kod. Wpisz go poniżej, wybierz apartament i zatwierdź. Telewizor sam pobierze numer pokoju. Tryb testowy nie steruje urządzeniami.</p>'+
-  '<div class="tv-kpis"><b>'+list.length+' z 30</b><small>Przypisanych telewizorów</small><b>'+list.filter(x=>x.online).length+'</b><small>Online</small></div></div>'+
+  '<div class="tv-kpis"><b>'+list.length+'</b><small>Przypisanych telewizorów</small><b>'+list.filter(x=>x.online).length+'</b><small>Online</small></div></div>'+
   '<div class="split tv-headpanels"><section class="panel"><h3>Sparuj nowy telewizor</h3>'+
-  '<form id="tv-approve" class="tv-form"><label>Kod wyświetlony na TV<input class="input" name="code" pattern="[0-9]{8}" minlength="8" maxlength="8" inputmode="numeric" placeholder="8 cyfr" required></label>'+
-  '<label>Apartament<select class="input" name="room" required>'+options+'</select></label>'+
-  '<label>Tryb<select class="input" name="mode"><option value="demo">TEST — bez sterowania</option><option value="room">Apartament docelowy</option></select></label>'+
+  '<form id="tv-approve" class="tv-form"><label>Kod wyświetlony na TV<input class="input" name="code" pattern="[0-9]{8}" minlength="8" maxlength="8" inputmode="numeric" placeholder="8 cyfr" value="'+esc(tvDraft.code)+'" required></label>'+
+  '<label>Nazwa telewizora<input class="input" name="name" maxlength="60" placeholder="np. 402 Sypialnia" value="'+esc(tvDraft.name)+'"></label>'+
+   '<label>Apartament<select class="input" name="room" required>'+options+'</select></label>'+
+  '<label>Tryb<select class="input" name="mode"><option value="demo" '+(tvDraft.mode==='demo'?'selected':'')+'>TEST — bez sterowania</option><option value="room" '+(tvDraft.mode==='room'?'selected':'')+'>Apartament docelowy</option></select></label>'+
   '<button class="btn primary" type="submit">Przypisz telewizor</button></form>'+
-  '<p class="tv-note">Parowanie zabezpiecza konto administratora i jednorazowy kod. Jeden telewizor docelowy może być przypisany do jednego apartamentu.</p></section>'+
+  '<p class="tv-note">Parowanie zabezpiecza konto administratora i jednorazowy kod. Do jednego apartamentu można przypisać kilka telewizorów. Każdy telewizor ma własną nazwę i przypisanie.</p></section>'+
   '<section class="panel"><h3>Czekają na przypisanie</h3><div class="tv-pending">'+waiting+'</div>'+
   '<button class="btn subtle" data-action="tv-refresh">Odśwież listę</button></section></div>'+
   '<div class="panel"><div class="twohead"><h3>Telewizory w apartamentach</h3><small>Wersja · Stan · Lokal</small></div>'+
@@ -328,13 +337,33 @@ async function loadPms(){
   if(S.tab==='pms')render();
  }catch(e){S.pmsReservations=[];toast('ALFA PMS: '+e.message,true);if(S.tab==='pms')render();}
 }
+// Refresh live lists, not the form: typing and the focused select stay intact.
+function renderTvLive(){
+ const form=root.querySelector('#tv-approve');
+ if(!form){render();return;}
+ const template=document.createElement('template');
+ template.innerHTML=tvPage();
+ for(const selector of ['.tv-kpis','.tv-pending','.tv-devices']){
+  const current=root.querySelector(selector),next=template.content.querySelector(selector);
+  if(!current||!next||current.contains(document.activeElement))continue;
+  if(current.innerHTML!==next.innerHTML)current.innerHTML=next.innerHTML;
+ }
+ const room=form.elements.namedItem('room'),nextRoom=template.content.querySelector('#tv-approve [name="room"]');
+ if(room&&nextRoom&&document.activeElement!==room){
+  const oldOptions=Array.from(room.options).map(o=>o.value).join(',');
+  const newOptions=Array.from(nextRoom.options).map(o=>o.value).join(',');
+  if(oldOptions!==newOptions){const value=room.value||tvDraft.room;room.innerHTML=nextRoom.innerHTML;if(Array.from(room.options).some(o=>o.value===value))room.value=value;}
+ }
+}
 async function loadTvs(){
  if(S.user?.role!=='admin')return;
+ const id=++tvRequestId;
  try{
   const data=await request('/api/tvs');
+  if(id!==tvRequestId||S.user?.role!=='admin')return;
   S.tvs=data.devices||[];S.tvPending=data.pending||[];S.tvRooms=data.rooms||[];
-  if(S.tab==='tvs')render();
- }catch(e){toast('Telewizory: '+e.message,true);}
+  if(S.tab==='tvs')renderTvLive();
+ }catch(e){if(id===tvRequestId)toast('Telewizory: '+e.message,true);}
 }
 function render(){
  if(!S.configured){root.innerHTML=authForm(true);return;}
@@ -361,7 +390,7 @@ async function loadData(silent=false,forceFresh=false){
   const changed=old!==incoming;
   S.overview=data;
   S.updated=new Date().toLocaleTimeString('pl-PL');
-  if(S.tab!=='staff'&&(!silent||changed))render();
+  if(S.tab!=='staff'&&S.tab!=='tvs'&&(!silent||changed))render();
   else {
    const timestamp=root.querySelector('[data-last-update]');
    if(timestamp)timestamp.textContent='Aktualizacja '+S.updated;
@@ -369,7 +398,7 @@ async function loadData(silent=false,forceFresh=false){
  }catch(e){
   if(requestId!==overviewRequestId)return;
   if(!silent)toast(e.message,true);
-  if(S.tab!=='staff'&&!silent)render();
+  if(S.tab!=='staff'&&S.tab!=='tvs'&&!silent)render();
  }
 }
 async function loadUsers(){
@@ -399,7 +428,7 @@ root.addEventListener('click',async e=>{
  if(a==='floor'){S.floor=Number(el.dataset.floor);render();return;}
  if(a==='room'){const number=Number(el.dataset.room);S.tab=number===401?'room401':'operations';S.focusRoom=number===401?null:number;render();void loadData(true);return;}
  if(a==='refresh'){if(S.tab==='pms')await doAction(()=>loadPms());else await doAction(()=>loadData(false,true));if(S.tab==='staff')await loadUsers();if(S.tab==='tvs')await loadTvs();if(S.tab==='updates')await loadUpdates();return;}
- if(a==='logout'){cancelFollowUpRefreshes();++overviewRequestId;await doAction(async()=>{await request('/api/logout',{});S.user=null;S.csrf=null;S.overview=null;S.tab='apartments';render()});return;}
+ if(a==='logout'){cancelFollowUpRefreshes();++overviewRequestId;++tvRequestId;await doAction(async()=>{await request('/api/logout',{});S.user=null;S.csrf=null;S.overview=null;S.tab='apartments';tvDraft={code:'',room:'',mode:'room',name:''};tvRoomDraft.clear();S.tvs=[];S.tvPending=[];render()});return;}
  if(a==='tv-refresh'){await loadTvs();return;}
  if(a==='tv-update-preview'){try{window.SISUTVAdmin.preview(root);toast('Podgląd szkicu odświeżony.')}catch(e){toast(e.message,true)}return;}
  if(a==='tv-update-publish'){
@@ -413,16 +442,24 @@ root.addEventListener('click',async e=>{
   await doAction(async()=>{const x=await window.SISUTVAdmin.rollback(request,version);await window.SISUTVAdmin.load(request);toast('Przywrócono v'+version+' jako nową wersję '+x.version+'.')});
   return;
  }
- if(a==='tv-revoke'){
+ if(a==='tv-rename'){
+   const d=S.tvs.find(x=>x.id===el.dataset.id);
+   if(!d)return;
+   const name=prompt('Nazwa telewizora (np. 402 Salon):',d.name||'Samsung TV');
+   if(name===null||!name.trim())return;
+   await doAction(async()=>{await request('/api/tvs/rename',{id:d.id,name:name.trim()});toast('Nazwa zapisana.');await loadTvs()});
+   return;
+  }
+  if(a==='tv-revoke'){
   if(!confirm('Na pewno odłączyć ten telewizor? Przestanie otrzymywać przypisanie pokoju.'))return;
-  await doAction(async()=>{await request('/api/tvs/revoke',{id:el.dataset.id});toast('Telewizor odłączony.');await loadTvs()});
+  await doAction(async()=>{await request('/api/tvs/revoke',{id:el.dataset.id});tvRoomDraft.delete(el.dataset.id);toast('Telewizor odłączony.');await loadTvs()});
   return;
  }
  if(a==='tv-reassign'){
   const input=root.querySelector('[data-tv-room="'+el.dataset.id+'"]');
   const room=Number(input?.value);
   if(!room||!confirm('Zmienić przypisanie telewizora na apartament '+room+'?'))return;
-  await doAction(async()=>{await request('/api/tvs/reassign',{id:el.dataset.id,room});toast('Nowy apartament: '+room);await loadTvs()});
+  await doAction(async()=>{await request('/api/tvs/reassign',{id:el.dataset.id,room});tvRoomDraft.delete(el.dataset.id);toast('Nowy apartament: '+room);await loadTvs()});
   return;
  }
  if(a==='hall-preview'){
@@ -543,6 +580,7 @@ root.addEventListener('click',async e=>{
  }
 });
 root.addEventListener('change',async e=>{
+ rememberTvField(e.target);
  if(e.target.dataset.action==='pms-language'){
   const reservationId=Number(e.target.dataset.reservationId),language=String(e.target.value||'auto');
   const ok=await doAction(async()=>{await request('/api/pms/language',{reservationId,language});toast(language==='auto'?'Przywrócono domyślny język polski.':'Język pobytu zapisany.');await loadPms()});
@@ -585,6 +623,7 @@ root.addEventListener('change',async e=>{
  if(success)refreshAfterControl('status');
 });
 root.addEventListener('input',e=>{
+ rememberTvField(e.target);
   if(e.target.id==='hall-message'){
     hallDraft.text=e.target.value;hallDraft.id=null;
     const counter=root.querySelector('#hall-counter');if(counter)counter.textContent=hallDraft.text.length+' / 650 znaków';
@@ -612,8 +651,9 @@ root.addEventListener('submit',async e=>{
  e.preventDefault();
  const form=e.target, kind=form.id, fd=new FormData(form);
  if(kind==='tv-approve'){
-  const body={code:String(fd.get('code')||'').trim(),room:Number(fd.get('room')),mode:String(fd.get('mode')||'demo')};
-  const ok=await doAction(async()=>{await request('/api/tvs/approve',body);toast('Parowanie zaakceptowane. TV pobierze konfigurację.');await loadTvs()});
+  const body={code:String(fd.get('code')||'').trim(),room:Number(fd.get('room')),mode:String(fd.get('mode')||'room'),name:String(fd.get('name')||'').trim()};
+   tvDraft={code:body.code,room:String(body.room),mode:body.mode,name:body.name};
+  const ok=await doAction(async()=>{await request('/api/tvs/approve',body);tvDraft={code:'',room:String(body.room),mode:body.mode,name:''};toast('Parowanie zaakceptowane. TV pobierze konfigurację.');await loadTvs()});
   if(ok)await loadTvs();
   return;
  }
