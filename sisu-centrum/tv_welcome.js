@@ -4,7 +4,7 @@
 const fs=require('node:fs');
 const path=require('node:path');
 const crypto=require('node:crypto');
-module.exports=function makeWelcome({dataDir,haApi,resolveDevice,send,jsonBody}) {
+module.exports=function makeWelcome({dataDir,haApi,resolveDevice,send,jsonBody,getWelcomeStay402}) {
   const FILE=path.join(dataDir,'sisu-welcome-claims.json');
   const HASH_ENTITY='input_text.401_kod_uzyty_do_powitania_skrot_sha_256';
   const MAX_AGE_MS=5*60*1000;
@@ -104,11 +104,45 @@ module.exports=function makeWelcome({dataDir,haApi,resolveDevice,send,jsonBody})
       console.warn('SISU TV 401: legacy claim migration deferred:',err.message);
     }
   })();
+  // 402: a PIN-triggered HA request tied to the active PMS reservation.
+  // The salon TV alone may claim. No raw PIN or guest details are exposed.
+  async function claim402(req,res,d){
+    const no=()=>{send(res,200,{ok:true,welcome:false});return true;};
+    if(!d.welcomeSalon402||typeof getWelcomeStay402!=='function')return no();
+    await jsonBody(req);
+    const states=await haApi('/states');
+    if(!Array.isArray(states))return no();
+    const request=states.find(x=>x.entity_id==='input_text.sisu_402_powitanie_pobyt');
+    const current=states.find(x=>x.entity_id==='input_text.sisu_402_aktualny_pobyt');
+    const key=String(request?.state||'');
+    const age=Date.now()-Date.parse(request?.last_changed||'');
+    if(!/^[a-f0-9]{32}$/.test(key)||current?.state!==key||
+       !Number.isFinite(age)||age<0||age>MAX_AGE_MS||claims['402']===key)return no();
+    let fresh;
+    try{fresh=await getWelcomeStay402()}catch{return no()}
+    if(fresh?.key!==key||fresh.context?.stayStatus!=='active'||!fresh.context.stayId)return no();
+    // Existing TV client uses its most recent config/heartbeat for the language.
+    // If not up to date, wait for that refresh rather than speaking the old locale.
+    const delivered=d.welcomeContext;
+    if(!delivered||delivered.room!=='402'||delivered.stayStatus!=='active'||
+       delivered.stayId!==fresh.context.stayId||delivered.language!==fresh.context.language)return no();
+    // Another simultaneous poll may have completed while PMS was being checked.
+    if(claims['402']===key)return no();
+    claims['402']=key;
+    persist();
+    const eventId=crypto.randomBytes(16).toString('hex');
+    send(res,200,{ok:true,welcome:true,eventId});
+    console.info('SISU TV 402: one-time arrival ticket issued');
+    try{await haApi('/services/input_text/set_value','POST',{entity_id:'input_text.sisu_402_powitanie_odtworzone',value:key});}
+    catch{console.warn('SISU TV 402: welcome light signal unavailable')}
+    return true;
+  }
   async function handle(req,res,p) {
     if(await handleManual(req,res,p))return true;
     if(p!=='/api/tv/welcome/claim')return false;
     if(req.method!=='POST'){send(res,405,{error:'Method not allowed'});return true;}
     const d=resolveDevice(req);
+    if(d&&d.mode==='room'&&String(d.room)==='402')return claim402(req,res,d);
     if(!d||d.mode!=='room'||d.room!==401){
       send(res,403,{error:'TV not paired with apartment 401'});return true;
     }
