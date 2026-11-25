@@ -1,18 +1,11 @@
 'use strict';
-// SISU23 0.9.3: wake-up call for apartment 401.
+// SISU23: isolated wake-up calls for apartments 401 and 402.
 // The TV has no HA or PMS credentials. A wake-up is tied to an opaque,
 // server-HMAC reservation identity and is fail-closed on booking changes.
 const fs=require('node:fs');
 const path=require('node:path');
 const crypto=require('node:crypto');
 
-const IDS=Object.freeze({
- due:'input_datetime.sisu_401_budzik_termin',
- active:'input_boolean.sisu_401_budzik_aktywny',
- ringing:'input_boolean.sisu_401_budzik_dzwoni',
- scheduledStay:'input_text.sisu_401_budzik_pobyt',
- currentStay:'input_text.sisu_401_aktualny_pobyt'
-});
 const TIME=/^([01]\d|2[0-3]):([0-5]\d)$/;
 const TZ='Europe/Warsaw';
 const localFormatter=new Intl.DateTimeFormat('en-GB',{
@@ -37,9 +30,17 @@ function plannedAt(time,checkout,now=Date.now()){
  }
  throw Object.assign(Error('Ta godzina wypada po wymeldowaniu'),{status:409});
 }
-module.exports=function createTvAlarm({dataDir,send,jsonBody,resolveDevice,haApi,hotelExpert,logger=console,autoPoll=true}){
- const DB=path.join(dataDir,'sisu-401-wakeup.json');
- const SECRET=path.join(dataDir,'sisu-401-wakeup-key');
+function createRoomAlarm({dataDir,send,jsonBody,resolveDevice,haApi,hotelExpert,logger=console,autoPoll=true,room='401'}){
+ if(!['401','402'].includes(room))throw Error('Unsupported SISU alarm room');
+ const IDS=Object.freeze({
+   due:'input_datetime.sisu_'+room+'_budzik_termin',
+   active:'input_boolean.sisu_'+room+'_budzik_aktywny',
+   ringing:'input_boolean.sisu_'+room+'_budzik_dzwoni',
+   scheduledStay:'input_text.sisu_'+room+'_budzik_pobyt',
+   currentStay:'input_text.sisu_'+room+'_aktualny_pobyt'
+ });
+ const DB=path.join(dataDir,'sisu-'+room+'-wakeup.json');
+ const SECRET=path.join(dataDir,'sisu-'+room+'-wakeup-key');
  fs.mkdirSync(dataDir,{recursive:true,mode:0o700});
  try{fs.writeFileSync(SECRET,crypto.randomBytes(32).toString('hex'),{flag:'wx',mode:0o600});}
  catch(e){if(e.code!=='EEXIST')throw e;}
@@ -68,7 +69,7 @@ module.exports=function createTvAlarm({dataDir,send,jsonBody,resolveDevice,haApi
  function stayKey(reservation){
    const raw=String(reservation&&reservation.id||'');
    if(!/^[a-zA-Z0-9_-]{1,100}$/.test(raw))throw Object.assign(Error('Brak identyfikatora rezerwacji'),{status:503});
-   return crypto.createHmac('sha256',key).update('SISU401:'+raw).digest('hex').slice(0,32);
+   return crypto.createHmac('sha256',key).update('SISU'+room+':'+raw).digest('hex').slice(0,32);
  }
  async function action(domain,service,entity,data={}){
    return haApi('/services/'+domain+'/'+service,'POST',{entity_id:entity,...data});
@@ -88,7 +89,7 @@ module.exports=function createTvAlarm({dataDir,send,jsonBody,resolveDevice,haApi
  }
  async function reconcile(){
    let booking;
-   try{booking=await hotelExpert.alarmGuest(401);}
+   try{booking=await hotelExpert.alarmGuest(Number(room));}
    catch(e){
      // Fail closed: inability to verify the booking must not wake a former guest.
      if(db.current||db.alarm){
@@ -118,7 +119,7 @@ module.exports=function createTvAlarm({dataDir,send,jsonBody,resolveDevice,haApi
      }
    }
    if(firstPmsConfirmation){
-     logger.info('SISU alarm 401: PMS sync OK, active_reservation='+String(!!reservation));
+     logger.info('SISU alarm '+room+': PMS sync OK, active_reservation='+String(!!reservation));
      firstPmsConfirmation=false;
    }
    return {current,reservation};
@@ -129,12 +130,12 @@ module.exports=function createTvAlarm({dataDir,send,jsonBody,resolveDevice,haApi
    const mine=!!(a&&current&&a.stay===current);
    const ringing=mine&&states.get(IDS.ringing)==='on'&&a.status!=='done';
    const active=mine&&states.get(IDS.active)==='on'&&a.status==='armed'&&Date.parse(a.scheduledFor)>Date.now();
-   return {ok:true,room:'401',active,ringing,time:mine?a.time:'',
+   return {ok:true,room,active,ringing,time:mine?a.time:'',
      scheduledFor:mine?a.scheduledFor:''};
  }
  const attempts=new Map();
  function quota(device){
-   const id=String(device.id||'401'),now=Date.now(),a=attempts.get(id);
+   const id=String(device.id||room),now=Date.now(),a=attempts.get(id);
    const rec=a&&now-a.since<60000?a:{since:now,n:0};
    rec.n++;
    attempts.set(id,rec);
@@ -144,7 +145,7 @@ module.exports=function createTvAlarm({dataDir,send,jsonBody,resolveDevice,haApi
    if(p!=='/api/tv/alarm'&&p!=='/api/tv/alarm/ack')return false;
    const d=resolveDevice(req);
    if(!d){send(res,401,{ok:false,error:'Telewizor nie jest sparowany'});return true;}
-   if(d.mode!=='room'||String(d.room)!=='401'){
+   if(d.mode!=='room'||String(d.room)!==room){
      send(res,403,{ok:false,error:'Budzik nie jest skonfigurowany dla tego apartamentu'});return true;
    }
    if(!['GET','PUT','DELETE','POST'].includes(req.method)){
@@ -190,7 +191,7 @@ module.exports=function createTvAlarm({dataDir,send,jsonBody,resolveDevice,haApi
        }
        send(res,405,{ok:false,error:'Niedozwolona metoda'});
      }catch(e){
-       logger.warn('SISU alarm 401 request error: '+(e&&e.message||'unknown'));
+       logger.warn('SISU alarm '+room+' request error: '+(e&&e.message||'unknown'));
        send(res,Number.isInteger(e.status)?e.status:503,{ok:false,error:e.status?e.message:'Budzik chwilowo niedostępny'});
      }
    });
@@ -207,19 +208,33 @@ module.exports=function createTvAlarm({dataDir,send,jsonBody,resolveDevice,haApi
    lastWakeLaunch=now;
    // HA already powers the TV on. This LAN fallback starts SISU if HA's
    // Samsung app-launch service is unsupported on this specific model.
-   const url='http://192.168.1.238:8001/api/v2/applications/RGKSISU232.Sisu23TV';
+   // Only bedroom TV is automatically awakened for 402. Both paired TVs share the room alarm.
+   if(room==='402'){
+     const bedroom='media_player.402_salon_402_sypialnia_telewizja';
+     const localTv='media_player.apartament_402_402_sypialnia_telewizja_ue55u8072huxxh';
+     const attempt=async(domain,service,id,data={})=>{
+       try{await action(domain,service,id,data)}catch(e){logger.warn('SISU 402 alarm: '+service+' unavailable')}
+     };
+     if(states.get(bedroom)!=='on'&&states.get(localTv)!=='on'){
+       await attempt('media_player','turn_on',bedroom);
+       await attempt('media_player','turn_on',localTv);
+     }
+     await attempt('media_player','volume_set',bedroom,{volume_level:0.42});
+   }
+   const tvIp=room==='402'?'192.168.1.230':'192.168.1.238';
+   const url='http://'+tvIp+':8001/api/v2/applications/RGKSISU232.Sisu23TV';
    try{
      const check=await fetch(url,{method:'GET',signal:AbortSignal.timeout(4500),redirect:'error'});
      if(!check.ok)return;
      const app=await check.json();
      if(app.running===true&&app.visible===true)return;
      const launched=await fetch(url,{method:'POST',signal:AbortSignal.timeout(4500),redirect:'error'});
-     if(!launched.ok)logger.warn('SISU 401 alarm: TV launch HTTP '+launched.status);
-   }catch(e){logger.warn('SISU 401 alarm: TV launch retry failed');}
+     if(!launched.ok)logger.warn('SISU '+room+' alarm: TV launch HTTP '+launched.status);
+   }catch(e){logger.warn('SISU '+room+' alarm: TV launch retry failed');}
  }
  async function maintenance(){
    try{const ctx=await reconcile();await openWakeApp(ctx.current);}
-   catch(e){logger.warn('SISU alarm 401 PMS reconciliation unavailable: '+(e&&e.message||'unknown'));}
+   catch(e){logger.warn('SISU alarm '+room+' PMS reconciliation unavailable: '+(e&&e.message||'unknown'));}
  }
  if(autoPoll){
    const timer=setInterval(()=>{void serialize(maintenance);},30000);
@@ -227,6 +242,16 @@ module.exports=function createTvAlarm({dataDir,send,jsonBody,resolveDevice,haApi
    setTimeout(()=>{void serialize(maintenance);},1800).unref?.();
  }
  return {handle,maintenance:()=>serialize(maintenance),plannedAt,localStamp};
+}
+module.exports=function createTvAlarm(options){
+ const primary=createRoomAlarm({...options,room:'401'});
+ const secondary=createRoomAlarm({...options,room:'402'});
+ return {...primary,maintenance402:secondary.maintenance,
+   async handle(req,res,p){
+     if(p!=='/api/tv/alarm'&&p!=='/api/tv/alarm/ack')return false;
+     const device=options.resolveDevice(req);
+     return String(device?.room)==='402'?secondary.handle(req,res,p):primary.handle(req,res,p);
+   }};
 };
 module.exports.plannedAt=plannedAt;
 module.exports.localStamp=localStamp;
