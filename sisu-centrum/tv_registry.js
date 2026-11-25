@@ -22,7 +22,14 @@ module.exports=function makeTvRegistry({dataDir,rooms,send,requireUser,csrfOk,js
     db={devices:parsed.devices};
   }
   const salon402=d=>String(d.room)==='402'&&d.mode==='room'&&/(?:^|[\s_-])salon(?:$|[\s_-])/i.test(d.name||'');
-  console.info('SISU welcome 402: paired salon targets='+db.devices.filter(salon402).length);
+  function salonTarget(room){
+    const all=db.devices.filter(d=>String(d.room)===String(room)&&d.mode==='room');
+    const named=all.filter(d=>/(?:^|[\s_-])salon(?:$|[\s_-])/i.test(d.name||''));
+    if(named.length===1)return named[0];
+    if(String(room)==='401'&&named.length===0&&all.length===1)return all[0];
+    return null;
+  }
+  console.info('SISU arrival: unique salon 401='+!!salonTarget('401')+', 402='+!!salonTarget('402'));
   function reply(res,status,data){send(res,status,data);return true;}
   function digest(s){return crypto.createHash('sha256').update(s).digest('hex')}
   function persist(){
@@ -188,5 +195,5 @@ module.exports=function makeTvRegistry({dataDir,rooms,send,requireUser,csrfOk,js
     }
     return false;
   }
-  return {handle,watchdogTargets:()=>db.devices.map(d=>({room:d.room,mode:d.mode,lastSeen:seen.get(d.id)||d.lastSeen||null})),resolveDevice:(req)=>{const d=tokenDevice(req);return d?{id:d.id,room:d.room,mode:d.mode,welcomeSalon402:salon402(d),welcomeContext:deliveredContext.get(d.id)||null}:null}};
+  return {handle,hasUniqueSalon:room=>!!salonTarget(room),watchdogTargets:()=>db.devices.map(d=>({room:d.room,mode:d.mode,lastSeen:seen.get(d.id)||d.lastSeen||null})),resolveDevice:(req)=>{const d=tokenDevice(req);return d?{id:d.id,room:d.room,mode:d.mode,welcomeSalon402:salon402(d),welcomeSalon:salonTarget(d.room)?.id===d.id,welcomeContext:deliveredContext.get(d.id)||null}:null}};
 };
