@@ -252,8 +252,9 @@ async function getOverview(fresh=false){
 async function haApi(endpoint,method='GET',payload){
   if(!HA_TOKEN)throw Object.assign(Error('Brak połączenia serwerowego z Home Assistant'),{status:503});
   const arrivalRead=/^\/states\/(?:input_text\.sisu_przyjazd_(?:wejscie|401|402)|media_player\.(?:401_salon_telewizor_ue55u8072huxxh|apartament_402_402_salon_telewizor_ue55u8072huxxh))$/.test(endpoint)&&method==='GET';
+  const autostartRead=/^\/states\/(?:input_button\.sisu_autostart_(?:401_salon|402_salon|402_sypialnia)|media_player\.apartament_402_402_sypialnia_telewizja_ue55u8072huxxh)$/.test(endpoint)&&method==='GET';
   const ttRead=/^\/services\/ttlock\/list_(?:passcodes|records)\?return_response$/.test(endpoint)&&method==='POST';
-  if(!arrivalRead&&!ttRead&&!/^\/(states|services\/[a-z_]+\/[a-z_]+)$/.test(endpoint))throw Object.assign(Error('Niedozwolone żądanie HA'),{status:400});
+  if(!arrivalRead&&!autostartRead&&!ttRead&&!/^\/(states|services\/[a-z_]+\/[a-z_]+)$/.test(endpoint))throw Object.assign(Error('Niedozwolone żądanie HA'),{status:400});
   let response;
   try{
     response=await fetch(HA_URL+endpoint,{
