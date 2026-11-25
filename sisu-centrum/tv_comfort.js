@@ -1,7 +1,7 @@
 'use strict';
 // Room-scoped device allowlist. The TV receives only safe ids/names/states; HA entity ids stay server-side.
 // Add lights for another apartment here (or move them to the management UI later) — the TV UI needs no rebuild.
-// Pilot only: room 401. Select switches only when their entity_id clearly represents lighting.
+// Room 401 preserves its existing light discovery; room 402 uses an explicit allowlist.
 // Additional 401 lighting relays named with the same convention become visible automatically.
 const LIGHT_NAMES=Object.freeze({
   salon_swiatlo:['salon','Salon'],
@@ -31,6 +31,29 @@ const WINDOWS=Object.freeze({
     'binary_sensor.401_salon_okno_lewe_kontaktron_1_contact','binary_sensor.401_salon_okno_lewe_kontaktron_2_contact'],
   sypialnia:['binary_sensor.401_sypialnia_okno_dachowe_kontaktron_1_contact']
 });
+// Explicit allowlist for 402. Never accept entity ids from the TV.
+const ROOM402=Object.freeze({
+  lights:[
+    {id:'salon',name:'Salon',entity:'switch.402_salon_oswietlenie'},
+    {id:'kuchnia',name:'Kuchnia',entity:'switch.402_kuchnia_oswietlenie'},
+    {id:'przedpokoj',name:'Przedpokój',entity:'switch.402_przedpokoj_oswietlenie'},
+    {id:'sypialnia',name:'Sypialnia',entity:'switch.402_sypialnia_oswietlenie'},
+    {id:'lazienka',name:'Łazienka',entity:'switch.402_lazienka_swiatlo'}
+  ],
+  climate:{
+    ac:['climate.402'],
+    salon:['climate.402_salon_termostat'],
+    sypialnia:['climate.402_sypialnia_termostat','climate.402_sypialnia_termostat_2'],
+    przedpokoj:['climate.402_przedpokoj_termostat'],
+    lazienka:[]
+  },
+  windows:{
+    salon:['binary_sensor.402_salon_okno_1_kontaktron_contact','binary_sensor.402_salon_okno_3_kontaktron_contact'],
+    sypialnia:['binary_sensor.402_sypialnia_okno_1_kontaktron_contact','binary_sensor.402_sypialnia_okno_2_kontaktron_contact','binary_sensor.402_sypialnia_okno_3_kontaktron_contact']
+  }
+});
+const ALL_WINDOWS_402=Object.freeze([...ROOM402.windows.salon,...ROOM402.windows.sypialnia]);
+
 const BASE=Object.freeze({ac:22,salon:22,sypialnia:22,lazienka:22});
 const RANGE=Object.freeze({ac:[21,23],salon:[19,23],sypialnia:[19,23],lazienka:[19,23]});
 const ALL_WINDOWS=Object.freeze([...WINDOWS.salon,...WINDOWS.sypialnia]);
@@ -55,7 +78,7 @@ module.exports=function createTvComfort({haApi,send,jsonBody,resolveDevice,audit
       send(res,403,{error:'Sterowanie dostępne wyłącznie w przypisanym apartamencie'});return null;
     }
     const room=String(tv.room);
-    if(room!=='401'){
+    if(room!=='401'&&room!=='402'){
       send(res,403,{error:'Urządzenia tego apartamentu nie są jeszcze skonfigurowane'});return null;
     }
     return tv;
@@ -86,7 +109,84 @@ module.exports=function createTvComfort({haApi,send,jsonBody,resolveDevice,audit
       fan:typeof s?.attributes?.fan_mode==='string'?s.attributes.fan_mode:null
     };
   }
+  function stateView402(states){
+    const lights={},lightList=[];
+    for(const item of ROOM402.lights){
+      const s=states.get(item.entity),available=usable(s),on=available&&s.state==='on';
+      lights[item.id]={available,on,name:item.name};
+      lightList.push({id:item.id,name:item.name,available,on});
+    }
+    const climate={};
+    for(const zone of ['ac','salon','sypialnia','lazienka','przedpokoj']){
+      const ss=ROOM402.climate[zone].map(id=>states.get(id));
+      const available=ss.length>0&&ss.every(usable);
+      const values=ss.map(s=>numeric(s?.attributes?.current_temperature)).filter(v=>v!==null);
+      const targets=ss.map(s=>numeric(s?.attributes?.temperature));
+      const target=available&&targets.every(v=>v!==null&&v===targets[0])?targets[0]:null;
+      const range=RANGE[zone]||RANGE.salon;
+      climate[zone]={available,mode:available?ss[0].state:'unavailable',
+        current:values.length?Math.round(values.reduce((a,b)=>a+b,0)/values.length*10)/10:null,
+        target,base:BASE[zone]||BASE.salon,min:range[0],max:range[1],
+        fan:typeof ss[0]?.attributes?.fan_mode==='string'?ss[0].attributes.fan_mode:null};
+    }
+    return {ok:true,room:'402',mode:'room',checkedAt:new Date().toISOString(),
+      seasonal:{season:seasonLabel(),mode:seasonalMode()},lights,lightList,climate,
+      windows:{acBlocked:anyWindowNotClosed(states,ALL_WINDOWS_402),
+        salonOpen:anyWindowNotClosed(states,ROOM402.windows.salon),
+        sypialniaOpen:anyWindowNotClosed(states,ROOM402.windows.sypialnia)}};
+  }
+  async function action402(body,states){
+    if(!body||typeof body!=='object')throw err(400,'Nieprawidłowe polecenie');
+    const {kind,zone,value}=body;
+    if(typeof kind!=='string'||(kind!=='heating_target'&&typeof zone!=='string'))throw err(400,'Nieprawidłowe polecenie');
+    const climate=ROOM402.climate;
+    const blocked=z=>z==='ac'?anyWindowNotClosed(states,ALL_WINDOWS_402):
+      !!ROOM402.windows[z]&&Array.isArray(ROOM402.windows[z])&&anyWindowNotClosed(states,ROOM402.windows[z]);
+    const available=ids=>ids.length>0&&ids.every(id=>usable(states.get(id)));
+    const setTemp=async(ids,n)=>{
+      for(const id of ids)await haApi('/services/climate/set_temperature','POST',{entity_id:id,temperature:n});
+    };
+    if(kind==='light'){
+      const item=ROOM402.lights.find(x=>x.id===zone);
+      if(!item||!['on','off'].includes(value))throw err(400,'Nieprawidłowe sterowanie światłem');
+      if(!usable(states.get(item.entity)))throw err(409,'Urządzenie chwilowo niedostępne');
+      await haApi('/services/switch/'+(value==='on'?'turn_on':'turn_off'),'POST',{entity_id:item.entity});
+    }else if(kind==='heating_target'){
+      const n=validTarget(value,'salon');
+      if(n===null||!Number.isInteger(n))throw err(400,'Nastawa ogrzewania musi być w zakresie 19–23°C co 1°C');
+      const applied=[];
+      for(const z of ['salon','sypialnia','przedpokoj']){
+        if(!available(climate[z])||blocked(z))continue;
+        await setTemp(climate[z],n);applied.push(z);
+      }
+      if(!applied.length)throw err(409,'Ogrzewanie jest chwilowo niedostępne lub okna są otwarte');
+      return {ok:true,kind,zone:'heating',value:n,applied};
+    }else if(kind==='target'){
+      const ids=Object.prototype.hasOwnProperty.call(climate,zone)?climate[zone]:[];
+      const n=validTarget(value,zone==='przedpokoj'?'salon':zone);
+      if(!ids.length||n===null||(zone!=='ac'&&!Number.isInteger(n)))throw err(400,'Nieprawidłowa strefa lub nastawa temperatury');
+      if(!available(ids))throw err(409,'Urządzenie chwilowo niedostępne');
+      if(blocked(zone))throw err(409,'Zamknij okna przed zmianą temperatury');
+      await setTemp(ids,n);
+    }else if(kind==='mode'&&zone==='ac'){
+      if(value!=='off'&&value!==seasonalMode())throw err(400,'Dostępny jest tylko tryb sezonowy: '+seasonalMode());
+      if(!available(climate.ac))throw err(409,'Klimatyzacja chwilowo niedostępna');
+      if(value!=='off'){
+        if(blocked('ac'))throw err(409,'Zamknij wszystkie okna przed włączeniem klimatyzacji');
+        const previous=numeric(states.get(climate.ac[0])?.attributes?.temperature);
+        if(previous===null||previous<RANGE.ac[0]||previous>RANGE.ac[1])await setTemp(climate.ac,BASE.ac);
+      }
+      await haApi('/services/climate/set_hvac_mode','POST',{entity_id:climate.ac[0],hvac_mode:value});
+    }else if(kind==='fan'&&zone==='ac'){
+      if(!FANS.has(value))throw err(400,'Nieprawidłowy poziom nawiewu');
+      if(!available(climate.ac)||blocked('ac'))throw err(409,'Klimatyzacja niedostępna lub zablokowana przez okno');
+      await haApi('/services/climate/set_fan_mode','POST',{entity_id:climate.ac[0],fan_mode:value});
+    }else throw err(400,'Nieobsługiwane polecenie');
+    return {ok:true,kind,zone,value};
+  }
+
   function stateView(states,room){
+    if(String(room)==='402')return stateView402(states);
     const lights={},lightList=[];
     for(const item of roomLights(room,states)){
       const s=states.get(item.entity),available=usable(s),on=available&&s.state==='on';
@@ -105,6 +205,7 @@ module.exports=function createTvComfort({haApi,send,jsonBody,resolveDevice,audit
     };
   }
   async function action(room,body,states){
+    if(String(room)==='402')return action402(body,states);
     const kind=body.kind,zone=body.zone,value=body.value;
     let domain,service,entity,data={};
     if(kind==='heating_target'){
