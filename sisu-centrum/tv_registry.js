@@ -12,6 +12,7 @@ module.exports=function makeTvRegistry({dataDir,rooms,send,requireUser,csrfOk,js
   const ONLINE_TTL=2*60*1000;
   const pending=new Map();
   const seen=new Map();
+  const deliveredContext=new Map();
   const rate=new Map();
   let db={devices:[]};
 
@@ -20,6 +21,8 @@ module.exports=function makeTvRegistry({dataDir,rooms,send,requireUser,csrfOk,js
     if(!parsed||!Array.isArray(parsed.devices))throw Error('SISU TV: invalid stored pairing file');
     db={devices:parsed.devices};
   }
+  const salon402=d=>String(d.room)==='402'&&d.mode==='room'&&/(?:^|[\s_-])salon(?:$|[\s_-])/i.test(d.name||'');
+  console.info('SISU welcome 402: paired salon targets='+db.devices.filter(salon402).length);
   function reply(res,status,data){send(res,status,data);return true;}
   function digest(s){return crypto.createHash('sha256').update(s).digest('hex')}
   function persist(){
@@ -67,6 +70,7 @@ module.exports=function makeTvRegistry({dataDir,rooms,send,requireUser,csrfOk,js
     if(typeof getRoomContext==='function'){
       try{stay=await getRoomContext(String(d.room))}catch{}
     }
+    deliveredContext.set(d.id,{stayId:stay.stayId,language:stay.language,stayStatus:stay.stayStatus,room:String(d.room)});
     return {ok:true,deviceId:d.id,room:String(d.room),mode:d.mode,
       appVersion:d.version||'',controlsEnabled:d.mode==='room'&&['401','402'].includes(String(d.room)),
       capabilities:d.mode!=='room'?{lights:[],climate:[]}:String(d.room)==='401'?{lights:['salon','stol','kuchnia','lazienka','sypialnia'],climate:['ac','salon','sypialnia','lazienka']}:String(d.room)==='402'?{lights:['salon','kuchnia','przedpokoj','sypialnia','lazienka'],climate:['ac','salon','sypialnia','przedpokoj']}:{lights:[],climate:[]},
@@ -168,7 +172,7 @@ module.exports=function makeTvRegistry({dataDir,rooms,send,requireUser,csrfOk,js
         const i=db.devices.findIndex(x=>x.id===body.id);
         if(i<0)return reply(res,404,{error:'Nie znaleziono telewizora'});
         const d=db.devices.splice(i,1)[0];
-        seen.delete(d.id);persist();
+        seen.delete(d.id);deliveredContext.delete(d.id);persist();
         audit(ctx.user.id,'tv_revoked',{device:d.id,room:d.room});
         return reply(res,200,{ok:true});
       }
@@ -176,7 +180,7 @@ module.exports=function makeTvRegistry({dataDir,rooms,send,requireUser,csrfOk,js
         const d=db.devices.find(x=>x.id===body.id);
         const room=asRoom(body.room);
         if(!d||!room)return reply(res,404,{error:'Nie znaleziono telewizora lub apartamentu'});
-        d.room=room;persist();
+        d.room=room;deliveredContext.delete(d.id);persist();
         audit(ctx.user.id,'tv_reassigned',{device:d.id,room});
         return reply(res,200,{ok:true,room});
       }
@@ -184,5 +188,5 @@ module.exports=function makeTvRegistry({dataDir,rooms,send,requireUser,csrfOk,js
     }
     return false;
   }
-  return {handle,watchdogTargets:()=>db.devices.map(d=>({room:d.room,mode:d.mode,lastSeen:seen.get(d.id)||d.lastSeen||null})),resolveDevice:(req)=>{const d=tokenDevice(req);return d?{id:d.id,room:d.room,mode:d.mode}:null}};
+  return {handle,watchdogTargets:()=>db.devices.map(d=>({room:d.room,mode:d.mode,lastSeen:seen.get(d.id)||d.lastSeen||null})),resolveDevice:(req)=>{const d=tokenDevice(req);return d?{id:d.id,room:d.room,mode:d.mode,welcomeSalon402:salon402(d),welcomeContext:deliveredContext.get(d.id)||null}:null}};
 };
