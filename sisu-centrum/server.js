@@ -731,6 +731,7 @@ const tvRegistry=require('./tv_registry')({
   getRoomContext:async room=>hotelExpert?hotelExpert.getRoomContext(room):{room:String(room),language:'',stayId:'',stayStatus:'unknown'}
 });
 const tvWatchdog=require('./tv_watchdog')({targets:tvRegistry.watchdogTargets});
+const tvAutostart=require('./tv_autostart')({haApi});
 const tvContent=require('./tv_content')({
   dataDir:DATA,rooms:ROOMS,send,requireUser,csrfOk,jsonBody,audit,resolveDevice:tvRegistry.resolveDevice
 });
@@ -739,6 +740,7 @@ hotelExpert=createHotelExpert({dataDir:DATA,send,resolveDevice:tvRegistry.resolv
 const lateCheckout=createLateCheckout({dataDir:DATA,send,jsonBody,resolveDevice:tvRegistry.resolveDevice,hotelExpert});
 const tvAlarm=require('./tv_alarm')({dataDir:DATA,send,jsonBody,resolveDevice:tvRegistry.resolveDevice,haApi,hotelExpert});
 const arrival=require('./tv_arrival')({dataDir:DATA,rooms:ROOMS,haApi,hasUniqueSalon:tvRegistry.hasUniqueSalon,
+  launchApp:room=>tvAutostart.launch(String(room)+'_salon'),
   getStay:async room=>{
     if(!['401','402'].includes(String(room)))return null;
     const reservation=(await hotelExpert.alarmGuest(Number(room))).reservation;
