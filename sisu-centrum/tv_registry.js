@@ -39,6 +39,7 @@ module.exports=function makeTvRegistry({dataDir,rooms,send,requireUser,csrfOk,js
     return Number.isInteger(n)&&allowed.has(n)?n:null;
   }
   function asId(v){return typeof v==='string'&&/^[a-zA-Z0-9_-]{12,100}$/.test(v)?v:null}
+  function tvName(v){return typeof v==='string'?v.replace(/[\u0000-\u001f\u007f]/g,' ').trim().slice(0,60):'';}
   function version(v){return typeof v==='string'?v.slice(0,32).replace(/[^a-zA-Z0-9. -]/g,''):''}
   function withCors(req,res){
     // Tizen file:// apps have Origin:null. TV endpoints use bearer credentials only, never cookies.
@@ -67,9 +68,9 @@ module.exports=function makeTvRegistry({dataDir,rooms,send,requireUser,csrfOk,js
       try{stay=await getRoomContext(String(d.room))}catch{}
     }
     return {ok:true,deviceId:d.id,room:String(d.room),mode:d.mode,
-      appVersion:d.version||'',controlsEnabled:d.mode==='room'&&String(d.room)==='401',
-      capabilities:d.mode==='room'&&String(d.room)==='401'?{lights:['salon','stol','kuchnia','lazienka','sypialnia'],climate:['ac','salon','sypialnia','lazienka']}:{lights:[],climate:[]},
-      notice:d.mode==='demo'?'Tryb testowy — bez sterowania urządzeniami':String(d.room)==='401'?'Sterowanie apartamentem 401 aktywne':'Sterowanie nieaktywne do czasu przypisania urządzeń przez administratora',
+      appVersion:d.version||'',controlsEnabled:d.mode==='room'&&['401','402'].includes(String(d.room)),
+      capabilities:d.mode!=='room'?{lights:[],climate:[]}:String(d.room)==='401'?{lights:['salon','stol','kuchnia','lazienka','sypialnia'],climate:['ac','salon','sypialnia','lazienka']}:String(d.room)==='402'?{lights:['salon','kuchnia','przedpokoj','sypialnia','lazienka'],climate:['ac','salon','sypialnia','przedpokoj']}:{lights:[],climate:[]},
+      notice:d.mode==='demo'?'Tryb testowy — bez sterowania urządzeniami':['401','402'].includes(String(d.room))?'Sterowanie apartamentem '+d.room+' aktywne':'Sterowanie nieaktywne do czasu przypisania urządzeń przez administratora',
       ...stay};
   }
   function quota(key,max,period=10*60000){
@@ -110,9 +111,8 @@ module.exports=function makeTvRegistry({dataDir,rooms,send,requireUser,csrfOk,js
       if(!/^[a-f0-9]{48}$/.test(id)||!rec||rec.deviceId!==body.deviceId)return reply(res,404,{error:'Parowanie wygasło'});
       if(!rec.room)return reply(res,200,{ok:true,status:'waiting',expiresIn:Math.max(0,Math.floor((rec.expires-Date.now())/1000))});
       if(db.devices.some(x=>x.deviceId===rec.deviceId))return reply(res,409,{error:'Telewizor już przypisany'});
-      if(rec.mode==='room'&&db.devices.some(x=>x.room===rec.room&&x.mode==='room'))return reply(res,409,{error:'Apartament zajęty'});
       const token=crypto.randomBytes(32).toString('hex');
-      const d={id:crypto.randomUUID(),deviceId:rec.deviceId,tokenHash:digest(token),name:'Samsung TV',room:rec.room,mode:rec.mode,version:rec.version,registeredAt:new Date().toISOString(),lastSeen:new Date().toISOString()};
+      const d={id:crypto.randomUUID(),deviceId:rec.deviceId,tokenHash:digest(token),name:rec.name||'Samsung TV',room:rec.room,mode:rec.mode,version:rec.version,registeredAt:new Date().toISOString(),lastSeen:new Date().toISOString()};
       db.devices.push(d);
       persist();pending.delete(id);
       seen.set(d.id,new Date().toISOString());
@@ -151,10 +151,18 @@ module.exports=function makeTvRegistry({dataDir,rooms,send,requireUser,csrfOk,js
         if(!/^\d{8}$/.test(code)||!room||!mode)return reply(res,400,{error:'Niepoprawny kod, apartament lub tryb'});
         const rec=[...pending.values()].find(x=>x.code===code);
         if(!rec||rec.expires<=Date.now()||rec.room)return reply(res,404,{error:'Kod wygasł lub został już użyty'});
-        if(mode==='room'&&db.devices.some(x=>x.room===room&&x.mode==='room'))return reply(res,409,{error:'Do tego apartamentu przypisano już telewizor. Najpierw go odłącz.'});
-        rec.room=room;rec.mode=mode;
+        rec.room=room;rec.mode=mode;rec.name=tvName(body.name)||'Samsung TV';
         audit(ctx.user.id,'tv_pair_approved',{deviceId:rec.deviceId.slice(0,12),room,mode});
         return reply(res,200,{ok:true,room,mode,status:'approved'});
+      }
+      if(p==='/api/tvs/rename'){
+        const d=db.devices.find(x=>x.id===body.id);
+        if(!d)return reply(res,404,{error:'Nie znaleziono telewizora'});
+        const name=tvName(body.name);
+        if(!name)return reply(res,400,{error:'Wpisz nazwę telewizora'});
+        d.name=name;persist();
+        audit(ctx.user.id,'tv_renamed',{device:d.id,room:d.room,name});
+        return reply(res,200,{ok:true,name});
       }
       if(p==='/api/tvs/revoke'){
         const i=db.devices.findIndex(x=>x.id===body.id);
@@ -168,7 +176,6 @@ module.exports=function makeTvRegistry({dataDir,rooms,send,requireUser,csrfOk,js
         const d=db.devices.find(x=>x.id===body.id);
         const room=asRoom(body.room);
         if(!d||!room)return reply(res,404,{error:'Nie znaleziono telewizora lub apartamentu'});
-        if(d.mode==='room'&&db.devices.some(x=>x.id!==d.id&&x.room===room&&x.mode==='room'))return reply(res,409,{error:'Apartament zajęty'});
         d.room=room;persist();
         audit(ctx.user.id,'tv_reassigned',{device:d.id,room});
         return reply(res,200,{ok:true,room});
