@@ -4,7 +4,7 @@
 const fs=require('node:fs');
 const path=require('node:path');
 const crypto=require('node:crypto');
-module.exports=function makeWelcome({dataDir,haApi,resolveDevice,send,jsonBody,getWelcomeStay402,arrival}) {
+module.exports=function makeWelcome({dataDir,haApi,resolveDevice,send,jsonBody,getWelcomeStay402,arrival:arrivalController}) {
   const FILE=path.join(dataDir,'sisu-welcome-claims.json');
   const HASH_ENTITY='input_text.401_kod_uzyty_do_powitania_skrot_sha_256';
   const MAX_AGE_MS=5*60*1000;
@@ -142,12 +142,12 @@ module.exports=function makeWelcome({dataDir,haApi,resolveDevice,send,jsonBody,g
     if(p!=='/api/tv/welcome/claim')return false;
     if(req.method!=='POST'){send(res,405,{error:'Method not allowed'});return true;}
     const d=resolveDevice(req);
-    if(arrival&&d&&d.mode==='room'&&['401','402'].includes(String(d.room))){
+    if(arrivalController&&d&&d.mode==='room'&&['401','402'].includes(String(d.room))){
       await jsonBody(req);
-      const ticket=await arrival.claim(d);
+      const ticket=await arrivalController.claim(d);
       if(!ticket){send(res,200,{ok:true,welcome:false});return true;}
       send(res,200,{ok:true,welcome:true,eventId:ticket.eventId});
-      void arrival.notify(ticket);
+      void arrivalController.notify(ticket);
       return true;
     }
     if(d&&d.mode==='room'&&String(d.room)==='402')return claim402(req,res,d);
