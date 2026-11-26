@@ -191,22 +191,20 @@ function tempEntry(kind,name,value,min,max,disabled){
 }
 function hvac(){
  const v=room401();if(!v)return'<div class="empty">Oczekiwanie na odczyty apartamentu 401.</div>';
- const windowsUnsafe=v.windows.some(x=>x.state!=='off');
  const blocked=!ready();
  const ac=v.ac;
  return '<div class="hero"><span class="label">SALON · POMIAR</span><strong>'+temp(v.temperature)+'</strong><small>Klimatyzator raportuje '+temp(ac.temperature)+'</small></div>'+
- (windowsUnsafe?'<div class="notice">Co najmniej jedno okno jest otwarte albo czujnik okna jest niedostępny. Włączenie klimatyzacji zostało zabezpieczone po stronie serwera.</div>':'')+
  '<div class="columns"><div><div class="panel devicebox"><h3>Mitsubishi — klimatyzacja</h3>'+
  deviceRow('Tryb',ac.state,ac.state)+deviceRow('Nastawa',ac.target,temp(ac.target))+
  '<div class="controlrow"><span>Tryb pracy</span><div class="controls">'+
  cmd('ac','','off','Wyłącz',ac.state==='off',blocked)+
- cmd('ac','','heat','Grzanie',ac.state==='heat',blocked||windowsUnsafe)+
- cmd('ac','','cool','Chłodzenie',ac.state==='cool',blocked||windowsUnsafe)+'</div></div>'+
+ cmd('ac','','heat','Grzanie',ac.state==='heat',blocked)+
+ cmd('ac','','cool','Chłodzenie',ac.state==='cool',blocked)+'</div></div>'+
  '<div class="controlrow temperature-control"><span>Temperatura docelowa</span><div class="controls">'+
- cmd('ac_temp','',Math.max(16,Number(ac.target||22)-.5),'−',false,blocked||windowsUnsafe)+
+ cmd('ac_temp','',Math.max(16,Number(ac.target||22)-.5),'−',false,blocked)+
  '<span class="current">'+temp(ac.target)+'</span>'+
- cmd('ac_temp','',Math.min(30,Number(ac.target||22)+.5),'+',false,blocked||windowsUnsafe)+
- tempEntry('ac_temp','',Number(ac.target||22),16,30,blocked||windowsUnsafe)+
+ cmd('ac_temp','',Math.min(30,Number(ac.target||22)+.5),'+',false,blocked)+
+ tempEntry('ac_temp','',Number(ac.target||22),16,30,blocked)+
  '</div></div></div><div class="panel devicebox"><h3>Telewizor Samsung</h3>'+
  deviceRow('Stan',v.tv.state,v.tv.state==='off'?'Wyłączony':['on','idle','playing','paused','standby','buffering'].includes(v.tv.state)?'Włączony':'Brak połączenia')+'<div class="controlrow"><span>Zasilanie</span><div class="controls">'+
  cmd('tv','','off','Wyłącz',v.tv.state==='off',blocked||!v.tv.available)+

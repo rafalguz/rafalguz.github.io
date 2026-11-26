@@ -92,7 +92,6 @@ const MAPPED_ROOMS=Object.freeze({'402':ROOM402,'403':ROOM403,'404':ROOM404});
 
 const BASE=Object.freeze({ac:22,salon:22,sypialnia:22,lazienka:22});
 const RANGE=Object.freeze({ac:[21,23],salon:[19,23],sypialnia:[19,23],lazienka:[19,23]});
-const ALL_WINDOWS=Object.freeze([...WINDOWS.salon,...WINDOWS.sypialnia]);
 function seasonalMode(){const m=new Date().getMonth()+1;return m>=5&&m<=9?'cool':'heat';}
 function seasonLabel(){return seasonalMode()==='cool'?'Lato':'Zima';}
 const FANS=new Set(['auto','1','2','3','4','5']);
@@ -146,7 +145,6 @@ module.exports=function createTvComfort({haApi,send,jsonBody,resolveDevice,audit
     };
   }
   function stateViewMapped(states,room,plan){
-    const allWindows=Object.values(plan.windows).flat();
     const lights={},lightList=[];
     for(const item of plan.lights){
       const s=states.get(item.entity),available=usable(s),on=available&&s.state==='on';
@@ -168,18 +166,15 @@ module.exports=function createTvComfort({haApi,send,jsonBody,resolveDevice,audit
     }
     return {ok:true,room:String(room),mode:'room',checkedAt:new Date().toISOString(),
       seasonal:{season:seasonLabel(),mode:seasonalMode()},lights,lightList,climate,
-      windows:{acBlocked:anyWindowNotClosed(states,allWindows),
+      windows:{acBlocked:false,interlockEnabled:false,
         salonOpen:anyWindowNotClosed(states,plan.windows.salon),
         sypialniaOpen:anyWindowNotClosed(states,plan.windows.sypialnia)}};
   }
   async function actionMapped(body,states,plan){
-    const allWindows=Object.values(plan.windows).flat();
     if(!body||typeof body!=='object')throw err(400,'Nieprawidłowe polecenie');
     const {kind,zone,value}=body;
     if(typeof kind!=='string'||(kind!=='heating_target'&&typeof zone!=='string'))throw err(400,'Nieprawidłowe polecenie');
     const climate=plan.climate;
-    const blocked=z=>z==='ac'?anyWindowNotClosed(states,allWindows):
-      !!plan.windows[z]&&Array.isArray(plan.windows[z])&&anyWindowNotClosed(states,plan.windows[z]);
     const available=ids=>ids.length>0&&ids.every(id=>usable(states.get(id)));
     const setTemp=async(ids,n)=>{
       for(const id of ids)await haApi('/services/climate/set_temperature','POST',{entity_id:id,temperature:n});
@@ -194,30 +189,28 @@ module.exports=function createTvComfort({haApi,send,jsonBody,resolveDevice,audit
       if(n===null||!Number.isInteger(n))throw err(400,'Nastawa ogrzewania musi być w zakresie 19–23°C co 1°C');
       const applied=[];
       for(const z of Object.keys(climate).filter(z=>z!=='ac'&&climate[z].length)){
-        if(!available(climate[z])||blocked(z))continue;
+        if(!available(climate[z]))continue;
         await setTemp(climate[z],n);applied.push(z);
       }
-      if(!applied.length)throw err(409,'Ogrzewanie jest chwilowo niedostępne lub okna są otwarte');
+      if(!applied.length)throw err(409,'Ogrzewanie jest chwilowo niedostępne');
       return {ok:true,kind,zone:'heating',value:n,applied};
     }else if(kind==='target'){
       const ids=Object.prototype.hasOwnProperty.call(climate,zone)?climate[zone]:[];
       const n=validTarget(value,zone==='przedpokoj'?'salon':zone);
       if(!ids.length||n===null||(zone!=='ac'&&!Number.isInteger(n)))throw err(400,'Nieprawidłowa strefa lub nastawa temperatury');
       if(!available(ids))throw err(409,'Urządzenie chwilowo niedostępne');
-      if(blocked(zone))throw err(409,'Zamknij okna przed zmianą temperatury');
       await setTemp(ids,n);
     }else if(kind==='mode'&&zone==='ac'){
       if(value!=='off'&&value!==seasonalMode())throw err(400,'Dostępny jest tylko tryb sezonowy: '+seasonalMode());
       if(!available(climate.ac))throw err(409,'Klimatyzacja chwilowo niedostępna');
       if(value!=='off'){
-        if(blocked('ac'))throw err(409,'Zamknij wszystkie okna przed włączeniem klimatyzacji');
         const previous=numeric(states.get(climate.ac[0])?.attributes?.temperature);
         if(previous===null||previous<RANGE.ac[0]||previous>RANGE.ac[1])await setTemp(climate.ac,BASE.ac);
       }
       await haApi('/services/climate/set_hvac_mode','POST',{entity_id:climate.ac[0],hvac_mode:value});
     }else if(kind==='fan'&&zone==='ac'){
       if(!FANS.has(value))throw err(400,'Nieprawidłowy poziom nawiewu');
-      if(!available(climate.ac)||blocked('ac'))throw err(409,'Klimatyzacja niedostępna lub zablokowana przez okno');
+      if(!available(climate.ac))throw err(409,'Klimatyzacja chwilowo niedostępna');
       await haApi('/services/climate/set_fan_mode','POST',{entity_id:climate.ac[0],fan_mode:value});
     }else throw err(400,'Nieobsługiwane polecenie');
     return {ok:true,kind,zone,value};
@@ -236,10 +229,10 @@ module.exports=function createTvComfort({haApi,send,jsonBody,resolveDevice,audit
     return {
       ok:true,room:String(room),mode:'room',checkedAt:new Date().toISOString(),
       seasonal:{season:seasonLabel(),mode:seasonalMode()},lights,lightList,climate,
-      windows:String(room)==='401'?{acBlocked:anyWindowNotClosed(states,ALL_WINDOWS),
+      windows:String(room)==='401'?{acBlocked:false,interlockEnabled:false,
         salonOpen:anyWindowNotClosed(states,WINDOWS.salon),
         sypialniaOpen:anyWindowNotClosed(states,WINDOWS.sypialnia)}:
-        {acBlocked:false,salonOpen:false,sypialniaOpen:false}
+        {acBlocked:false,interlockEnabled:false,salonOpen:false,sypialniaOpen:false}
     };
   }
   async function action(room,body,states){
@@ -254,11 +247,10 @@ module.exports=function createTvComfort({haApi,send,jsonBody,resolveDevice,audit
       for(const z of ['salon','sypialnia','lazienka']){
         const id=CLIMATE[z];
         if(!usable(states.get(id)))continue;
-        if(WINDOWS[z]&&anyWindowNotClosed(states,WINDOWS[z]))continue;
         await haApi('/services/climate/set_temperature','POST',{entity_id:id,temperature:n});
         applied.push(z);
       }
-      if(!applied.length)throw err(409,'Ogrzewanie jest chwilowo niedostępne lub okna są otwarte');
+      if(!applied.length)throw err(409,'Ogrzewanie jest chwilowo niedostępne');
       return {ok:true,kind,zone:'heating',value:n,applied};
     }
     if(kind==='light'){
@@ -270,7 +262,6 @@ module.exports=function createTvComfort({haApi,send,jsonBody,resolveDevice,audit
       const allowed=seasonalMode();
       if(value!=='off'&&value!==allowed)throw err(400,'Dostępny jest tylko tryb sezonowy: '+allowed);
       entity=CLIMATE.ac;domain='climate';service='set_hvac_mode';data.hvac_mode=value;
-      if(value!=='off'&&anyWindowNotClosed(states,ALL_WINDOWS))throw err(409,'Zamknij wszystkie okna przed włączeniem klimatyzacji');
       if(value!=='off'){
         const previous=states.get(CLIMATE.ac)?.attributes?.temperature;
         if(!numeric(previous)||previous<RANGE.ac[0]||previous>RANGE.ac[1]){
@@ -284,14 +275,10 @@ module.exports=function createTvComfort({haApi,send,jsonBody,resolveDevice,audit
       const n=validTarget(value,zone);
       if(!entity||n===null)throw err(400,'Nastawa przekracza dozwolony zakres obiektu (co 0,5°C)');
       if(zone!=='ac'&&!Number.isInteger(n))throw err(400,'Termostaty 401 obsługują nastawy co 1°C');
-      if(zone==='ac'&&anyWindowNotClosed(states,ALL_WINDOWS))throw err(409,'Klimatyzacja zablokowana przez otwarte okno');
-      if(zone!=='ac'&&WINDOWS[zone]&&anyWindowNotClosed(states,WINDOWS[zone]))
-        throw err(409,'Zamknij okno przed zmianą temperatury grzejnika');
       domain='climate';service='set_temperature';data.temperature=n;
     }else if(kind==='fan'&&zone==='ac'){
       if(String(room)!=='401')throw err(403,'Nawiew tego apartamentu nie jest jeszcze skonfigurowany');
       if(!FANS.has(value))throw err(400,'Nieprawidłowy poziom nawiewu');
-      if(anyWindowNotClosed(states,ALL_WINDOWS))throw err(409,'Klimatyzacja zablokowana przez otwarte okno');
       entity=CLIMATE.ac;domain='climate';service='set_fan_mode';data.fan_mode=value;
     }else throw err(400,'Nieobsługiwane polecenie');
     if(!usable(states.get(entity)))throw err(409,'Urządzenie chwilowo niedostępne');

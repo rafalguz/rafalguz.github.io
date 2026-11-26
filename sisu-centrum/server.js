@@ -329,12 +329,6 @@ async function control401(body){
   }else if(kind==='tv'&&['on','off'].includes(value)){
     domain='media_player';action=value==='on'?'turn_on':'turn_off';entity=DEVICES.tvPower;
   }else throw Object.assign(Error('Nieobsługiwane polecenie'),{status:400});
-  if(kind==='ac_temp'||(kind==='ac'&&value!=='off')){
-    const states=await haApi('/states');
-    const values=new Map(states.map(s=>[s.entity_id,s.state]));
-    const safe=Object.values(DEVICES.windows).every(id=>values.get(id)==='off');
-    if(!safe)throw Object.assign(Error('Klimatyzacja zablokowana: okno otwarte lub czujnik okna niedostępny'),{status:409});
-  }
   await haApi('/services/'+domain+'/'+action,'POST',{entity_id:entity,...data});
   return {kind,name:name||null,value,entity};
 }
