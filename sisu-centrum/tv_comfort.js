@@ -70,7 +70,25 @@ const ROOM404=Object.freeze({
     sypialnia:['binary_sensor.404_sypialnia_okno_1_kontaktron_contact']
   }
 });
-const MAPPED_ROOMS=Object.freeze({'402':ROOM402,'404':ROOM404});
+// Verified 403 room-owned HA entities. The entrance contact is not a window.
+const ROOM403=Object.freeze({
+  lights:[
+    {id:'salon',name:'Salon',entity:'switch.403_salon_oswietlenie'},
+    {id:'kuchnia',name:'Kuchnia',entity:'switch.403_kuchnia_oswietlenie'},
+    {id:'przedpokoj',name:'Przedpokój',entity:'switch.403_przedpokoj_oswietlenie'},
+    {id:'sypialnia',name:'Sypialnia',entity:'switch.403_sypialnia_oswietlenie'},
+    {id:'lazienka',name:'Łazienka',entity:'switch.403_lazienka_oswietlenie'}
+  ],
+  climate:{
+    ac:['climate.403'], salon:['climate.403_salon_termostat'],
+    sypialnia:['climate.403_sypialnia_termostat'], lazienka:[], przedpokoj:['climate.403_przedpokoj_termostat']
+  },
+  windows:{
+    salon:[1,2,3].map(n=>'binary_sensor.403_salon_okno_'+n+'_kontaktron_contact'),
+    sypialnia:['binary_sensor.403_sypialnia_okno_1_kontaktron_contact']
+  }
+});
+const MAPPED_ROOMS=Object.freeze({'402':ROOM402,'403':ROOM403,'404':ROOM404});
 
 const BASE=Object.freeze({ac:22,salon:22,sypialnia:22,lazienka:22});
 const RANGE=Object.freeze({ac:[21,23],salon:[19,23],sypialnia:[19,23],lazienka:[19,23]});
