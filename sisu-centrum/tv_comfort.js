@@ -52,7 +52,7 @@ const ROOM402=Object.freeze({
     sypialnia:['binary_sensor.402_sypialnia_okno_1_kontaktron_contact','binary_sensor.402_sypialnia_okno_2_kontaktron_contact','binary_sensor.402_sypialnia_okno_3_kontaktron_contact']
   }
 });
-// Only actual room-owned HA entities. 404 has no window contacts in HA as of rollout.
+// Only actual room-owned HA entities, including the three registered 404 window contacts.
 const ROOM404=Object.freeze({
   lights:[
     {id:'salon',name:'Salon',entity:'switch.0xa4c1382f74f6fac9'},
@@ -65,7 +65,10 @@ const ROOM404=Object.freeze({
     sypialnia:['climate.404_sypialnia_termostat'], lazienka:['climate.404_lazienka_termostat'],
     przedpokoj:[]
   },
-  windows:{salon:[],sypialnia:[]}
+  windows:{
+    salon:['binary_sensor.404_salon_okno_1_dachowe_kontaktron_contact','binary_sensor.404_salon_okno_3_kontaktron_contact'],
+    sypialnia:['binary_sensor.404_sypialnia_okno_1_kontaktron_contact']
+  }
 });
 const MAPPED_ROOMS=Object.freeze({'402':ROOM402,'404':ROOM404});
 

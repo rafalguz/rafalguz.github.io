@@ -5,9 +5,10 @@ const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypt
 const MAIN='lock.wejscie_glowne', APP='app:RGKSISU232.Sisu23TV';
 const PILOT=Object.freeze({
   '401':{power:'media_player.401_salon_401_salon_telewizor',local:'media_player.401_salon_telewizor_ue55u8072huxxh',fallback:'media_player.401_salon_telewizor_smart'},
-  '402':{power:'media_player.402_salon_402_salon_telewizor',local:'media_player.apartament_402_402_salon_telewizor_ue55u8072huxxh'}
+  '402':{power:'media_player.402_salon_402_salon_telewizor',local:'media_player.apartament_402_402_salon_telewizor_ue55u8072huxxh'},
+  '404':{power:'media_player.404_salon_404_salon_telewizor',local:'media_player.404_salon_404_salon_telewizor'}
 });
-const SIGNALS=Object.freeze({[MAIN]:'input_text.sisu_przyjazd_wejscie','lock.401':'input_text.sisu_przyjazd_401','lock.402':'input_text.sisu_przyjazd_402'});
+const SIGNALS=Object.freeze({[MAIN]:'input_text.sisu_przyjazd_wejscie','lock.401':'input_text.sisu_przyjazd_401','lock.402':'input_text.sisu_przyjazd_402','lock.404':'input_text.sisu_przyjazd_404'});
 const stamp=v=>Date.parse(String(v||''));
 const pin=v=>String(v??'');
 const day=v=>new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Warsaw',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(v));
@@ -160,7 +161,11 @@ module.exports=function createArrival({dataDir,rooms,haApi,getStay,hasUniqueSalo
     return {room,key:p.key,eventId:crypto.randomBytes(16).toString('hex')};
   }
   async function notify(ticket){
-    try{await service('input_text','set_value','input_text.sisu_'+ticket.room+'_powitanie_gosc',{value:ticket.key})}
+    try{
+      // 404 has welcome only: no alarm scheduler writes the verified stay helper.
+      if(ticket.room==='404')await service('input_text','set_value','input_text.sisu_404_aktualny_pobyt',{value:ticket.key});
+      await service('input_text','set_value','input_text.sisu_'+ticket.room+'_powitanie_gosc',{value:ticket.key});
+    }
     catch{logger.warn('SISU arrival '+ticket.room+': light signal failed')}
   }
   async function recover(){

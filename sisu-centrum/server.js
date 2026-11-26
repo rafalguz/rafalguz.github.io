@@ -251,8 +251,8 @@ async function getOverview(fresh=false){
 }
 async function haApi(endpoint,method='GET',payload){
   if(!HA_TOKEN)throw Object.assign(Error('Brak połączenia serwerowego z Home Assistant'),{status:503});
-  const arrivalRead=/^\/states\/(?:input_text\.sisu_przyjazd_(?:wejscie|401|402)|media_player\.(?:401_salon_telewizor_ue55u8072huxxh|apartament_402_402_salon_telewizor_ue55u8072huxxh))$/.test(endpoint)&&method==='GET';
-  const autostartRead=/^\/states\/(?:input_button\.sisu_autostart_(?:401_salon|402_salon|402_sypialnia)|media_player\.apartament_402_402_sypialnia_telewizja_ue55u8072huxxh)$/.test(endpoint)&&method==='GET';
+  const arrivalRead=/^\/states\/(?:input_text\.sisu_przyjazd_(?:wejscie|401|402|404)|media_player\.(?:401_salon_telewizor_ue55u8072huxxh|apartament_402_402_salon_telewizor_ue55u8072huxxh|404_salon_404_salon_telewizor))$/.test(endpoint)&&method==='GET';
+  const autostartRead=/^\/states\/(?:input_button\.sisu_autostart_(?:401_salon|402_salon|402_sypialnia|404_salon)|media_player\.apartament_402_402_sypialnia_telewizja_ue55u8072huxxh)$/.test(endpoint)&&method==='GET';
   const ttRead=/^\/services\/ttlock\/list_(?:passcodes|records)\?return_response$/.test(endpoint)&&method==='POST';
   if(!arrivalRead&&!autostartRead&&!ttRead&&!/^\/(states|services\/[a-z_]+\/[a-z_]+)$/.test(endpoint))throw Object.assign(Error('Niedozwolone żądanie HA'),{status:400});
   let response;
@@ -387,7 +387,7 @@ function createHotelExpert({dataDir,send,resolveDevice,requireUser,csrfOk,jsonBo
   function device(req,res){
     const tv=resolveDevice(req);
     if(!tv){send(res,401,{error:'Telewizor nie jest sparowany'});return null;}
-    if(tv.mode!=='room'||!['401','402'].includes(String(tv.room))){send(res,403,{error:'Dane pobytu dostępne tylko dla przypisanego apartamentu'});return null;}
+    if(tv.mode!=='room'||!['401','402','404'].includes(String(tv.room))){send(res,403,{error:'Dane pobytu dostępne tylko dla przypisanego apartamentu'});return null;}
     return tv;
   }
   async function api(cfg,route,method='GET',body=null,useWrite=false){
@@ -497,11 +497,11 @@ function createHotelExpert({dataDir,send,resolveDevice,requireUser,csrfOk,jsonBo
     return p.year+'-'+p.month+'-'+p.day;
   }
   function addDays(day,n){const d=new Date(day+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10);}
-  async function getRoomContext(room){
+  async function getRoomContext(room,verifiedReservation){
     room=String(room);
     const empty={room,language:'pl',stayId:'',stayStatus:'vacant'};
     try{
-      let reservation=(await alarmGuest(Number(room))).reservation;
+      let reservation=verifiedReservation||(await alarmGuest(Number(room))).reservation;
       if(!reservation){
         const byDate=await guest(Number(room));
         reservation=byDate&&byDate.reservation||null;
@@ -568,17 +568,17 @@ function createHotelExpert({dataDir,send,resolveDevice,requireUser,csrfOk,jsonBo
     if(req.method!=='GET'){send(res,405,{error:'Metoda nieobsługiwana'});return true;}
     const tv=device(req,res);if(!tv)return true;
     try{
-      if(String(tv.room)==='402'){
+      if(['402','404'].includes(String(tv.room))){
         // Read only the active stay in this TV's assigned room. No guest contact
         // details or raw reservation identifier are needed by the TV display.
-        const context=await alarmGuest(402);
+        const context=await alarmGuest(Number(tv.room));
         const r=context.reservation;
         const reservation=r?{
           guestName:r.guestName,arrival:r.arrival,departure:r.departure,
           arrivalTime:r.arrivalTime,departureTime:r.departureTime,
           persons:r.persons,children:r.children,status:r.status
         }:null;
-        send(res,200,{ok:true,room:'402',source:'HotelowyExpert',reservation});
+        send(res,200,{ok:true,room:String(tv.room),source:'HotelowyExpert',reservation});
       }else send(res,200,await guest(Number(tv.room)));
     }
     catch(e){send(res,Number.isInteger(e.status)?e.status:500,{error:e.message||'Błąd HotelowyExpert'});}
@@ -732,7 +732,11 @@ const tvRegistry=require('./tv_registry')({
   getRoomContext:async room=>hotelExpert?hotelExpert.getRoomContext(room):{room:String(room),language:'',stayId:'',stayStatus:'unknown'}
 });
 const tvWatchdog=require('./tv_watchdog')({targets:tvRegistry.watchdogTargets});
-const tvAutostart=require('./tv_autostart')({haApi});
+function tv404Host(){
+  try{return String(JSON.parse(fs.readFileSync(path.join(DATA,'options.json'),'utf8')).tv_404_salon_host||'').trim();}
+  catch{return '';}
+}
+const tvAutostart=require('./tv_autostart')({haApi,host404:tv404Host()});
 const tvContent=require('./tv_content')({
   dataDir:DATA,rooms:ROOMS,send,requireUser,csrfOk,jsonBody,audit,resolveDevice:tvRegistry.resolveDevice
 });
@@ -743,9 +747,14 @@ const tvAlarm=require('./tv_alarm')({dataDir:DATA,send,jsonBody,resolveDevice:tv
 const arrival=require('./tv_arrival')({dataDir:DATA,rooms:ROOMS,haApi,hasUniqueSalon:tvRegistry.hasUniqueSalon,
   launchApp:room=>tvAutostart.launch(String(room)+'_salon'),
   getStay:async room=>{
-    if(!['401','402'].includes(String(room)))return null;
+    room=String(room);
+    if(!['401','402','404'].includes(room))return null;
     const reservation=(await hotelExpert.alarmGuest(Number(room))).reservation;
     if(!reservation)return null;
+    if(room==='404'){
+      const context=await hotelExpert.getRoomContext(room,reservation);
+      return {reservation,key:context.stayId,context};
+    }
     const key=await (String(room)==='401'?tvAlarm.verifyStay401():tvAlarm.verifyStay402());
     return {reservation,key,context:await hotelExpert.getRoomContext(String(room))};
   }});
