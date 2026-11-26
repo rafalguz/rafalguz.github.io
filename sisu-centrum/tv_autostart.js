@@ -1,15 +1,16 @@
 'use strict';
 const {isIPv4}=require('node:net');
 // Fixed LAN endpoints; bounded launch, verify foreground, no continuous force or power-on.
-module.exports=function createTvAutostart({haApi,host403,host404,logger=console,autoPoll=true,now=Date.now,sleep=ms=>new Promise(r=>setTimeout(r,ms)),requestImpl}){
+module.exports=function createTvAutostart({haApi,host403,host404,host405,logger=console,autoPoll=true,now=Date.now,sleep=ms=>new Promise(r=>setTimeout(r,ms)),requestImpl}){
   const app='RGKSISU232.Sisu23TV';
   const isSisuLan=host=>typeof host==='string'&&isIPv4(host)&&/^192\.168\.1\./.test(host)&&!/[.](?:0|255)$/.test(host);
-  const lan403=isSisuLan(host403),lan404=isSisuLan(host404);
+  const lan403=isSisuLan(host403),lan404=isSisuLan(host404),lan405=isSisuLan(host405);
   const devices=Object.freeze({
     '401_salon':{host:'192.168.1.238',local:'media_player.401_salon_telewizor_ue55u8072huxxh'},
     '402_salon':{host:'192.168.1.210',local:'media_player.apartament_402_402_salon_telewizor_ue55u8072huxxh'},
     '402_sypialnia':{host:'192.168.1.230',local:'media_player.apartament_402_402_sypialnia_telewizja_ue55u8072huxxh'},
     ...(lan403?{'403_salon':{host:host403,local:'media_player.403_salon_403_salon_telewizor'}}:{}),
+    ...(lan405?{'405_salon':{host:host405,local:'media_player.405_salon_405_salon_telewizor'}}:{}),
     ...(lan404?{'404_salon':{host:host404,local:'media_player.404_salon_404_salon_telewizor'}}:{})
   });
   const boot=now(),seen=new Map(),jobs=new Map(),polling=new Set(),ready=new Set();

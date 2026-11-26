@@ -88,7 +88,19 @@ const ROOM403=Object.freeze({
     sypialnia:['binary_sensor.403_sypialnia_okno_1_kontaktron_contact']
   }
 });
-const MAPPED_ROOMS=Object.freeze({'402':ROOM402,'403':ROOM403,'404':ROOM404});
+// 405: verified lights, AC, and the named bathroom and salon radiators.
+const ROOM405=Object.freeze({
+  lights:[
+    {id:'salon',name:'Salon',entity:'switch.405_salon_oswietlenie'},
+    {id:'stol',name:'Nad stołem',entity:'switch.405_nad_stolem_oswietlenie'},
+    {id:'kuchnia',name:'Kuchnia',entity:'switch.405_kuchnia_oswietlenie'},
+    {id:'przedpokoj',name:'Przedpokój',entity:'switch.405_przedpokoj_oswietlenie'},
+    {id:'lazienka',name:'Łazienka',entity:'switch.405_lazienka_oswietlenie'}
+  ],
+  climate:{ac:['climate.405'],salon:['climate.405_salon_termostat_1','climate.405_salon_termostat_2'],sypialnia:[],lazienka:['climate.405_lazienka_termostat'],przedpokoj:[]},
+  windows:{salon:[],sypialnia:[]}
+});
+const MAPPED_ROOMS=Object.freeze({'402':ROOM402,'403':ROOM403,'404':ROOM404,'405':ROOM405});
 
 const BASE=Object.freeze({ac:22,salon:22,sypialnia:22,lazienka:22});
 const RANGE=Object.freeze({ac:[21,23],salon:[19,23],sypialnia:[19,23],lazienka:[19,23]});
