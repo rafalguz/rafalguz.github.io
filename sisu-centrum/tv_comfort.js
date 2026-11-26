@@ -100,7 +100,21 @@ const ROOM405=Object.freeze({
   climate:{ac:['climate.405'],salon:['climate.405_salon_termostat_1','climate.405_salon_termostat_2'],sypialnia:[],lazienka:['climate.405_lazienka_termostat'],przedpokoj:[]},
   windows:{salon:[],sypialnia:[]}
 });
-const MAPPED_ROOMS=Object.freeze({'402':ROOM402,'403':ROOM403,'404':ROOM404,'405':ROOM405});
+// 406: seven verified light circuits and the AC; no enrolled heating heads yet.
+const ROOM406=Object.freeze({
+  lights:[
+    {id:'salon',name:'Salon',entity:'switch.406_salon_oswietlenie'},
+    {id:'stol',name:'Nad stołem',entity:'switch.406_nad_stolem_oswietlenie'},
+    {id:'kuchnia',name:'Kuchnia',entity:'switch.406_kuchnia_oswietlenie'},
+    {id:'przedpokoj',name:'Przedpokój',entity:'switch.406_przedpokoj_oswietlenie'},
+    {id:'lazienka',name:'Łazienka',entity:'switch.406_lazienka_oswietlenie'},
+    {id:'sypialnia',name:'Sypialnia 1',entity:'switch.406_sypialnia_oswietlenie'},
+    {id:'sypialnia_2',name:'Sypialnia 2',entity:'switch.406_sypialnia_2_oswietlenie'}
+  ],
+  climate:{ac:['climate.406'],salon:[],sypialnia:[],lazienka:[],przedpokoj:[]},
+  windows:{salon:[],sypialnia:[]}
+});
+const MAPPED_ROOMS=Object.freeze({'402':ROOM402,'403':ROOM403,'404':ROOM404,'405':ROOM405,'406':ROOM406});
 
 const BASE=Object.freeze({ac:22,salon:22,sypialnia:22,lazienka:22});
 const RANGE=Object.freeze({ac:[21,23],salon:[19,23],sypialnia:[19,23],lazienka:[19,23]});
