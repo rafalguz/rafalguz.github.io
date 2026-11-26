@@ -62,7 +62,7 @@ const ROOM404=Object.freeze({
   ],
   climate:{
     ac:['climate.404'], salon:['climate.404_salon_termostat'],
-    sypialnia:['climate.404_sypialnia_termostat'], lazienka:['climate.404_lazienka_termostat'],
+    sypialnia:['climate.404_sypialnia_termostat'], lazienka:[],
     przedpokoj:[]
   },
   windows:{
@@ -81,7 +81,7 @@ const ROOM403=Object.freeze({
   ],
   climate:{
     ac:['climate.403'], salon:['climate.403_salon_termostat'],
-    sypialnia:['climate.403_sypialnia_termostat'], lazienka:[], przedpokoj:['climate.403_przedpokoj_termostat']
+    sypialnia:['climate.403_sypialnia_termostat'], lazienka:['climate.403_lazienka_termostat'], przedpokoj:['climate.403_przedpokoj_termostat']
   },
   windows:{
     salon:[1,2,3].map(n=>'binary_sensor.403_salon_okno_'+n+'_kontaktron_contact'),
