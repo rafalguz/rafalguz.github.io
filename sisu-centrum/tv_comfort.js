@@ -100,7 +100,7 @@ const ROOM405=Object.freeze({
   climate:{ac:['climate.405'],salon:['climate.405_salon_termostat_1','climate.405_salon_termostat_2'],sypialnia:[],lazienka:['climate.405_lazienka_termostat'],przedpokoj:[]},
   windows:{salon:[],sypialnia:[]}
 });
-// 406: seven verified light circuits and the AC; no enrolled heating heads yet.
+// 406: one shared setpoint for both heads in bedroom 1; bedroom 2 is independent.
 const ROOM406=Object.freeze({
   lights:[
     {id:'salon',name:'Salon',entity:'switch.406_salon_oswietlenie'},
@@ -111,13 +111,13 @@ const ROOM406=Object.freeze({
     {id:'sypialnia',name:'Sypialnia 1',entity:'switch.406_sypialnia_oswietlenie'},
     {id:'sypialnia_2',name:'Sypialnia 2',entity:'switch.406_sypialnia_2_oswietlenie'}
   ],
-  climate:{ac:['climate.406'],salon:[],sypialnia:[],lazienka:[],przedpokoj:[]},
+  climate:{ac:['climate.406'],salon:['climate.406_salon_termostat'],sypialnia:['climate.406_sypialnia_1_termostat_1','climate.406_sypialnia_1_termostat_2'],sypialnia_2:['climate.406_sypialnia_2_termostat'],lazienka:['climate.406_lazienka_termostat'],przedpokoj:[]},
   windows:{salon:[],sypialnia:[]}
 });
 const MAPPED_ROOMS=Object.freeze({'402':ROOM402,'403':ROOM403,'404':ROOM404,'405':ROOM405,'406':ROOM406});
 
 const BASE=Object.freeze({ac:22,salon:22,sypialnia:22,lazienka:22});
-const RANGE=Object.freeze({ac:[21,23],salon:[19,23],sypialnia:[19,23],lazienka:[19,23]});
+const RANGE=Object.freeze({ac:[21,23],salon:[19,23],sypialnia:[19,23],sypialnia_2:[19,23],lazienka:[19,23]});
 function seasonalMode(){const m=new Date().getMonth()+1;return m>=5&&m<=9?'cool':'heat';}
 function seasonLabel(){return seasonalMode()==='cool'?'Lato':'Zima';}
 const FANS=new Set(['auto','1','2','3','4','5']);
@@ -178,7 +178,7 @@ module.exports=function createTvComfort({haApi,send,jsonBody,resolveDevice,audit
       lightList.push({id:item.id,name:item.name,available,on});
     }
     const climate={};
-    for(const zone of ['ac','salon','sypialnia','lazienka','przedpokoj']){
+    for(const zone of Object.keys(plan.climate)){
       const ss=plan.climate[zone].map(id=>states.get(id));
       const available=ss.length>0&&ss.every(usable);
       const values=ss.map(s=>numeric(s?.attributes?.current_temperature)).filter(v=>v!==null);
