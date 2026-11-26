@@ -62,7 +62,7 @@ const ROOM404=Object.freeze({
   ],
   climate:{
     ac:['climate.404'], salon:['climate.404_salon_termostat'],
-    sypialnia:['climate.404_sypialnia_termostat'], lazienka:[],
+    sypialnia:['climate.404_sypialnia_termostat'], lazienka:['climate.404_lazienka_termostat'],
     przedpokoj:[]
   },
   windows:{
