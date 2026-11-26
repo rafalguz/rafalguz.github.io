@@ -4,6 +4,7 @@
 const crypto=require('node:crypto');
 const fs=require('node:fs');
 const path=require('node:path');
+const {capabilities:roomCapabilities}=require('./tv_comfort');
 
 module.exports=function makeTvRegistry({dataDir,rooms,send,requireUser,csrfOk,jsonBody,audit,clientKey,getRoomContext}) {
   const allowed=new Set(rooms.map(Number));
@@ -78,10 +79,11 @@ module.exports=function makeTvRegistry({dataDir,rooms,send,requireUser,csrfOk,js
       try{stay=await getRoomContext(String(d.room))}catch{}
     }
     deliveredContext.set(d.id,{stayId:stay.stayId,language:stay.language,stayStatus:stay.stayStatus,room:String(d.room)});
+    const capabilities=d.mode==='room'?roomCapabilities(d.room):{lights:[],climate:[]};
+    const controlsEnabled=capabilities.lights.length>0||capabilities.climate.length>0;
     return {ok:true,deviceId:d.id,room:String(d.room),mode:d.mode,
-      appVersion:d.version||'',controlsEnabled:d.mode==='room'&&['401','402'].includes(String(d.room)),
-      capabilities:d.mode!=='room'?{lights:[],climate:[]}:String(d.room)==='401'?{lights:['salon','stol','kuchnia','lazienka','sypialnia'],climate:['ac','salon','sypialnia','lazienka']}:String(d.room)==='402'?{lights:['salon','kuchnia','przedpokoj','sypialnia','lazienka'],climate:['ac','salon','sypialnia','przedpokoj']}:{lights:[],climate:[]},
-      notice:d.mode==='demo'?'Tryb testowy — bez sterowania urządzeniami':['401','402'].includes(String(d.room))?'Sterowanie apartamentem '+d.room+' aktywne':'Sterowanie nieaktywne do czasu przypisania urządzeń przez administratora',
+      appVersion:d.version||'',controlsEnabled,capabilities,
+      notice:d.mode==='demo'?'Tryb testowy — bez sterowania urządzeniami':controlsEnabled?'Sterowanie apartamentem '+d.room+' aktywne':'Sterowanie nieaktywne do czasu przypisania urządzeń przez administratora',
       ...stay};
   }
   function quota(key,max,period=10*60000){

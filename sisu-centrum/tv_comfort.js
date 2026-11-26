@@ -52,7 +52,22 @@ const ROOM402=Object.freeze({
     sypialnia:['binary_sensor.402_sypialnia_okno_1_kontaktron_contact','binary_sensor.402_sypialnia_okno_2_kontaktron_contact','binary_sensor.402_sypialnia_okno_3_kontaktron_contact']
   }
 });
-const ALL_WINDOWS_402=Object.freeze([...ROOM402.windows.salon,...ROOM402.windows.sypialnia]);
+// Only actual room-owned HA entities. 404 has no window contacts in HA as of rollout.
+const ROOM404=Object.freeze({
+  lights:[
+    {id:'salon',name:'Salon',entity:'switch.0xa4c1382f74f6fac9'},
+    {id:'przedpokoj',name:'Przedpokój',entity:'switch.404_przedpokoj_oswietlenie'},
+    {id:'sypialnia',name:'Sypialnia',entity:'switch.404_sypialnia_oswietlenie'},
+    {id:'lazienka',name:'Łazienka',entity:'switch.404_lazienka_oswietlenie'}
+  ],
+  climate:{
+    ac:['climate.404'], salon:['climate.404_salon_termostat'],
+    sypialnia:['climate.404_sypialnia_termostat'], lazienka:['climate.404_lazienka_termostat'],
+    przedpokoj:[]
+  },
+  windows:{salon:[],sypialnia:[]}
+});
+const MAPPED_ROOMS=Object.freeze({'402':ROOM402,'404':ROOM404});
 
 const BASE=Object.freeze({ac:22,salon:22,sypialnia:22,lazienka:22});
 const RANGE=Object.freeze({ac:[21,23],salon:[19,23],sypialnia:[19,23],lazienka:[19,23]});
@@ -78,7 +93,7 @@ module.exports=function createTvComfort({haApi,send,jsonBody,resolveDevice,audit
       send(res,403,{error:'Sterowanie dostępne wyłącznie w przypisanym apartamencie'});return null;
     }
     const room=String(tv.room);
-    if(room!=='401'&&room!=='402'){
+    if(room!=='401'&&!Object.hasOwn(MAPPED_ROOMS,room)){
       send(res,403,{error:'Urządzenia tego apartamentu nie są jeszcze skonfigurowane'});return null;
     }
     return tv;
@@ -109,16 +124,17 @@ module.exports=function createTvComfort({haApi,send,jsonBody,resolveDevice,audit
       fan:typeof s?.attributes?.fan_mode==='string'?s.attributes.fan_mode:null
     };
   }
-  function stateView402(states){
+  function stateViewMapped(states,room,plan){
+    const allWindows=Object.values(plan.windows).flat();
     const lights={},lightList=[];
-    for(const item of ROOM402.lights){
+    for(const item of plan.lights){
       const s=states.get(item.entity),available=usable(s),on=available&&s.state==='on';
       lights[item.id]={available,on,name:item.name};
       lightList.push({id:item.id,name:item.name,available,on});
     }
     const climate={};
     for(const zone of ['ac','salon','sypialnia','lazienka','przedpokoj']){
-      const ss=ROOM402.climate[zone].map(id=>states.get(id));
+      const ss=plan.climate[zone].map(id=>states.get(id));
       const available=ss.length>0&&ss.every(usable);
       const values=ss.map(s=>numeric(s?.attributes?.current_temperature)).filter(v=>v!==null);
       const targets=ss.map(s=>numeric(s?.attributes?.temperature));
@@ -129,25 +145,26 @@ module.exports=function createTvComfort({haApi,send,jsonBody,resolveDevice,audit
         target,base:BASE[zone]||BASE.salon,min:range[0],max:range[1],
         fan:typeof ss[0]?.attributes?.fan_mode==='string'?ss[0].attributes.fan_mode:null};
     }
-    return {ok:true,room:'402',mode:'room',checkedAt:new Date().toISOString(),
+    return {ok:true,room:String(room),mode:'room',checkedAt:new Date().toISOString(),
       seasonal:{season:seasonLabel(),mode:seasonalMode()},lights,lightList,climate,
-      windows:{acBlocked:anyWindowNotClosed(states,ALL_WINDOWS_402),
-        salonOpen:anyWindowNotClosed(states,ROOM402.windows.salon),
-        sypialniaOpen:anyWindowNotClosed(states,ROOM402.windows.sypialnia)}};
+      windows:{acBlocked:anyWindowNotClosed(states,allWindows),
+        salonOpen:anyWindowNotClosed(states,plan.windows.salon),
+        sypialniaOpen:anyWindowNotClosed(states,plan.windows.sypialnia)}};
   }
-  async function action402(body,states){
+  async function actionMapped(body,states,plan){
+    const allWindows=Object.values(plan.windows).flat();
     if(!body||typeof body!=='object')throw err(400,'Nieprawidłowe polecenie');
     const {kind,zone,value}=body;
     if(typeof kind!=='string'||(kind!=='heating_target'&&typeof zone!=='string'))throw err(400,'Nieprawidłowe polecenie');
-    const climate=ROOM402.climate;
-    const blocked=z=>z==='ac'?anyWindowNotClosed(states,ALL_WINDOWS_402):
-      !!ROOM402.windows[z]&&Array.isArray(ROOM402.windows[z])&&anyWindowNotClosed(states,ROOM402.windows[z]);
+    const climate=plan.climate;
+    const blocked=z=>z==='ac'?anyWindowNotClosed(states,allWindows):
+      !!plan.windows[z]&&Array.isArray(plan.windows[z])&&anyWindowNotClosed(states,plan.windows[z]);
     const available=ids=>ids.length>0&&ids.every(id=>usable(states.get(id)));
     const setTemp=async(ids,n)=>{
       for(const id of ids)await haApi('/services/climate/set_temperature','POST',{entity_id:id,temperature:n});
     };
     if(kind==='light'){
-      const item=ROOM402.lights.find(x=>x.id===zone);
+      const item=plan.lights.find(x=>x.id===zone);
       if(!item||!['on','off'].includes(value))throw err(400,'Nieprawidłowe sterowanie światłem');
       if(!usable(states.get(item.entity)))throw err(409,'Urządzenie chwilowo niedostępne');
       await haApi('/services/switch/'+(value==='on'?'turn_on':'turn_off'),'POST',{entity_id:item.entity});
@@ -155,7 +172,7 @@ module.exports=function createTvComfort({haApi,send,jsonBody,resolveDevice,audit
       const n=validTarget(value,'salon');
       if(n===null||!Number.isInteger(n))throw err(400,'Nastawa ogrzewania musi być w zakresie 19–23°C co 1°C');
       const applied=[];
-      for(const z of ['salon','sypialnia','przedpokoj']){
+      for(const z of Object.keys(climate).filter(z=>z!=='ac'&&climate[z].length)){
         if(!available(climate[z])||blocked(z))continue;
         await setTemp(climate[z],n);applied.push(z);
       }
@@ -186,7 +203,7 @@ module.exports=function createTvComfort({haApi,send,jsonBody,resolveDevice,audit
   }
 
   function stateView(states,room){
-    if(String(room)==='402')return stateView402(states);
+    if(Object.hasOwn(MAPPED_ROOMS,room))return stateViewMapped(states,room,MAPPED_ROOMS[room]);
     const lights={},lightList=[];
     for(const item of roomLights(room,states)){
       const s=states.get(item.entity),available=usable(s),on=available&&s.state==='on';
@@ -205,7 +222,7 @@ module.exports=function createTvComfort({haApi,send,jsonBody,resolveDevice,audit
     };
   }
   async function action(room,body,states){
-    if(String(room)==='402')return action402(body,states);
+    if(Object.hasOwn(MAPPED_ROOMS,room))return actionMapped(body,states,MAPPED_ROOMS[room]);
     const kind=body.kind,zone=body.zone,value=body.value;
     let domain,service,entity,data={};
     if(kind==='heating_target'){
@@ -278,4 +295,12 @@ module.exports=function createTvComfort({haApi,send,jsonBody,resolveDevice,audit
     return true;
   }
   return {handle};
+};
+
+// Registry advertises exactly the devices accepted by the comfort endpoints.
+module.exports.capabilities=function capabilities(room){
+  const key=String(room);
+  if(key==='401')return {lights:['salon','stol','kuchnia','lazienka','sypialnia'],climate:Object.keys(CLIMATE)};
+  const plan=Object.hasOwn(MAPPED_ROOMS,key)?MAPPED_ROOMS[key]:null;
+  return plan?{lights:plan.lights.map(x=>x.id),climate:Object.keys(plan.climate).filter(z=>plan.climate[z].length)}:{lights:[],climate:[]};
 };
