@@ -114,7 +114,26 @@ const ROOM406=Object.freeze({
   climate:{ac:['climate.406'],salon:['climate.406_salon_termostat'],sypialnia:['climate.406_sypialnia_1_termostat_1','climate.406_sypialnia_1_termostat_2'],sypialnia_2:['climate.406_sypialnia_2_termostat'],lazienka:['climate.406_lazienka_termostat'],przedpokoj:[]},
   windows:{salon:[],sypialnia:[]}
 });
-const MAPPED_ROOMS=Object.freeze({'402':ROOM402,'403':ROOM403,'404':ROOM404,'405':ROOM405,'406':ROOM406});
+// 304: only exact HA entities confirmed for this apartment.
+const ROOM304=Object.freeze({
+  lights:[
+    {id:'salon',name:'Salon',entity:'switch.304_salon_oswietlenie'},
+    {id:'stol',name:'Nad stołem',entity:'switch.304_nad_stolem_oswietlenie'},
+    {id:'kuchnia',name:'Kuchnia',entity:'switch.304_kuchnia_oswietlenie'},
+    {id:'przedpokoj',name:'Przedpokój',entity:'switch.304_przedpokoj_oswietlenie'},
+    {id:'lazienka',name:'Łazienka',entity:'switch.304_lazienka_oswietlenie'},
+    {id:'sypialnia',name:'Sypialnia',entity:'switch.304_sypialnia_oswietlenie'}
+  ],
+  climate:{
+    ac:[],salon:['climate.304_salon_2_termostat'],
+    sypialnia:['climate.304_sypialnia_termostat'],lazienka:['climate.304_lazienka_termostat']
+  },
+  windows:{
+    salon:['binary_sensor.304_salon_okno1_kontaktron_contact','binary_sensor.304_salon_okno_2_kontaktron_contact'],
+    sypialnia:['binary_sensor.304_sypialnia_okno_kontaktron_contact']
+  }
+});
+const MAPPED_ROOMS=Object.freeze({'304':ROOM304,'402':ROOM402,'403':ROOM403,'404':ROOM404,'405':ROOM405,'406':ROOM406});
 
 const BASE=Object.freeze({ac:22,salon:22,sypialnia:22,lazienka:22});
 const RANGE=Object.freeze({ac:[21,23],salon:[19,23],sypialnia:[19,23],sypialnia_2:[19,23],lazienka:[19,23]});
