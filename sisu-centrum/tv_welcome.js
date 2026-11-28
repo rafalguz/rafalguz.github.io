@@ -142,7 +142,7 @@ module.exports=function makeWelcome({dataDir,haApi,resolveDevice,send,jsonBody,g
     if(p!=='/api/tv/welcome/claim')return false;
     if(req.method!=='POST'){send(res,405,{error:'Method not allowed'});return true;}
     const d=resolveDevice(req);
-    if(arrivalController&&d&&d.mode==='room'&&['401','402','403','404','405','406'].includes(String(d.room))){
+    if(arrivalController&&d&&d.mode==='room'&&['304','401','402','403','404','405','406'].includes(String(d.room))){
       await jsonBody(req);
       const ticket=await arrivalController.claim(d);
       if(!ticket){send(res,200,{ok:true,welcome:false});return true;}
