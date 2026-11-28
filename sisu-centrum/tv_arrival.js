@@ -2,7 +2,7 @@
 // Two-stage arrival: verified guest code at main entrance prewarms the salon TV.
 // A separate verified room-door event grants the welcome. No PIN is persisted/logged.
 const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
-const MAIN='lock.wejscie_glowne', APP='app:RGKSISU232.Sisu23TV';
+const MAIN='lock.wejscie_glowne', GREEN='lock.zielone_drzwi', DOWNSTAIRS=new Set([MAIN,GREEN]), APP='app:RGKSISU232.Sisu23TV';
 const PILOT=Object.freeze({
   '304':{power:'media_player.304_304_salon',local:'media_player.304_304_salon'},
   '401':{power:'media_player.401_salon_401_salon_telewizor',local:'media_player.401_salon_telewizor_ue55u8072huxxh',fallback:'media_player.401_salon_telewizor_smart'},
@@ -12,7 +12,7 @@ const PILOT=Object.freeze({
   '405':{power:'media_player.405_salon_405_salon_telewizor',local:'media_player.405_salon_405_salon_telewizor'},
   '406':{power:'media_player.406_salon_406_salon_telewizor',local:'media_player.406_salon_406_salon_telewizor'}
 });
-const SIGNALS=Object.freeze({[MAIN]:'input_text.sisu_przyjazd_wejscie','lock.304':'input_text.sisu_przyjazd_304','lock.401':'input_text.sisu_przyjazd_401','lock.402':'input_text.sisu_przyjazd_402','lock.403':'input_text.sisu_przyjazd_403','lock.404':'input_text.sisu_przyjazd_404','lock.405':'input_text.sisu_przyjazd_405','lock.406':'input_text.sisu_przyjazd_406'});
+const WELCOME_PATH_MS=30*60000;
 const stamp=v=>Date.parse(String(v||''));
 const pin=v=>String(v??'');
 const day=v=>new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Warsaw',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(v));
@@ -28,7 +28,7 @@ const same=(a,b)=>!!a&&!!b&&pin(a.passcode)===pin(b.passcode)&&
   stamp(a.start_date)===stamp(b.start_date)&&stamp(a.end_date)===stamp(b.end_date)&&
   !!String(a.name||'').trim()&&String(a.name).trim()===String(b.name||'').trim();
 function datesMatch(c,r){return !!r&&day(stamp(c.start_date))===r.arrival&&day(stamp(c.end_date))===r.departure;}
-module.exports=function createArrival({dataDir,rooms,haApi,getStay,hasUniqueSalon,launchApp,logger=console,autoPoll=true,now=Date.now,sleep=ms=>new Promise(r=>setTimeout(r,ms))}){
+module.exports=function createArrival({dataDir,rooms,haApi,getStay,hasUniqueSalon,launchApp,resolveWakeTarget=()=>null,logger=console,autoPoll=true,now=Date.now,sleep=ms=>new Promise(r=>setTimeout(r,ms))}){
   const FILE=path.join(dataDir,'sisu-guest-arrival-v2.json');
   fs.mkdirSync(dataDir,{recursive:true,mode:0o700});
   let db={seen:{},pending:{},completed:{},prepared:{}};
@@ -39,7 +39,14 @@ module.exports=function createArrival({dataDir,rooms,haApi,getStay,hasUniqueSalo
   }
   function save(){const tmp=FILE+'.tmp-'+process.pid;fs.writeFileSync(tmp,JSON.stringify(db),{mode:0o600});fs.renameSync(tmp,FILE)}
   const boot=now();
-  const busy=new Set(),signals=new Map(),wakeJobs=new Map();
+  const busy=new Set(),signals=new Map(),wakeJobs=new Map(), proofs=new Map();
+  const proofSecret=crypto.randomBytes(32);
+  const proofKey=c=>crypto.createHmac('sha256',proofSecret)
+    .update(JSON.stringify([pin(c.passcode),stamp(c.start_date),stamp(c.end_date),String(c.name||'').trim()])).digest('hex');
+  const matchedRooms=new Set(rooms.map(String).filter(n=>/^\d{3}$/.test(n)));
+  const signalsByLock=Object.fromEntries([[MAIN,'input_text.sisu_przyjazd_wejscie'],
+    [GREEN,'input_text.sisu_przyjazd_zielone_drzwi'], ...[...matchedRooms].map(n=>['lock.'+n,'input_text.sisu_przyjazd_'+n])]);
+  function pruneProofs(){for(const [k,t] of proofs)if(now()-t>WELCOME_PATH_MS)proofs.delete(k);}
   async function service(domain,action,id,data={}){return haApi('/services/'+domain+'/'+action,'POST',{entity_id:id,...data});}
   async function readResponse(action,ids,extra={}){
     const x=await haApi('/services/ttlock/'+action+'?return_response','POST',{entity_id:ids,...extra});
@@ -53,8 +60,8 @@ module.exports=function createArrival({dataDir,rooms,haApi,getStay,hasUniqueSalo
   async function recordList(id){return (await readResponse('list_records',id,{page_size:15,page_no:1}))[id];}
   async function state(id){return (await haApi('/states/'+id))?.state;}
   async function verifiedStay(room,code){
-    if(!PILOT[room]||!hasUniqueSalon(room))return null;
-    const s=await getStay(room);
+    if(!matchedRooms.has(room)||!hasUniqueSalon(room))return null;
+    const s=await getStay(room,{code:{name:code.name,start_date:code.start_date,end_date:code.end_date}});
     if(!s||!s.reservation||!datesMatch(code,s.reservation)||!/^[a-f0-9]{32}$/.test(s.key||'')||
       s.context?.stayStatus!=='active'||!s.context?.stayId)return null;
     return s;
@@ -62,9 +69,9 @@ module.exports=function createArrival({dataDir,rooms,haApi,getStay,hasUniqueSalo
   async function wake(room,key,force=false){
     if(wakeJobs.has(room))return wakeJobs.get(room);
     const job=(async()=>{
-      const p=PILOT[room];
+      const p=resolveWakeTarget(room)||PILOT[room];
       if(!p||db.completed[room]===key||!hasUniqueSalon(room))return false;
-      if((await getStay(room))?.key!==key)return false;
+      if((await getStay(room,{key}))?.key!==key)return false;
       const recent=db.prepared[room];
       let powered=await state(p.local)==='on';
       if(powered&&!force&&recent?.key===key&&now()-recent.at<15*60000)return true;
@@ -75,7 +82,7 @@ module.exports=function createArrival({dataDir,rooms,haApi,getStay,hasUniqueSalo
         if(!powered)return false;
         await sleep(2000);
       }
-      if(db.completed[room]===key||(await getStay(room))?.key!==key)return false;
+      if(db.completed[room]===key||(await getStay(room,{key}))?.key!==key)return false;
       if(launchApp){if(!await launchApp(room))return false;}
       else await service('media_player','play_media',p.local,{media_content_type:'app',media_content_id:APP});
       db.prepared[room]={key,at:now()};save();
@@ -88,32 +95,34 @@ module.exports=function createArrival({dataDir,rooms,haApi,getStay,hasUniqueSalo
   async function process(source,record){
     const t=stamp(record?.lock_date),value=pin(record?.keyboard_pwd);
     if(record?.record_type!=='PASSWORD_UNLOCK'||record?.success!==true||!value||!Number.isFinite(t)||Math.abs(now()-t)>120000)return false;
-    let room,code;
-    if(source===MAIN){
-      const list=await codes(MAIN);
-      const main=selectCode(list[MAIN],value,t);
-      if(!main)return false;
-      // Only a guest-code event causes a building-wide read. Incomplete/ambiguous mapping fails closed.
-      const ids=rooms.map(n=>'lock.'+n);
-      const all=await codes(ids);
-      const hits=ids.filter(id=>all[id].some(c=>pin(c.passcode)===value&&
-        (c.type!=='period'||activeCode(c,t))));
-      if(hits.length!==1)return false;
-      room=hits[0].slice(5);code=selectCode(all[hits[0]],value,t);
-      if(!same(main,code))return false;
-    }else{
-      room=source.slice(5);
-      if(!PILOT[room])return false;
-      const list=await codes([source,MAIN]);
-      code=selectCode(list[source],value,t);
-      if(!same(code,selectCode(list[MAIN],value,t)))return false;
+    pruneProofs();
+    if(DOWNSTAIRS.has(source)){
+      const list=await codes(source);
+      const entry=selectCode(list[source],value,t);
+      if(!entry||!/^\s*rez(?:erwacja)?[ .:#_-]+/i.test(String(entry.name||'')))return false;
+      const k=proofKey(entry);
+      if(t>(proofs.get(k)||0))proofs.set(k,t);
+      // Prewarm only after proof, and only an unambiguous reservation and known controllable living-room TV.
+      void (async()=>{
+        const eligible=[...matchedRooms].filter(room=>hasUniqueSalon(room));
+        const stays=await Promise.all(eligible.map(room=>verifiedStay(room,entry).catch(()=>null)));
+        const hits=eligible.filter((room,i)=>!!stays[i]);
+        if(hits.length!==1||!(resolveWakeTarget(hits[0])||PILOT[hits[0]])||now()-t>120000)return;
+        const roomLock='lock.'+hits[0], roomCodes=await codes(roomLock);
+        const upper=selectCode(roomCodes[roomLock],value,t);
+        if(same(entry,upper)&&now()-t<=120000)launch(hits[0],stays[eligible.indexOf(hits[0])].key);
+      })().catch(()=>{});
+      return true;
     }
+    const room=source.slice(5);
+    if(source!=='lock.'+room||!matchedRooms.has(room)||!hasUniqueSalon(room))return false;
+    const list=await codes(source);
+    const code=selectCode(list[source],value,t);
+    if(!code)return false;
+    const lower=proofs.get(proofKey(code));
+    if(!Number.isFinite(lower)||lower>=t||t-lower>WELCOME_PATH_MS)return null;
     const stay=await verifiedStay(room,code);
     if(!stay||db.completed[room]===stay.key)return false;
-    if(source===MAIN){
-      logger.info('SISU arrival '+room+': verified main entrance, prewarm only');
-      launch(room,stay.key);return true;
-    }
     const old=db.pending[room];
     if(old?.key===stay.key&&now()-old.at<300000)return true;
     db.pending[room]={key:stay.key,at:now(),recordId:String(record.id)};
@@ -125,9 +134,9 @@ module.exports=function createArrival({dataDir,rooms,haApi,getStay,hasUniqueSalo
     if(busy.has(source))return;
     busy.add(source);
     try{
-      const signal=await state(SIGNALS[source]);
+      const signal=await state(signalsByLock[source]);
       const ts=stamp(signal);
-      if(!Number.isFinite(ts)||ts<boot-2000||now()-ts>90000||ts-now()>5000)return;
+      if(!Number.isFinite(ts)||ts<boot||now()-ts>90000||ts-now()>5000)return;
       const last=signals.get(source);
       if(last?.value===signal&&last.done)return;
       if(last?.value===signal&&now()-last.at<4500)return;
@@ -136,14 +145,15 @@ module.exports=function createArrival({dataDir,rooms,haApi,getStay,hasUniqueSalo
       const recent=list.filter(r=>{
         const st=stamp(r.server_date),lt=stamp(r.lock_date);
         return r.record_type==='PASSWORD_UNLOCK'&&r.success===true&&
-          Number.isFinite(st)&&Number.isFinite(lt)&&Math.abs(st-ts)<=18000&&lt>=boot-3000&&now()-lt<=120000;
+          Number.isFinite(st)&&Number.isFinite(lt)&&Math.abs(st-ts)<=18000&&lt>=boot&&now()-lt<=120000;
       }).sort((a,b)=>stamp(a.lock_date)-stamp(b.lock_date));
       if(!recent.length)return;
       const seen=Array.isArray(db.seen[source])?db.seen[source]:[];
       for(const r of recent){
         const id=String(r.id??'');
         if(!/^\d{1,24}$/.test(id)||seen.includes(id))continue;
-        await process(source,r);
+        const verdict=await process(source,r);
+        if(verdict===null)return; // A near-simultaneous downstairs record can arrive slightly later.
         seen.push(id);db.seen[source]=seen.slice(-100);save();
       }
       signals.set(source,{value:signal,at:now(),done:true});
@@ -152,10 +162,10 @@ module.exports=function createArrival({dataDir,rooms,haApi,getStay,hasUniqueSalo
   }
   async function claim(d){
     const room=String(d?.room||'');
-    if(!d||d.mode!=='room'||!d.welcomeSalon||!PILOT[room]||!hasUniqueSalon(room))return null;
+    if(!d||d.mode!=='room'||!d.welcomeSalon||!matchedRooms.has(room)||!hasUniqueSalon(room))return null;
     const p=db.pending[room];
-    if(!p||now()-p.at>300000||now()<p.at||db.completed[room]===p.key)return null;
-    const fresh=await getStay(room).catch(()=>null),ctx=d.welcomeContext;
+    if(!p||p.at<boot||now()-p.at>300000||now()<p.at||db.completed[room]===p.key)return null;
+    const fresh=await getStay(room,{key:p.key}).catch(()=>null),ctx=d.welcomeContext;
     if(!fresh||fresh.key!==p.key||fresh.context?.stayStatus!=='active'||
        !ctx||ctx.room!==room||ctx.stayStatus!=='active'||ctx.stayId!==fresh.context.stayId||
        ctx.language!==fresh.context.language||!ctx.stayId)return null;
@@ -164,7 +174,13 @@ module.exports=function createArrival({dataDir,rooms,haApi,getStay,hasUniqueSalo
     logger.info('SISU arrival '+room+': verified welcome issued once');
     return {room,key:p.key,eventId:crypto.randomBytes(16).toString('hex')};
   }
+  async function welcomeContext(room){
+    const p=db.pending[String(room)];
+    if(!p||p.at<boot||now()-p.at>300000||now()<p.at||db.completed[room]===p.key)return null;
+    return (await getStay(String(room),{key:p.key}).catch(()=>null))?.context||null;
+  }
   async function notify(ticket){
+    if(!Object.hasOwn(PILOT,ticket.room))return; // No light cascade outside the already deployed set.
     try{
       // These rooms have welcome only: no alarm scheduler writes the verified stay helper.
       if(['304','403','404','405','406'].includes(ticket.room))await service('input_text','set_value','input_text.sisu_'+ticket.room+'_aktualny_pobyt',{value:ticket.key});
@@ -173,9 +189,9 @@ module.exports=function createArrival({dataDir,rooms,haApi,getStay,hasUniqueSalo
     catch{logger.warn('SISU arrival '+ticket.room+': light signal failed')}
   }
   async function recover(){
-    for(const room of Object.keys(PILOT)){
+    for(const room of matchedRooms){
       const p=db.pending[room];
-      if(!p||now()-p.at>300000||now()-p.at<20000||wakeJobs.has(room)||db.completed[room]===p.key)continue;
+      if(!p||p.at<boot||now()-p.at>300000||now()-p.at<20000||wakeJobs.has(room)||db.completed[room]===p.key)continue;
       const prep=db.prepared[room];
       if(prep?.key===p.key&&now()-prep.at<30000)continue;
       void wake(room,p.key,true);
@@ -186,10 +202,11 @@ module.exports=function createArrival({dataDir,rooms,haApi,getStay,hasUniqueSalo
     let ready=false,probing=false;
     const tick=()=>{
       if(!ready){if(!probing){probing=true;void probe().then(()=>{ready=true}).catch(()=>logger.warn('SISU arrival: TTLock read API not ready')).finally(()=>{probing=false})}return;}
-      for(const s of Object.keys(SIGNALS))void pollOne(s);
+      for(const source of DOWNSTAIRS)void pollOne(source);
+      for(const room of matchedRooms)if(hasUniqueSalon(room))void pollOne('lock.'+room);
       void recover();
     };
     tick();const timer=setInterval(tick,2500);timer.unref?.();
   }
-  return {claim,notify,process,pollOne,probe,waitForWake:room=>wakeJobs.get(room)||Promise.resolve(true)};
+  return {claim,notify,welcomeContext,process,pollOne,probe,waitForWake:room=>wakeJobs.get(room)||Promise.resolve(true)};
 };

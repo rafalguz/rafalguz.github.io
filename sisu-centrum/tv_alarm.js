@@ -241,13 +241,14 @@ function createRoomAlarm({dataDir,send,jsonBody,resolveDevice,haApi,hotelExpert,
    timer.unref?.();
    setTimeout(()=>{void serialize(maintenance);},1800).unref?.();
  }
- return {handle,maintenance:()=>serialize(maintenance),plannedAt,localStamp,
+ return {handle,maintenance:()=>serialize(maintenance),plannedAt,localStamp,stayKey,
    async currentStayKey(){const x=await hotelExpert.alarmGuest(Number(room));return x.reservation?stayKey(x.reservation):'';}};
 }
 module.exports=function createTvAlarm(options){
  const primary=createRoomAlarm({...options,room:'401'});
  const secondary=createRoomAlarm({...options,room:'402'});
  return {...primary,maintenance402:secondary.maintenance,verifyStay401:primary.currentStayKey,verifyStay402:secondary.currentStayKey,
+   welcomeKey401:primary.stayKey,welcomeKey402:secondary.stayKey,
    async handle(req,res,p){
      if(p!=='/api/tv/alarm'&&p!=='/api/tv/alarm/ack')return false;
      const device=options.resolveDevice(req);

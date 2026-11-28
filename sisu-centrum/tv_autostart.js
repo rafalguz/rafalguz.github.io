@@ -1,7 +1,7 @@
 'use strict';
 const {isIPv4}=require('node:net');
 // Fixed LAN endpoints; bounded launch, verify foreground, no continuous force or power-on.
-module.exports=function createTvAutostart({haApi,host304,host403,host404,host405,host406Salon,host406Bedroom,logger=console,autoPoll=true,now=Date.now,sleep=ms=>new Promise(r=>setTimeout(r,ms)),requestImpl}){
+module.exports=function createTvAutostart({haApi,welcomeTargets={},host304,host403,host404,host405,host406Salon,host406Bedroom,logger=console,autoPoll=true,now=Date.now,sleep=ms=>new Promise(r=>setTimeout(r,ms)),requestImpl}){
   const app='RGKSISU232.Sisu23TV';
   const isSisuLan=host=>typeof host==='string'&&isIPv4(host)&&/^192\.168\.1\./.test(host)&&!/[.](?:0|255)$/.test(host);
   const lan403=isSisuLan(host403),lan404=isSisuLan(host404),lan405=isSisuLan(host405);
@@ -17,6 +17,7 @@ module.exports=function createTvAutostart({haApi,host304,host403,host404,host405
     ...(lan405?{'405_salon':{host:host405,local:'media_player.405_salon_405_salon_telewizor'}}:{}),
     ...(lan404?{'404_salon':{host:host404,local:'media_player.404_salon_404_salon_telewizor'}}:{})
   });
+  const launchTargets={...Object.fromEntries(Object.entries(welcomeTargets).map(([r,t])=>[r+'_salon',t])),...devices};
   const boot=now(),seen=new Map(),jobs=new Map(),polling=new Set(),ready=new Set();
   const read=id=>haApi('/states/'+id).then(x=>x?.state);
   const isOn=async tv=>(await read(tv.local))==='on';
@@ -28,9 +29,9 @@ module.exports=function createTvAutostart({haApi,host304,host403,host404,host405
   }
   const visible=x=>x?.id===app&&x.running===true&&x.visible===true;
   function launch(name){
-    if(!Object.hasOwn(devices,name))return Promise.resolve(false);
+    if(!Object.hasOwn(launchTargets,name))return Promise.resolve(false);
     if(jobs.has(name))return jobs.get(name);
-    const tv=devices[name],deadline=now()+30000;
+    const tv=launchTargets[name],deadline=now()+30000;
     const task=(async()=>{
       for(let i=0;i<3&&now()<deadline;i++){
         try{

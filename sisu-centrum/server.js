@@ -251,7 +251,10 @@ async function getOverview(fresh=false){
 }
 async function haApi(endpoint,method='GET',payload){
   if(!HA_TOKEN)throw Object.assign(Error('Brak połączenia serwerowego z Home Assistant'),{status:503});
-  const arrivalRead=/^\/states\/(?:input_text\.sisu_przyjazd_(?:wejscie|304|401|402|403|404|405|406)|media_player\.(?:401_salon_telewizor_ue55u8072huxxh|apartament_402_402_salon_telewizor_ue55u8072huxxh|403_salon_403_salon_telewizor|404_salon_404_salon_telewizor))$/.test(endpoint)&&method==='GET';
+  const roomSignal=method==='GET'&&/^\/states\/input_text\.sisu_przyjazd_(?:[1-4]\d{2}|zielone_drzwi)$/.test(endpoint)&&
+    (endpoint.endsWith('_zielone_drzwi')||ROOMS.includes(Number(endpoint.slice(-3))));
+  const configuredTvRead=method==='GET'&&Object.values(privateWelcomeTargets).some(t=>endpoint==='/states/'+t.local);
+  const arrivalRead=configuredTvRead||roomSignal||/^\/states\/(?:input_text\.sisu_przyjazd_(?:wejscie|304|401|402|403|404|405|406)|media_player\.(?:401_salon_telewizor_ue55u8072huxxh|apartament_402_402_salon_telewizor_ue55u8072huxxh|403_salon_403_salon_telewizor|404_salon_404_salon_telewizor))$/.test(endpoint)&&method==='GET';
   const autostartRead=/^\/states\/(?:input_button\.sisu_autostart_(?:304_salon|401_salon|402_salon|402_sypialnia|403_salon|404_salon|405_salon|406_salon|406_sypialnia)|media_player\.(?:304_304_salon|apartament_402_402_sypialnia_telewizja_ue55u8072huxxh|405_salon_405_salon_telewizor|406_salon_406_salon_telewizor|406_salon_406_sypialnia_telewizor))$/.test(endpoint)&&method==='GET';
   const ttRead=/^\/services\/ttlock\/list_(?:passcodes|records)\?return_response$/.test(endpoint)&&method==='POST';
   if(!arrivalRead&&!autostartRead&&!ttRead&&!/^\/(states|services\/[a-z_]+\/[a-z_]+)$/.test(endpoint))throw Object.assign(Error('Niedozwolone żądanie HA'),{status:400});
@@ -479,6 +482,38 @@ function createHotelExpert({dataDir,send,resolveDevice,requireUser,csrfOk,jsonBo
       persons:Number(record.osob)||1,children:Number(record.dzieci)||0,status:record.status||null
     }:null};
   }
+  const welcomeName=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu,' ').trim();
+  let welcomeInFlight=null;
+  async function welcomeStay(room,{code,key}={},keyFor){
+    const cfg=opts(),now=Date.now();
+    if(!code&&!/^[a-f0-9]{32}$/.test(key||''))return null;
+    if(!alarmRawCache||now-alarmRawCache.at>30000){
+      if(!welcomeInFlight)welcomeInFlight=Promise.all([api(cfg,'/properties'),api(cfg,'/reservations')])
+        .then(([p,r])=>{alarmRawCache={at:Date.now(),properties:Array.isArray(p)?p:Array.isArray(p?.value)?p.value:[],
+          reservations:Array.isArray(r)?r:Array.isArray(r?.rezerwacje)?r.rezerwacje:[]};})
+        .finally(()=>{welcomeInFlight=null;});
+      await welcomeInFlight;
+    }
+    const properties=alarmRawCache.properties.filter(x=>String(x?.code)===String(String(room)==='401'&&cfg.room401?cfg.room401:room));
+    if(properties.length!==1)return null;
+    const localDate=v=>{const t=Date.parse(String(v||''));return Number.isFinite(t)?new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Warsaw',year:'numeric',month:'2-digit',day:'2-digit'}).format(t):'';};
+    const denied=new Set(['cancelled','canceled','anulowana','anulowany','no_show','checked_out','wymeldowany','rejected','odrzucona']);
+    const label=welcomeName(code?.name);
+    const identity=x=>keyFor?keyFor(x):opaqueStayId(room,x);
+    const found=alarmRawCache.reservations.filter(x=>{
+      if(!x?.id||String(x.apartament)!==String(properties[0].id)||denied.has(String(x.status||'').trim().toLowerCase()))return false;
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(x.przyjazd)||!/^\d{4}-\d{2}-\d{2}$/.test(x.wyjazd))return false;
+      if(key){try{return identity(x)===key;}catch{return false;}}
+      if(x.przyjazd!==localDate(code.start_date)||x.wyjazd!==localDate(code.end_date))return false;
+      const guest=welcomeName(x.gosc);
+      return /^(rez|rezerwacja) /.test(label)&&guest.length>=5&&(' '+label+' ').includes(' '+guest+' ');
+    });
+    if(found.length!==1)return null;
+    const r=found[0],stayId=opaqueStayId(room,r),welcomeKey=identity(r);
+    return {reservation:{arrival:r.przyjazd,departure:r.wyjazd},key:welcomeKey,
+      context:{room:String(room),language:languageFor(r.id),stayId,stayStatus:'active'}};
+  }
   async function patchReservation(id,changes){
     const cfg=opts();
     const result=await api(cfg,'/reservations/'+encodeURIComponent(String(id)),'PATCH',changes,true);
@@ -578,7 +613,7 @@ function createHotelExpert({dataDir,send,resolveDevice,requireUser,csrfOk,jsonBo
     catch(e){send(res,Number.isInteger(e.status)?e.status:500,{error:e.message||'Błąd HotelowyExpert'});}
     return true;
   }
-  return {handle:handleHotel,guest,alarmGuest,patchReservation,getRoomContext,publicReservations,setReservationLanguage};
+  return {handle:handleHotel,guest,alarmGuest,welcomeStay,patchReservation,getRoomContext,publicReservations,setReservationLanguage};
 }
 function createLateCheckout({dataDir,send,jsonBody,resolveDevice,hotelExpert}){
   const OPTIONS=path.join(dataDir,'options.json');
@@ -720,17 +755,36 @@ function createLateCheckout({dataDir,send,jsonBody,resolveDevice,hotelExpert}){
   }
   return {handle};
 }
-let hotelExpert=null;
+let hotelExpert=null,arrival=null;
 const tvRegistry=require('./tv_registry')({
   dataDir:DATA,rooms:ROOMS,send,requireUser,csrfOk,jsonBody,audit,clientKey,
-  getRoomContext:async room=>hotelExpert?hotelExpert.getRoomContext(room):{room:String(room),language:'',stayId:'',stayStatus:'unknown'}
+  getRoomContext:async room=>(await arrival?.welcomeContext(room))||(hotelExpert?await hotelExpert.getRoomContext(room):{room:String(room),language:'',stayId:'',stayStatus:'unknown'})
 });
 const tvWatchdog=require('./tv_watchdog')({targets:tvRegistry.watchdogTargets});
 function tvSalonHost(room,zone='salon'){
   try{return String(JSON.parse(fs.readFileSync(path.join(DATA,'options.json'),'utf8'))['tv_'+room+'_'+zone+'_host']||'').trim();}
   catch{return '';}
 }
-const tvAutostart=require('./tv_autostart')({haApi,host304:tvSalonHost('304'),host403:tvSalonHost('403'),host404:tvSalonHost('404'),host405:tvSalonHost('405'),host406Salon:tvSalonHost('406'),host406Bedroom:tvSalonHost('406','sypialnia')});
+const {isIPv4}=require('node:net');
+const reservedWelcomeHosts=new Set(['192.168.1.238','192.168.1.210','192.168.1.230',
+  ...['304','403','404','405','406'].flatMap(room=>[tvSalonHost(room),tvSalonHost(room,'sypialnia')])]);
+function readPrivateWelcomeTargets(){
+  let entries;
+  try{entries=JSON.parse(JSON.parse(fs.readFileSync(path.join(DATA,'options.json'),'utf8')).welcome_tv_targets||'{}');}
+  catch{return {};}
+  if(!entries||typeof entries!=='object'||Array.isArray(entries))return {};
+  const valid=[];
+  for(const [room,x] of Object.entries(entries)){
+    if(!ROOMS.includes(Number(room))||!/^\d{3}$/.test(room)||['304','401','402','403','404','405','406'].includes(room))continue;
+    const host=x?.host,local=x?.entity;
+    if(typeof host!=='string'||!isIPv4(host)||!/^192\.168\.1\./.test(host)||/\.(?:0|255)$/.test(host)||reservedWelcomeHosts.has(host))continue;
+    if(typeof local!=='string'||!new RegExp('^media_player\\.(?:apartament_)?'+room+'_(?:[a-z0-9]+_)*salon(?:_[a-z0-9]+)*$').test(local)||/sypialnia/.test(local))continue;
+    valid.push([room,{host,local,power:local}]);
+  }
+  return Object.fromEntries(valid.filter(([,v])=>valid.filter(([,w])=>v.host===w.host||v.local===w.local).length===1));
+}
+const privateWelcomeTargets=readPrivateWelcomeTargets();
+const tvAutostart=require('./tv_autostart')({haApi,welcomeTargets:privateWelcomeTargets,host304:tvSalonHost('304'),host403:tvSalonHost('403'),host404:tvSalonHost('404'),host405:tvSalonHost('405'),host406Salon:tvSalonHost('406'),host406Bedroom:tvSalonHost('406','sypialnia')});
 const tvContent=require('./tv_content')({
   dataDir:DATA,rooms:ROOMS,send,requireUser,csrfOk,jsonBody,audit,resolveDevice:tvRegistry.resolveDevice
 });
@@ -738,21 +792,11 @@ const tvComfort=require('./tv_comfort')({haApi,send,jsonBody,audit,resolveDevice
 hotelExpert=createHotelExpert({dataDir:DATA,send,resolveDevice:tvRegistry.resolveDevice,requireUser,csrfOk,jsonBody,audit});
 const lateCheckout=createLateCheckout({dataDir:DATA,send,jsonBody,resolveDevice:tvRegistry.resolveDevice,hotelExpert});
 const tvAlarm=require('./tv_alarm')({dataDir:DATA,send,jsonBody,resolveDevice:tvRegistry.resolveDevice,haApi,hotelExpert});
-const arrival=require('./tv_arrival')({dataDir:DATA,rooms:ROOMS,haApi,hasUniqueSalon:tvRegistry.hasUniqueSalon,
+arrival=require('./tv_arrival')({dataDir:DATA,rooms:ROOMS,haApi,hasUniqueSalon:tvRegistry.hasUniqueSalon,
+  resolveWakeTarget:room=>privateWelcomeTargets[room]||null,
   launchApp:room=>tvAutostart.launch(String(room)+'_salon'),
-  getStay:async room=>{
-    room=String(room);
-    if(!['304','401','402','403','404','405','406'].includes(room))return null;
-    const reservation=(await hotelExpert.alarmGuest(Number(room))).reservation;
-    if(!reservation)return null;
-    if(['304','403','404','405','406'].includes(room)){
-      const context=await hotelExpert.getRoomContext(room,reservation);
-      return {reservation,key:context.stayId,context};
-    }
-    const key=await (String(room)==='401'?tvAlarm.verifyStay401():tvAlarm.verifyStay402());
-    return {reservation,key,context:await hotelExpert.getRoomContext(String(room))};
-  }});
-const tvWelcome=require('./tv_welcome')({dataDir:DATA,haApi,resolveDevice:tvRegistry.resolveDevice,send,jsonBody,arrival,
+  getStay:(room,evidence)=>hotelExpert.welcomeStay(room,evidence,room==='401'?tvAlarm.welcomeKey401:room==='402'?tvAlarm.welcomeKey402:null)});
+const tvWelcome=require('./tv_welcome')({dataDir:DATA,haApi,resolveDevice:tvRegistry.resolveDevice,send,jsonBody,arrival,rooms:ROOMS,
   getWelcomeStay402:async()=>({key:await tvAlarm.verifyStay402(),context:await hotelExpert.getRoomContext('402')})});
 const hallAnnouncements=require('./hall_announcements')({haApi,send,requireUser,csrfOk,jsonBody,audit,invalidateOverview,hallAudio:DEVICES.hallAudio,haToken:HA_TOKEN});
 
