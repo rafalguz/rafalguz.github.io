@@ -1,5 +1,5 @@
 name: SISU Centrum Zarzadzania
-version: "0.1.65"
+version: "0.1.66"
 slug: sisu-centrum
 description: "Niezalezny panel WWW dla 30 apartamentow SISU Wlodkowica"
 url: "https://github.com/rafalguz/rafalguz.github.io"
@@ -20,6 +20,7 @@ ports:
 ports_description:
   8098/tcp: "Prywatny panel WWW SISU"
 options:
+  tv_304_salon_host: ""
   tv_403_salon_host: ""
   tv_404_salon_host: ""
   tv_405_salon_host: ""
@@ -45,6 +46,7 @@ options:
   late_checkout_default_checkin: "15:00"
   late_checkout_default_checkout: "11:00"
 schema:
+  tv_304_salon_host: str
   tv_403_salon_host: str
   tv_404_salon_host: str
   tv_405_salon_host: str

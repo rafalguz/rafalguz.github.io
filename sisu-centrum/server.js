@@ -252,7 +252,7 @@ async function getOverview(fresh=false){
 async function haApi(endpoint,method='GET',payload){
   if(!HA_TOKEN)throw Object.assign(Error('Brak połączenia serwerowego z Home Assistant'),{status:503});
   const arrivalRead=/^\/states\/(?:input_text\.sisu_przyjazd_(?:wejscie|401|402|403|404|405|406)|media_player\.(?:401_salon_telewizor_ue55u8072huxxh|apartament_402_402_salon_telewizor_ue55u8072huxxh|403_salon_403_salon_telewizor|404_salon_404_salon_telewizor))$/.test(endpoint)&&method==='GET';
-  const autostartRead=/^\/states\/(?:input_button\.sisu_autostart_(?:401_salon|402_salon|402_sypialnia|403_salon|404_salon|405_salon|406_salon|406_sypialnia)|media_player\.(?:apartament_402_402_sypialnia_telewizja_ue55u8072huxxh|405_salon_405_salon_telewizor|406_salon_406_salon_telewizor|406_salon_406_sypialnia_telewizor))$/.test(endpoint)&&method==='GET';
+  const autostartRead=/^\/states\/(?:input_button\.sisu_autostart_(?:304_salon|401_salon|402_salon|402_sypialnia|403_salon|404_salon|405_salon|406_salon|406_sypialnia)|media_player\.(?:304_304_salon|apartament_402_402_sypialnia_telewizja_ue55u8072huxxh|405_salon_405_salon_telewizor|406_salon_406_salon_telewizor|406_salon_406_sypialnia_telewizor))$/.test(endpoint)&&method==='GET';
   const ttRead=/^\/services\/ttlock\/list_(?:passcodes|records)\?return_response$/.test(endpoint)&&method==='POST';
   if(!arrivalRead&&!autostartRead&&!ttRead&&!/^\/(states|services\/[a-z_]+\/[a-z_]+)$/.test(endpoint))throw Object.assign(Error('Niedozwolone żądanie HA'),{status:400});
   let response;
@@ -730,7 +730,7 @@ function tvSalonHost(room,zone='salon'){
   try{return String(JSON.parse(fs.readFileSync(path.join(DATA,'options.json'),'utf8'))['tv_'+room+'_'+zone+'_host']||'').trim();}
   catch{return '';}
 }
-const tvAutostart=require('./tv_autostart')({haApi,host403:tvSalonHost('403'),host404:tvSalonHost('404'),host405:tvSalonHost('405'),host406Salon:tvSalonHost('406'),host406Bedroom:tvSalonHost('406','sypialnia')});
+const tvAutostart=require('./tv_autostart')({haApi,host304:tvSalonHost('304'),host403:tvSalonHost('403'),host404:tvSalonHost('404'),host405:tvSalonHost('405'),host406Salon:tvSalonHost('406'),host406Bedroom:tvSalonHost('406','sypialnia')});
 const tvContent=require('./tv_content')({
   dataDir:DATA,rooms:ROOMS,send,requireUser,csrfOk,jsonBody,audit,resolveDevice:tvRegistry.resolveDevice
 });
